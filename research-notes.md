@@ -1,10 +1,83 @@
 # Service Mesh Fundamentals: Providing Security, Reliability, and Observability to Kubernetes Applications
 
+### Author: Flyn
+
 - Examples of existing solutions:
   - Istio
   - Linkerd
   - Consul
   - Kuma
+
+### Definition: <br>
+An infrastructure layer providing security, reliability, and obversability at a platform level, uniformly across an entire application
+
+
+### The Microservice Arch
+- Multiple binaries
+- Multiple processes
+- Multiple machines (usually)
+
+Meshes <u><b>typically</b></u> work by adding a proxy next to each application pod 
+
+Proxies <b>mediate</b> and <b>measure</b> all communication
+
+### Proxies mediate communication, allowing them to enforce rules
+- mTLS
+- advenced load balancing
+- retries, timeouts, etc.
+
+### Proxies measure communication
+- Discover and display the call graph
+- Measure and publish golden metrics (latency, success rate, traffic)
+
+### (In)security
+- Eavesdropping:
+    - An evildoer can snoop on cleartext communications
+    - Encryption
+- Tampering:
+    - An evildoer can change what's being sent
+    - Integrity checking
+- Identity theft:
+    - An evildoer can pretend to be a  legitimate workload
+    - Authentication
+
+### Mesh security
+Meshes provide all three (Encryption, Integrity checking, Authentication)<br>
+Most commonly, the proxies enforce mTLS for all communication.<br>
+Some meshes do use lower-level mechanism like WireGuard of IPsec.<br>
+Mesh can't help if application has it's own vulnerabilities
+
+### (Un)reliability
+- The network can fail
+- Services can fail
+- Things can get overloaded
+
+### Reliability
+- Retries
+- Timeouts
+- Circuit breakers
+
+<b>The mesh can't directly improve reliability of things inside a single application Pod</b>
+
+### Mehs observability
+- The mesh is in perfect place to measure everything
+- In particular, real-time telemetry can reveal the call graph of the application
+- Easily collects golden metrics:
+    - Success rates
+    - Latency
+    - Traffic volume
+
+
+### Service meshes control communications
+- All meshes work by taking over network communications between workloads in the application
+- Not all meshes do this in exactly the same way
+
+### Service meshes focus on workloads
+- Meshes operate at the level of the workloads, not at the level of end users
+- A mesh can guarantee that a given workload is what it claims to be; the application must worry about the user
+
+
+
 
 # Mastering Service Mesh
 
