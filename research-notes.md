@@ -76,6 +76,36 @@ Mesh can't help if application has it's own vulnerabilities
 - Meshes operate at the level of the workloads, not at the level of end users
 - A mesh can guarantee that a given workload is what it claims to be; the application must worry about the user
 
+### Commonalities
+- All modern meshes must:
+    - Manage communication to add security, reliability, and observability to an entire application at the platform level
+    - Provide a way to tackle ingress
+    - Allow multicluster operation
+    -Be able to work with non-K8s workloads 
+- All meshes must manage communication to provide:
+    - Secure communication between application pods (mTLS)
+    - Fine-grained workload authentication and autorization
+    - Per-request load balancing 
+    - Retries, circuit breakers, timeouts, etc.
+    - Uniform metrics across the entire application
+
+### <b>Managing Ingress</b>
+<b>Ingress: bringing traffic in from outside the cluster</b>
+- The ingress problem is fundamental for cloud native world
+- Popular mesh solutions work with ingress controller to solve this problem
+
+### Multicluster
+In case of multicluster we rely on the mesh to handle communication between clusters in the same way that we handle communication within a cluster. Typically, you'll end up with an instance of the control plane running on each of your clusters.
+
+
+### <b>In 2023 Istio released Istio Ambient</b>
+- L4 (Transport) is handled in the per-Node Rust ztunnel proxy
+- L7 (Application) is handled by an Envoy (the "waypoint")
+- The point of Ambient is to try reduce resource uasge and increase perfomance
+- Probably you will use only one Envoy(connection between node) because ztunnels (between micro-services) are much lighter weight
+- You do possibly run into some more operational complexity with this
+
+
 
 
 
