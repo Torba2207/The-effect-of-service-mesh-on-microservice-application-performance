@@ -98,12 +98,26 @@ Mesh can't help if application has it's own vulnerabilities
 In case of multicluster we rely on the mesh to handle communication between clusters in the same way that we handle communication within a cluster. Typically, you'll end up with an instance of the control plane running on each of your clusters.
 
 
+### Linkerd
+- Doesn't use Envoy. It uses Rust-based microproxies instead
+- Linkerd control plane must be in k8s
+
+
 ### <b>In 2023 Istio released Istio Ambient</b>
 - L4 (Transport) is handled in the per-Node Rust ztunnel proxy
 - L7 (Application) is handled by an Envoy (the "waypoint")
 - The point of Ambient is to try reduce resource uasge and increase perfomance
 - Probably you will use only one Envoy(connection between node) because ztunnels (between micro-services) are much lighter weight
 - You do possibly run into some more operational complexity with this
+- Istio is k8s-first
+
+### Consule
+- Consule Control Plane is always outside of k8s
+
+### Kuma
+- Kuma can work with different ingress controllers
+- Only mesh supports multiple sources of truth
+
 
 
 
