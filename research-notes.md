@@ -120,6 +120,23 @@ In case of multicluster we rely on the mesh to handle communication between clus
 
 
 
+## Kubectl
+
+### Instalation link:
+- https://kuberenetes.io/docs/tasks/tools/#kubectl
+
+## Helm
+
+### Instalation link:
+- https://helm.sh/docs/intro/install
+
+## k3d Cluster
+
+### Instalation instructions:
+- https://k3d.io/#quick-start
+
+
+
 
 
 
