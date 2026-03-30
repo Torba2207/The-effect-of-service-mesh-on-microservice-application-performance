@@ -14,7 +14,7 @@
   
   [Termin], [#align(center)[*Cel*]], [#align(center)[*Oczekiwane pliki*]],
   
-  [31.03.2026], [Formowanie bazy wiedzy (service mesh, k8s, containers, microservices)], [Plik PDF z wymienionymi źródłami i krótkim opisem każdego],
+  
   
   [08.04.2026], [Papierowy prototyp aplikacji mikrousługowej], [Plik PDF z ogólnym opisem aplikacji i wykazem mikrousług, z których się składa],
   
@@ -26,11 +26,7 @@
   
   [10.05.2026], [Pilotażowe badania wydajności bez użycia service mesh], [Raport PDF z wynikami pomiarów bazowych (np. opóźnienia, przepustowość, zużycie CPU/RAM) i surowe logi z testów],
   
-  [20.05.2026], [Linkerd - pomiary wydajności], [Raport PDF z wynikami dla Linkerd oraz pliki konfiguracyjne użyte do wdrożenia tego mesh'a],
-  
-  [25.05.2026], [Istio - pomiary wydajności], [Raport PDF z wynikami dla Istio oraz pliki konfiguracyjne],
-  
-  [30.05.2026], [Consul - pomiary wydajności], [Raport PDF z wynikami dla Consul oraz pliki konfiguracyjne],
+  [30.05.2026], [Pomiary wydajności z użyciem różnych rozwiązań service mesh], [Raport PDF z wynikami dla różnych rozwiązań service mesh oraz pliki konfiguracyjne],
   
   [05.06.2026], [Podsumowanie pomiarów wydajności, wnioskowanie], [Ostateczny raport PDF z zestawieniem wyników (tabele, wykresy porównawcze) i wnioskami]
 )
