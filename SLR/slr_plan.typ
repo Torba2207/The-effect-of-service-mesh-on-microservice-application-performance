@@ -1,9 +1,9 @@
 #set page(paper: "a4", margin: 1in)
-#set text(font: "Linux Libertine", size: 11pt)
+#set text(size: 11pt)
 #set heading(numbering: "1.1")
 
 #align(center)[
-  #text(size: 17pt, weight: "bold")[Systemic Literature Review Report]
+  #text(size: 17pt, weight: "bold")[Systematic Literature Review Report]
 ]
 
 #align(center)[
@@ -142,34 +142,114 @@ The following data will be extracted from each selected article and recorded in 
 == Results in numbers
 Number of articles retrieved from databases (before deduplication):
 - Scopus: 75
-- SpringerLink: 12
-- Arxiv: 30
+- SpringerLink: 5
+- Arxiv: 28
 - IEEE Xplore: 179
 == Articles selected for data extraction
-The following list presents the 8 articles selected after verification and qualified for data extraction:
+The following list presents the 12 articles selected after verification and qualified for data extraction:
 
-#set enum(numbering: "[1]")
-+ ("Elastic Scaling of Real-Time Communication Services")
-+ ("Trade-Offs in Kubernetes Security and Energy Consumption")
-+ ("Network shortcut in data plane of service mesh with eBPF")
-+ ("Evaluation of a Smart Intercom Microservice System Based on the Cloud of Things")
-+ ("Resilient microservices: an investigation into Istio effectiveness in Kubernetes")
-+ ("Technical Report: Performance Comparison of Service Mesh Frameworks: the MTLS Test Case")
-+ ("Impact of etcd deployment on Kubernetes, Istio, and application performance")
-+ ("Challenges and Opportunities in Performance Benchmarking of Service Mesh for the Edge")
-== Initial extacted data
+#set list(marker: "")
+- @nagy_elastic_2026 "Elastic Scaling of Real-Time Communication Services"
+- @dermentzis_trade-offs_2026 "Trade-Offs in Kubernetes Security and Energy Consumption"
+- @yang_network_2024 "Network shortcut in data plane of service mesh with eBPF"
+- @huang_evaluation_2023 "Evaluation of a Smart Intercom Microservice System Based on the Cloud of Things"
+- @singh_resilient_2026 "Resilient microservices: an investigation into Istio effectiveness in Kubernetes"
+- @barr_technical_2024 "Technical Report: Performance Comparison of Service Mesh Frameworks: the MTLS Test Case"
+- @larsson_impact_2020 "Impact of etcd deployment on Kubernetes, Istio, and application performance"
+- @ganguli_challenges_2021 "Challenges and Opportunities in Performance Benchmarking of Service Mesh for the Edge"
+- @hahn_security_2020 "Security Issues and Challenges in Service Meshes – An Extended Study"
+- @zeng_full-stack_2023 "Full-stack vulnerability analysis of the cloud-native platform"
+- @bosquez_comparative_2025 "Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application" \
+- @kurpad_microarchitectural_2023 "Microarchitectural Analysis and Characterization of Performance Overheads in Service Meshes with Kubernetes"
+
+== Initial extracted data
+
+#table(
+  columns: (1fr, auto, auto),
+  inset: 8pt,
+  align: horizon,
+  [*Main focus / Keywords*], [*Service Mesh*], [*Article*],
+
+  // --- Article 1 ---
+  [Edge computing, performance benchmarking, latency, throughput, Iptables overhead],
+  [Istio (Envoy)],
+  [@ganguli_challenges_2021],
+  
+  table.cell(colspan: 3)[
+    *Title:* Challenges and Opportunities in Performance Benchmarking of Service Mesh for the Edge \
+    *Summary:* This paper investigates the architectural complexities and performance impacts of deploying a service mesh in latency-sensitive edge environments. By benchmarking north-south and east-west communications, the authors identify significant bottlenecks in the Linux network stack. Specifically, they highlight that Linux's Iptables rule matching (used heavily by sidecar proxies) creates substantial CPU micro-architecture overhead at scale. This emphasizes the need for optimized data planes when deploying service meshes at the edge.
+  ],
+
+  // --- Article 2 ---
+  [Chaos engineering, resilience, fault tolerance, response time, heavy load],
+  [Istio],
+  [@singh_resilient_2026],
+
+  table.cell(colspan: 3)[
+    *Title:* Resilient microservices: an investigation into Istio effectiveness in Kubernetes \
+    *Summary:* This study evaluates the impact of the Istio service mesh on the resilience of Kubernetes clusters using chaos engineering principles (injecting failures into the system). Performance metrics such as response time, error rates, and resource usage were analyzed under increased load. The findings demonstrate that Istio significantly improves system stability, failure resilience, and recovery times compared to a traditional, non-mesh Kubernetes architecture.
+  ],
+
+  // --- Article 3 ---
+  [mTLS overhead, latency, memory consumption, sidecar vs. sidecar-less],
+  [Istio, Linkerd, Cilium],
+  [@barr_technical_2024],
+
+  table.cell(colspan: 3)[
+    *Title:* Technical Report: Performance Comparison of Service Mesh Frameworks: the MTLS Test Case \
+    *Summary:* Recognizing that security is a primary driver for service mesh adoption, this technical report thoroughly evaluates the performance overhead of mutual TLS (mTLS). It compares traditional sidecar architectures (Istio, Linkerd) with sidecar-less and eBPF-accelerated architectures (Istio Ambient, Cilium). The experiments reveal significant differences in latency and memory consumption, noting that while some meshes appear faster, the overhead is heavily dependent on the default security features and the underlying proxy architecture.
+  ],
+
+  // --- Article 4 ---
+  [CPU consumption, RAM usage, latency, high-load stability, SEMMA methodology],
+  [Istio, Linkerd],
+  [@bosquez_comparative_2025],
+
+  table.cell(colspan: 3)[
+    *Title:* Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application \
+    *Summary:* This paper conducts a direct, objective comparison between Istio and Linkerd using the Online Boutique microservices application under low, medium, and high load scenarios. Experimental results showed that Linkerd significantly outperformed Istio in efficiency, maintaining lower average latency (104 ms vs. 135 ms), consuming less CPU and RAM, and recording zero errors under high load. Conversely, Istio exhibited consumption peaks and internal failures under stress, though the authors note it remains preferable for environments requiring highly advanced control features.
+  ]
+)
 == Article statistics
+
+To understand the research landscape surrounding service mesh performance in microservice architectures, a quantitative analysis was performed on the search results.
+
+=== Initial Search Distribution
+The initial database queries returned a total of 287 articles before deduplication. As shown in @fig:db_counts, IEEE Xplore (179 articles) and Scopus (75 articles) provided the vast majority of the results. This reflects the topic's strong roots in applied computer science, network engineering, and distributed systems. arXiv (28 articles) and SpringerLink (5 articles) yielded fewer direct matches based on our highly specific search strings.
+
+#figure(
+  image("database_counts_pre_dedup.png", width: 80%),
+  caption: [Number of articles retrieved per database before deduplication.]
+) <fig:db_counts>
+
+=== Publication Trends Over Time
+After removing duplicates and cleaning the dataset, the temporal distribution of the unique articles was analyzed (@fig:pub_years). The data indicates that while modern service meshes (like Istio) were introduced around 2017, rigorous academic research and performance benchmarking began to gain significant traction from 2020 onward. The steady volume of recent publications demonstrates that service mesh efficiency, security overhead, and edge deployment are currently highly active and maturing research areas.
+
+#figure(
+  image("publications_by_year.png", width: 80%),
+  caption: [Distribution of unique publications by year.]
+) <fig:pub_years>
+
+=== Top Publication Sources
+An analysis of the publication venues (@fig:top_sources) reveals that a significant portion of research in this domain is published across IEEE conferences and specialized computer networks journals.
+
+#figure(
+  image("top_sources.png", width: 85%),
+  caption: [Top 10 publication sources for the filtered articles.]
+) <fig:top_sources>
 = Conclusions
 
 == SLR process
-The systematic literature review process revealed that defining the correct scope of search queries was a significant challenge. The main obstacle was the massive volume of general publications regarding cloud computing, Kubernetes, and microservices that only briefly mentioned service meshes without providing quantitative evaluations. This required rigorous manual filtering of abstracts and full texts to focus strictly on studies that practically evaluated the performance, efficiency, and security overhead of service mesh deployments (such as Istio or Linkerd).
+Conducting this systematic literature review revealed that while "service mesh" is a highly popular industry topic, rigorous academic benchmarking remains relatively niche. The initial search across IEEE Xplore, Scopus, arXiv, and SpringerLink yielded 287 articles. A major challenge during the screening process was the prevalence of general cloud-computing or microservices papers that only mentioned service meshes in passing without providing quantitative evaluations. Consequently, careful manual screening was required to isolate the final 12 articles that actually provided empirical performance data. The process demonstrated the necessity of highly specific search strings and strict quality criteria to filter out industry buzzwords and focus on true architectural benchmarking.
 
 == SLR results
-The results of the literature review for the 8 selected publications indicate that research on service mesh efficiency in microservice environments is currently focused on three practical directions:
+Based on the initial data extracted from the core publications, several distinct themes have emerged regarding the impact of service mesh solutions on microservice efficiency:
+#set enum(numbering: "1.")
++ *The Cost of Security (mTLS) and Sidecar Proxies:* Deploying a traditional sidecar architecture introduces measurable latency and memory/CPU overhead @barr_technical_2024. This is largely driven by the cryptographic costs of mutual TLS and the underlying Linux network stack (e.g., Iptables rule matching), which becomes a significant bottleneck, particularly in latency-sensitive edge computing environments @ganguli_challenges_2021.
++ *Linkerd vs. Istio Performance:* Direct experimental comparisons highlight that Linkerd generally offers a lighter footprint with lower average latency (e.g., 104 ms vs. 135 ms) and better stability under high load compared to Istio @bosquez_comparative_2025. However, Istio remains the standard for environments requiring highly complex traffic routing and granular observability configurations.
++ *Architectural Evolution (eBPF and Sidecar-less):* To mitigate sidecar overheads, the research landscape is shifting toward kernel-level optimizations. Newer architectures utilizing eBPF are showing immense promise in drastically reducing network latency while maintaining robust security and observability, effectively bypassing traditional proxy bottlenecks @yang_network_2024 @barr_technical_2024.
++ *Trade-offs Between Efficiency and Resilience:* While service meshes impose a performance penalty, they significantly enhance system stability @singh_resilient_2026. Studies utilizing chaos engineering indicate that environments equipped with Istio recover faster and handle failure injections much more gracefully than native Kubernetes deployments, proving that the performance trade-off is often justified by massive gains in fault tolerance @dermentzis_trade-offs_2026 @larsson_impact_2020.
 
-+ *Performance Benchmarking and Overhead Analysis* -- extensive evaluation of the latency, CPU, and memory overhead introduced by service mesh components (specifically proxy sidecars and mTLS encryption), particularly in latency-sensitive, edge, or high-load environments [6], [8].
-+ *Architectural Optimizations (e.g., eBPF)* -- a growing trend toward mitigating performance penalties by optimizing the data plane. Researchers are increasingly exploring kernel-level technologies like eBPF to create network shortcuts and bypass traditional sidecar bottlenecks [3], [6].
-+ *Trade-offs Between Security, Resilience, and Efficiency* -- analyzing how the implementation of advanced service mesh features (such as mutual TLS, traffic routing, and chaotic testing) impacts overall system stability, energy consumption, and underlying infrastructure like `etcd` [2], [5], [7].
-
-Simultaneously, the literature confirms that while service meshes provide essential security and observability abstractions, their performance cost is highly dependent on the architecture and configuration. This conclusion directly reinforces the primary goal of our project: to experimentally test and quantify these efficiency trade-offs in a real-world microservices deployment.
+These findings directly validate the necessity of our research project. The literature confirms that service mesh performance overhead is highly contextual, reinforcing our goal to experimentally test these solutions in a controlled environment to find the optimal balance between security, observability, and efficiency.
 = Literature
+#bibliography("SLR_bib.bib", style: "ieee", full: true)
