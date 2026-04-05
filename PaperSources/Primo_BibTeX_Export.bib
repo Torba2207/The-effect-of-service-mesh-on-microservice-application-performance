@@ -1,0 +1,280 @@
+@article{BarrAnatBremler2024TRPC,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {Service Mesh has become essential for modern cloud-native applications by abstracting communication between microservices and providing zero-trust security, observability, and advanced traffic control without requiring code changes. This allows developers to leverage new network capabilities and focus on application logic without managing network complexities. However, the additional layer can significantly impact system performance, latency, and resource consumption, posing challenges for cloud managers and operators. In this work, we investigate the impact of the mTLS protocol - a common security and authentication mechanism - on application performance within service meshes. Recognizing that security is a primary motivation for deploying a service mesh, we evaluated the performance overhead introduced by leading service meshes: Istio, Istio Ambient, Linkerd, and Cilium. Our experiments were conducted by testing their performance in service-to-service communications within a Kubernetes cluster. Our experiments reveal significant performance differences (in terms of latency and memory consumption) among the service meshes, rooting from the different architecture of the service mesh, sidecar versus sidecareless, and default extra features hidden in the mTLS implementation. Our results highlight the understanding of the service mesh architecture and its impact on performance.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Barr, Anat Bremler and Lavi, Ofek and Naor, Yaniv and Rampal, Sanjeev and Tavori, Jhonatan},
+title = {Technical Report: Performance Comparison of Service Mesh Frameworks: the MTLS Test Case},
+year = {2024},
+}
+
+@article{LarssonLars2020IoeD,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {By intrinsic necessity, Kubernetes is a complex platform. Its complexity makes conducting performance analysis in that environment fraught with difficulties and emergent behavior. Applications leveraging more "moving parts" such as the Istio service mesh makes the platform strictly more complex, not less. In this paper we study how underlying platform constitution and deployment affects application performance, specifically in Kubernetes-based environments. We alter platform constitution via use of native Kubernetes networking or Istio. Platform deployment is altered via etcd data storage location at two extremes on the performance spectrum: network disk and RAM disk. Our results show that etcd performance has a large impact on that of Kubernetes and its ability to perform orchestration actions, and thereby indirectly on the performance of the application. The implication is that systems researchers conducting performance evaluations cannot just consider their specific application as being under test, but must also take the underlying Kubernetes platform into account. To conduct experiments of scientific rigor, we developed an experiment framework for conducting repeatable and reproducible experiments. Our framework and resulting data set are openly available for the research community to build upon and reason about.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Larsson, Lars and Tärneberg, William and Klein, Cristian and Elmroth, Erik and Kihl, Maria},
+title = {Impact of etcd Deployment on Kubernetes, Istio, and Application Performance},
+year = {2020},
+}
+
+@article{AslanHaciIsmail2025QAQO,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {Modern applications increasingly span across cloud, fog, and edge environments, demanding orchestration systems that can adapt to diverse deployment contexts while meeting Quality-of-Service (QoS) requirements. Standard Kubernetes schedulers do not account for user-defined objectives such as energy efficiency, cost optimization, and global performance, often leaving operators to make manual, cluster-by-cluster placement decisions. To address this need, we present QONNECT, a vendor-agnostic orchestration framework that enables declarative, QoS-driven application deployment across heterogeneous Kubernetes and K3s clusters. QONNECT introduces a distributed architecture composed of a central Knowledge Base, Raft-replicated Resource Lead Agents, and lightweight Resource Agents in each cluster. Through a minimal YAML-based interface, users specify high-level QoS goals, which the system translates into concrete placement and migration actions. Our implementation is evaluated on a federated testbed of up to nine cloud-fog-edge clusters using the Istio Bookinfo microservice application. The system demonstrates dynamic, policy-driven microservice placement, automated failover, QoS-compliant rescheduling, and leader re-election after node failure, all without manual intervention. By bridging the gap between declarative deployment models and operational QoS goals, QONNECT transforms the cloud-edge continuum into a unified, self-optimizing platform.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Aslan, Haci Ismail and Haque, Syed Muhammad Mahmudul and Witzke, Joel and Kao, Odej},
+title = {QONNECT: A QoS-Aware Orchestration System for Distributed Kubernetes Clusters},
+year = {2025},
+}
+
+@article{FarkianiBehrooz2025ENPE,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {Portable service mesh implementations enable Layer 4 to Layer 7 policy enforcement across heterogeneous infrastructures, yet they depend on the underlying network's connectivity and policies. Layer 3 network policies govern IP traffic regardless of whether upper layers authorize the flow. While these policies are integral to security, correct enforcement often requires coordination across multiple teams, and achieving consistent policy behavior across heterogeneous environments is challenging. Studies show that most Kubernetes clusters do not enforce any network policies. We propose integrating Layer 3 network policy enforcement with service meshes to protect data-plane traffic in a portable, infrastructure-agnostic manner. This integration allows developers to define Layer 3-7 policies and to ensure enforcement across any infrastructure. Our solution builds an overlay Layer 3 network and enforces Layer 3 policies by routing traffic through specific policy enforcement points and applying default-deny principles with authorization keys. We prototyped our approach using Kubernetes and Istio and found that it adds less than 1ms of latency while supporting complex policies comparable to native Kubernetes network policies.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Farkiani, Behrooz and Liu, Fan and Crowley, Patrick},
+title = {Enabling Network Policy Enforcement in Service Meshes},
+year = {2025},
+}
+
+@article{TavoriJhonatan2025RPSR,
+keywords = {Computer Science - Cryptography and Security ;  Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {Modern cloud applications are built on independent, diverse microservices, offering scalability, flexibility, and usage-based billing. However, the structural design of these varied services, along with their reliance on auto-scalers for dynamic internet traffic, introduces significant coordination challenges. As we demonstrate in this paper, common default retry patterns used between misaligned services can turn into retry storms which drive up resource usage and costs, leading to self-inflicted Denial-of-Wallet (DoW) scenarios. To overcome these problems we introduce RetryGuard, a distributed framework for productive control of retry patterns across interdependent microservices. By managing retry policy on a per-service basis and making parallel decisions, RetryGuard prevents retry storms, curbs resource contention, and mitigates escalating operational costs. RetryGuard makes its decisions based on an analytic model that captures the relationships among retries, throughput (rejections), delays, and costs. Experimental results show that RetryGuard significantly reduces resource usage and costs compared to AWS standard and advanced retry policies. We further demonstrate its scalability and superior performance in a more complex Kubernetes deployment with the Istio service mesh, where it achieves substantial improvements.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Tavori, Jhonatan and Bremler-Barr, Anat and Levy, Hanoch and Lavi, Ofek},
+title = {RetryGuard: Preventing Self-Inflicted Retry Storms in Cloud Microservices Applications},
+year = {2025},
+}
+
+@article{WenYangyang2025ADMS,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {As microservice-based systems scale across the cloud-edge continuum, traditional centralized scheduling mechanisms increasingly struggle with latency, coordination overhead, and fault tolerance. This paper presents a new architectural direction: leveraging service mesh sidecar proxies as decentralized, in-situ schedulers to enable scalable, low-latency coordination in large-scale, cloud-native environments. We propose embedding lightweight, autonomous scheduling logic into each sidecar, allowing scheduling decisions to be made locally without centralized control. This approach leverages the growing maturity of service mesh infrastructures, which support programmable distributed traffic management. We describe the design of such an architecture and present initial results demonstrating its scalability potential in terms of response time and latency under varying request rates. Rather than delivering a finalized scheduling algorithm, this paper presents a system-level architectural direction and preliminary evidence to support its scalability potential.},
+copyright = {http://creativecommons.org/licenses/by-nc-nd/4.0},
+author = {Wen, Yangyang and Townend, Paul and Östberg, Per-Olov and Souza, Abel and Courageux-Sudan, Clément},
+title = {A Decentralized Microservice Scheduling Approach Using Service Mesh in Cloud-Edge Systems},
+year = {2025},
+}
+
+@article{SamaniForoughShahab2023AFfd,
+keywords = {Computer Science - Artificial Intelligence ;  Computer Science - Learning ;  Computer Science - Systems and Control},
+language = {eng},
+abstract = {We present a framework for achieving end-to-end management objectives for multiple services that concurrently execute on a service mesh. We apply reinforcement learning (RL) techniques to train an agent that periodically performs control actions to reallocate resources. We develop and evaluate the framework using a laboratory testbed where we run information and computing services on a service mesh, supported by the Istio and Kubernetes platforms. We investigate different management objectives that include end-to-end delay bounds on service requests, throughput objectives, cost-related objectives, and service differentiation. We compute the control policies on a simulator rather than on the testbed, which speeds up the training time by orders of magnitude for the scenarios we study. Our proposed framework is novel in that it advocates a top-down approach whereby the management objectives are defined first and then mapped onto the available control actions. It allows us to execute several types of control actions simultaneously. By first learning the system model and the operating region from testbed traces, we can train the agent for different management objectives in parallel.},
+copyright = {http://creativecommons.org/licenses/by-sa/4.0},
+author = {Samani, Forough Shahab and Stadler, Rolf},
+title = {A Framework for dynamically meeting performance objectives on a service mesh},
+year = {2023},
+}
+
+@article{SamaniForoughShahab2022Dmpo,
+keywords = {Computer Science - Learning},
+language = {eng},
+abstract = {We present a framework that lets a service provider achieve end-to-end management objectives under varying load. Dynamic control actions are performed by a reinforcement learning (RL) agent. Our work includes experimentation and evaluation on a laboratory testbed where we have implemented basic information services on a service mesh supported by the Istio and Kubernetes platforms. We investigate different management objectives that include end-to-end delay bounds on service requests, throughput objectives, and service differentiation. These objectives are mapped onto reward functions that an RL agent learns to optimize, by executing control actions, namely, request routing and request blocking. We compute the control policies not on the testbed, but in a simulator, which speeds up the learning process by orders of magnitude. In our approach, the system model is learned on the testbed; it is then used to instantiate the simulator, which produces near-optimal control policies for various management objectives. The learned policies are then evaluated on the testbed using unseen load patterns.},
+copyright = {http://creativecommons.org/licenses/by-sa/4.0},
+author = {Samani, Forough Shahab and Stadler, Rolf},
+title = {Dynamically meeting performance objectives for multiple services on a service mesh},
+year = {2022},
+}
+
+@article{KahlhoferMario2025KACD,
+keywords = {Computer Science - Cryptography and Security},
+language = {eng},
+abstract = {System operators responsible for protecting software applications remain hesitant to implement cyber deception technology, including methods that place traps to catch attackers, despite its proven benefits. Overcoming their concerns removes a barrier that currently hinders industry adoption of deception technology. Our work introduces deception policy documents to describe deception technology "as code" and pairs them with Koney, a Kubernetes operator, which facilitates the setup, rotation, monitoring, and removal of traps in Kubernetes. We leverage cloud-native technologies, such as service meshes and eBPF, to automatically add traps to containerized software applications, without having access to the source code. We focus specifically on operational properties, such as maintainability, scalability, and simplicity, which we consider essential to accelerate the adoption of cyber deception technology and to facilitate further research on cyber deception.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Kahlhofer, Mario and Golinelli, Matteo and Rass, Stefan},
+title = {Koney: A Cyber Deception Orchestration Framework for Kubernetes},
+year = {2025},
+}
+
+@article{PallewattaSamodha2024TSMo,
+keywords = {Computer Science - Cryptography and Security ;  Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Software Engineering},
+language = {eng},
+abstract = {IoT application providers increasingly use MicroService Architecture (MSA) to develop applications that convert IoT data into valuable information. The independently deployable and scalable nature of microservices enables dynamic utilization of edge and cloud resources provided by various service providers, thus improving performance. However, IoT data security should be ensured during multi-domain data processing and transmission among distributed and dynamically composed microservices. The ability to implement granular security controls at the microservices level has the potential to solve this. To this end, edge-cloud environments require intricate and scalable security frameworks that operate across multi-domain environments to enforce various security policies during the management of microservices (i.e., initial placement, scaling, migration, and dynamic composition), considering the sensitivity of the IoT data. To address the lack of such a framework, we propose an architectural framework that uses Policy-as-Code to ensure secure microservice management within multi-domain edge-cloud environments. The proposed framework contains a "control plane" to intelligently and dynamically utilise and configure cloud-native (i.e., container orchestrators and service mesh) technologies to enforce security policies. We implement a prototype of the proposed framework using open-source cloud-native technologies such as Docker, Kubernetes, Istio, and Open Policy Agent to validate the framework. Evaluations verify our proposed framework's ability to enforce security policies for distributed microservices management, thus harvesting the MSA characteristics to ensure IoT application security needs.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Pallewatta, Samodha and Babar, Muhammad Ali},
+title = {Towards Secure Management of Edge-Cloud IoT Microservices using Policy as Code},
+year = {2024},
+}
+
+@article{WangYuejie2026XAHP,
+keywords = {Computer Science - Performance ;  Computer Science - Networking and Internet Architecture ;  Computer Science - Systems and Control},
+language = {eng},
+abstract = {L7 load balancers are a fundamental building block in microservices as they enable fine-grained traffic distribution. Compared to monolithic applications, microservices demand higher performance and stricter isolation from load balancers. This is due to the increased number of instances, longer service chains, and the necessity for co-location with services on the same host. Traditional sidecar-based load balancers are ill-equipped to meet these demands, often resulting in significant performance degradation. In this work, we present XLB, a novel architecture that reshapes L7 load balancers as in-kernel interposition operating on the socket layer. We leverage eBPF to implement the core load balancing logic in the kernel, and address the connection management and state maintenance challenges through novel socket layer redirection and nested eBPF maps designs. XLB eliminates the extra overhead of scheduling, communication, and data movement, resulting in a more lightweight, scalable, and efficient L7 load balancer architecture. Compared to the widely used microservices load balancers (Istio and Cilium), over 50 microservice instances, XLB achieves up to 1.5x higher throughput and 60% lower end-to-end latency.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Wang, Yuejie and Shou, Chenchen and Qian, Jiaxu and Liu, Guyue},
+title = {XLB: A High Performance Layer-7 Load Balancer for Microservices using eBPF-based In-kernel Interposition},
+year = {2026},
+}
+
+@article{GrewalKaruna2025SETP,
+keywords = {Computer Science - Programming Languages},
+language = {eng},
+abstract = {A microservice-based application is composed of multiple self-contained components called microservices, and controlling inter-service communication is important for enforcing safety properties. Presently, inter-service communication is configured using microservice deployment tools. However, such tools only support a limited class of single-hop policies, which can be overly permissive because they ignore the rich service tree structure of microservice calls. Policies that can express the service tree structure can offer development and security teams more fine-grained control over communication patterns. To this end, we design an expressive policy language to specify service tree structures, and we develop a visibly pushdown automata-based dynamic enforcement mechanism to enforce service tree policies. Our technique is non-invasive: it does not require any changes to service implementations, and does not require access to microservice code. To realize our method, we build a runtime monitor on top of a service mesh, an emerging network infrastructure layer that can control inter-service communication during deployment. In particular, we employ the programmable network traffic filtering capabilities of Istio, a popular service mesh implementation, to implement an online and distributed monitor. Our experiments show that our monitor can enforce rich safety properties while adding minimal latency overhead on the order of milliseconds.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Grewal, Karuna and Godfrey, P. Brighten and Hsu, Justin},
+title = {SafeTree: Expressive Tree Policies for Microservices},
+year = {2025},
+}
+
+@article{KleinKevin2024CCSM,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Software Engineering},
+language = {eng},
+abstract = {The amount of software in modern cars is increasing continuously with traditional electric/electronic (E/E) architectures reaching their limit when deploying complex applications, e.g., regarding bandwidth or computational power. To mitigate this situation, more powerful computing platforms are being employed and applications are developed as distributed applications, e.g., involving microservices. Microservices received widespread adoption and changed the way modern applications are developed. However, they also introduce additional complexity regarding inter-service communication. This has led to the emergence of service meshes, a promising approach to cope with this complexity. In this paper, we present an architecture applying the service mesh approach to automotive E/E platforms comprising multiple interlinked High-Performance Computers (HPCs). We validate the feasibility of our approach through a prototypical implementation.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Klein, Kevin and Hirmer, Pascal and Becker, Steffen},
+title = {CARISMA: CAR-Integrated Service Mesh Architecture},
+year = {2024},
+}
+
+@article{ChenMing2025iACE,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {This paper presents iDynamics, a configurable emulation framework that exposes these dynamics as controllable experimental factors while running real microservice code on a Kubernetes-based cloud-edge cluster. iDynamics comprises three modular components. The Graph Dynamics Analyzer reconstructs application call graphs from service-mesh telemetry and quantifies bidirectional traffic between upstream-downstream microservice pairs. The Networking Dynamics Manager injects and measures realistic cross-node delay and bandwidth patterns via Linux traffic control primitives and distributed agents. The Scheduling Policy Extender offers a pluggable interface and utility library for implementing and evaluating arbitrary scheduling policies, expressed as pod placement and migration strategies. We use iDynamics to implement two representative policies – a call-graph-aware policy and a hybrid policy that jointly considers traffic and latency – as case studies demonstrating how the framework can be used to study SLA compliance under dynamic conditions. Experiments on a real cloud-edge cluster, running the DeathStarBench Social Network microservices, show that iDynamics can accurately emulate targeted network conditions, generate diverse call-graph and traffic patterns, and help quantify how different scheduling policies mitigate SLA violations under controllable and repeatable dynamics.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Chen, Ming and Islam, Muhammed Tawfiqul and Read, Maria Rodriguez and Buyya, Rajkumar},
+title = {iDynamics: A Configurable Emulation Framework for Evaluating Microservice Scheduling Policies under Controllable Cloud-Edge Dynamics},
+year = {2025},
+}
+
+@article{HahnDaltonA2020SIaC,
+keywords = {Computer Science - Cryptography and Security},
+language = {eng},
+abstract = {Service meshes have emerged as an attractive DevOps solution for collecting, managing, and coordinating microservice deployments. However, current service meshes leave fundamental security mechanisms missing or incomplete. The security burden means service meshes may actually cause additional workload and overhead for administrators over traditional monolithic systems. By assessing the effectiveness and practicality of service mesh tools, this work provides necessary insights into the available security of service meshes. We evaluate service meshes from two perspectives: skilled system administrators (who deploy optimal configurations of available security mechanisms) and default configurations. Under these two models, we consider a comprehensive set of adversarial scenarios and uncover important design flaws with contradicting goals, as well as the limitations and challenges encountered in employing service mesh tools for operational environments.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Hahn, Dalton A and Davidson, Drew and Bardas, Alexandru G},
+title = {Security Issues and Challenges in Service Meshes – An Extended Study},
+year = {2020},
+}
+
+@article{FarkianiBehrooz2024SMAA,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {The scalability and flexibility of microservice architecture have led to major changes in cloud-native application architectures. However, the complexity of managing thousands of small services written in different languages and handling the exchange of data between them have caused significant management challenges. Service mesh is a promising solution that could mitigate these problems by introducing an overlay layer on top of the services. In this paper, we first study the architecture and components of service mesh architecture. Then, we review two important service mesh implementations and discuss how the service mesh could be helpful in other areas, including 5G.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Farkiani, Behrooz and Jain, Raj},
+title = {Service Mesh: Architectures, Applications, and Implementations},
+year = {2024},
+}
+
+@article{LarssonLars2021TSCB,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {Service meshes factor out code dealing with inter-micro-service communication, such as circuit breaking. Circuit breaking actuation is currently limited to an "on/off" switch, i.e., a tripped circuit breaker will return an application-level error indicating service unavailability to the calling micro-service. This paper proposes a soft circuit breaker actuator, which returns cached data instead of an error. The overall resilience of a cloud application is improved if constituent micro-services return stale data, instead of no data at all. While caching is widely employed for serving web service traffic, its usage in inter-micro-service communication is lacking. Micro-services responses are highly dynamic, which requires carefully choosing adaptive time-to-life caching algorithms. We evaluate our approach through two experiments. First, we quantify the trade-off between traffic reduction and data staleness using a purpose-build service, thereby identifying algorithm configurations that keep data staleness at about 3% or less while reducing network load by up to 30%. Second, we quantify the network load reduction with the micro-service benchmark by Google Cloud called Hipster Shop. Our approach results in caching of about 80% of requests. Results show the feasibility and efficiency of our approach, which encourages implementing caching as a circuit breaking actuator in service meshes.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Larsson, Lars and Tärneberg, William and Klein, Cristian and Kihl, Maria and Elmroth, Erik},
+title = {Towards Soft Circuit Breaking in Service Meshes via Application-agnostic Caching},
+year = {2021},
+}
+
+@article{Al-DebagyOmar2019ACRo,
+keywords = {Computer Science - Software Engineering},
+language = {eng},
+abstract = {Microservices' architecture is getting attention in the academic community and the industry, and mostly is compared with monolithic architecture. Plenty of the results of these research papers contradict each other regarding the performance of these architectures. Therefore, these two architectures are compared in this paper, and some specific configurations of microservices' applications are evaluated as well in the term of service discovery. Monolithic architecture in concurrency testing showed better performance in throughput by 6% when compared to microservices architecture. The load testing scenario did not present significant difference between the two architectures. Furthermore, a third test comparing microservices applications built with different service discovery technologies such as Consul and Eureka showed that applications with Consul presented better results in terms of throughput.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Al-Debagy, Omar and Martinek, Peter},
+title = {A Comparative Review of Microservices and Monolithic Architectures},
+year = {2019},
+}
+
+@article{DuqueAleksandraObeso2022AQEo,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {2022 22nd IEEE International Symposium on Cluster, Cloud and Internet Computing (CCGrid) Service mesh is getting widely adopted as the cloud-native mechanism for traffic management in microservice-based applications, in particular for generic IT workloads hosted in more centralized cloud environments. Performance-demanding applications continue to drive the decentralization of modern application execution environments, as in the case of mobile edge cloud. This paper presents a systematic and qualitative analysis of state-of-the-art service mesh to evaluate how suitable its design is for addressing the traffic management needs of performance-demanding application workloads hosted in a mobile edge cloud environment. With this analysis, we argue that today's dependability-centric service mesh design fails at addressing the needs of the different types of emerging mobile edge cloud workloads and motivate further research in the directions of performance-efficient architectures, stronger QoS guarantees and higher complexity abstractions of cloud-native traffic management frameworks.},
+copyright = {http://creativecommons.org/licenses/by-nc-nd/4.0},
+author = {Duque, Aleksandra Obeso and Klein, Cristian and Feng, Jinhua and Cai, Xuejun and Skubic, Björn and Elmroth, Erik},
+title = {A Qualitative Evaluation of Service Mesh-based Traffic Management for Mobile Edge Cloud},
+year = {2022},
+}
+
+@article{MengFanfei2021MRLf,
+keywords = {Computer Science - Artificial Intelligence ;  Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Learning ;  Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {Microservice-based architectures enable different aspects of web applications to be created and updated independently, even after deployment. Associated technologies such as service mesh provide application-level fault resilience through attribute configurations that govern the behavior of request-response service – and the interactions among them – in the presence of failures. While this provides tremendous flexibility, the configured values of these attributes – and the relationships among them – can significantly affect the performance and fault resilience of the overall application. Furthermore, it is impossible to determine the best and worst combinations of attribute values with respect to fault resiliency via testing, due to the complexities of the underlying distributed system and the many possible attribute value combinations. In this paper, we present a model-based reinforcement learning workflow towards service mesh fault resiliency. Our approach enables the prediction of the most significant fault resilience behaviors at a web application-level, scratching from single service to aggregated multi-service management with efficient agent collaborations.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Meng, Fanfei and Jagadeesan, Lalita and Thottan, Marina},
+title = {Model-based Reinforcement Learning for Service Mesh Fault Resiliency in a Web Application-level},
+year = {2021},
+}
+
+@article{SahuPrateek2023SotC,
+keywords = {Computer Science - Performance ;  Computer Science - Distributed Parallel and Cluster Computing ;  Computer Science - Hardware Architecture},
+language = {eng},
+abstract = {Cloud applications are moving away from monolithic model towards loosely-coupled microservices designs. Service meshes are widely used for implementing microservices applications mainly because they provide a modular architecture for modern applications by separating operational features from application business logic. Sidecar proxies in service meshes enable this modularity by applying security, networking, and monitoring policies on the traffic to and from services. To implement these policies, sidecars often execute complex chains of logic that vary across associated applications and end up unevenly impacting the performance of the overall application. Lack of understanding of how the sidecars impact the performance of microservice-based applications stands in the way of building performant and resource-efficient applications. To this end, we bring sidecar proxies in focus and argue that we need to deeply study their impact on the system performance and resource utilization. We identify and describe challenges in characterizing sidecars, namely the need for microarchitectural metrics and comprehensive methodologies, and discuss research directions where such characterization will help in building efficient service mesh infrastructure for microservice applications.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Sahu, Prateek and Zheng, Lucy and Bueso, Marco and Wei, Shijia and Yadwadkar, Neeraja J and Tiwari, Mohit},
+title = {Sidecars on the Central Lane: Impact of Network Proxies on Microservices},
+year = {2023},
+}
+
+@article{KabambaHerveMbikayi2023ASfP,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {The rise of microservice architectures has revolutionized application design, fostering adaptability and resilience. These architectures facilitate scaling and encourage collaborative efforts among specialized teams, streamlining deployment and maintenance. Critical to this ecosystem is the demand for low latency, prompting the adoption of cloud-based structures and in-memory data storage. This shift optimizes data access times, supplanting direct disk access and driving the adoption of non-relational databases. Despite their benefits, microservice architectures present challenges in system performance and debugging, particularly as complexity grows. Performance issues can readily cascade through components, jeopardizing user satisfaction and service quality. Existing monitoring approaches often require code instrumentation, demanding extensive developer involvement. Recent strategies like proxies and service meshes aim to enhance tracing transparency, but introduce added configuration complexities. Our innovative solution introduces a new framework that transparently integrates heterogeneous microservices, enabling the creation of tailored tools for fine-grained performance debugging, especially for in-memory data store-based microservices. This approach leverages transparent user-level tracing, employing a two-level abstraction analysis model to pinpoint key performance influencers. It harnesses system tracing and advanced analysis to provide visualization tools for identifying intricate performance issues. In a performance-centric landscape, this approach offers a promising solution to ensure peak efficiency and reliability for in-memory data store-based cloud applications.},
+copyright = {http://creativecommons.org/licenses/by-nc-nd/4.0},
+author = {Kabamba, Herve Mbikayi and Khouzam, Matthew and Dagenais, Michel},
+title = {Advanced Strategies for Precise and Transparent Debugging of Performance Issues in In-Memory Data Store-Based Microservices},
+year = {2023},
+}
+
+@article{YangBicheng2025HXIO,
+keywords = {Computer Science - Operating Systems},
+language = {eng},
+abstract = {Cloud-native systems increasingly rely on infrastructure services (e.g., service meshes, monitoring agents), which compete for resources with user applications, degrading performance and scalability. We propose HeteroPod, a new abstraction that offloads these services to Data Processing Units (DPUs) to enforce strict isolation while reducing host resource contention and operational costs. To realize HeteroPod, we introduce HeteroNet, a cross-PU (XPU) network system featuring: (1) split network namespace, a unified network abstraction for processes spanning CPU and DPU, and (2) elastic and efficient XPU networking, a communication mechanism achieving shared-memory performance without pinned resource overhead and polling costs. By leveraging HeteroNet and the compositional nature of cloud-native workloads, HeteroPod can optimally offload infrastructure containers to DPUs. We implement HeteroNet based on Linux, and implement a cloud-native system called HeteroK8s based on Kubernetes. We evaluate the systems using NVIDIA Bluefield-2 DPUs and CXL-based DPUs (simulated with real CXL memory devices). The results show that HeteroK8s effectively supports complex (unmodified) commodity cloud-native applications (up to 1 million LoC) and provides up to 31.9x better latency and 64x less resource consumption (compared with kernel-bypass design), 60% better end-to-end latency, and 55% higher scalability compared with SOTA systems.},
+copyright = {http://creativecommons.org/licenses/by/4.0},
+author = {Yang, Bicheng and He, Jingkai and Du, Dong and Xia, Yubin and Chen, Haibo},
+title = {HeteroPod: XPU-Accelerated Infrastructure Offloading for Commodity Cloud-Native Applications},
+year = {2025},
+}
+
+@article{PallewattaSamodha2023PoMI,
+keywords = {Computer Science - Distributed Parallel and Cluster Computing},
+language = {eng},
+abstract = {ACM Computing Surveys, 55(14), article 321, 2023 The Fog computing paradigm utilises distributed, heterogeneous and resource-constrained devices at the edge of the network for efficient deployment of latency-critical and bandwidth-hungry IoT application services. Moreover, MicroService Architecture (MSA) is increasingly adopted to keep up with the rapid development and deployment needs of fast-evolving IoT applications. Due to the fine-grained modularity of the microservices and their independently deployable and scalable nature, MSA exhibits great potential in harnessing Fog and Cloud resources, thus giving rise to novel paradigms like Osmotic computing. The loosely coupled nature of the microservices, aided by the container orchestrators and service mesh technologies, enables the dynamic composition of distributed and scalable microservices to achieve diverse performance requirements of the IoT applications using distributed Fog resources. To this end, efficient placement of microservice plays a vital role, and scalable placement algorithms are required to utilise the said characteristics of the MSA while overcoming novel challenges introduced by the architecture. Thus, we present a comprehensive taxonomy of recent literature on microservices-based IoT applications placement within Fog computing environments. Furthermore, we organise multiple taxonomies to capture the main aspects of the placement problem, analyse and classify related works, identify research gaps within each category, and discuss future research directions.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Pallewatta, Samodha and Kostakos, Vassilis and Buyya, Rajkumar},
+title = {Placement of Microservices-based IoT Applications in Fog Computing: A Taxonomy and Future Directions},
+year = {2023},
+}
+
+@article{MontebugnoliSofia2026MADP,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {The shift to disaggregated 5G architectures introduces unprecedented flexibility but also significant complexity in Beyond 5G Radio Access Networks (RANs). Open RAN enables programmability through xApps, yet deploying and validating these applications is critical given the nature of the systems they aim to control. Current Open RAN ecosystems lack robust lifecycle management of xApps that enable automated testing, seamless migration, and production-grade observability, resulting in slow, error-prone xApp delivery. To address these issues, DevOps practices can streamline the xApp lifecycle by integrating Continuous Integration/Continuous Deployment (CI/CD) pipelines with advanced traffic management and monitoring, such as leveraging service mesh technologies to enable progressive deployment strategies (e.g., canary releases and A/B testing) to ensure fine-grained observability and resilience. The solution presented in this article, MANATEE (Mesh Architecture for Radio Access Network Automation and TEsting Ecosystems), is the first platform that combines these principles to simplify xApp delivery into production, accelerate innovation, and guarantee performance across heterogeneous O-RAN environments. We prototyped MANATEE on a Kubernetes cluster integrated with the O-RAN Software Community Near-Real Time RAN Intelligent Controller (RIC), as well as with service mesh technologies, to facilitate testing of xApps across simulated, emulated, and real testbed environments. Our experimental results demonstrate that service mesh integration introduces minimal overhead (below 1 ms latency), while enabling reliable canary deployments with fine-grained traffic control and conflict-free A/B testing through circuit-breaking mechanisms.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Montebugnoli, Sofia and Bonati, Leonardo and Sabbioni, Andrea and Foschini, Luca and Bellavista, Paolo and D'Oro, Salvatore and Polese, Michele and Melodia, Tommaso},
+title = {MANATEE: A DevOps Platform for xApp Lifecycle Management and Testing in Open RAN},
+year = {2026},
+}
+
+@article{FrancoDavid2022TihD,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {XV Jornadas de Ingenieria Telematica (2021), 224-227, ISBN: 978-84-09-35131-2 (https://jitel21.udc.es/files/actasJITEL21.pdf) This paper proposes a framework for integrating data plane (DP) acceleration within the Network Functions Virtualization (NFV) architecture. Data plane programming (DPP) proves to be beneficial for NFV environments, as it provides full packet forwarding flexibility through the use of self-designed algorithms. Additionally, DPP provides high-performance networking, as the DP can be configured to execute specific functions on dedicated hardware. We present an integration of the DP acceleration within the ETSI NFV architecture that leverages custom DP functions implemented in hardware switches using P4 language. Besides, OpenStack and Kubernetes are used as Virtualized Infrastructure Managers (VIMs) and Open Source MANO (OSM) as the Management and Orchestration (MANO) element.},
+copyright = {http://creativecommons.org/licenses/by-nc-nd/4.0},
+author = {Franco, David and Atutxa, Asier and Sasiain, Jorge and Ollora, Eder and Higuero, Marivi and Astorga, Jasone and Jacob, Eduardo},
+title = {Towards integrating hardware Data Plane acceleration in Network Functions Virtualization},
+year = {2022},
+}
+
+@article{Fondo-FerreiroPablo2024ASNS,
+keywords = {Computer Science - Networking and Internet Architecture},
+language = {eng},
+abstract = {IEEE Access, vol. 10, pp. 19905-19916, 2022 Mobile core networks handle critical control functions for delivering services in modern cellular networks. Traditional point-to-point architectures, where network functions are directly connected through standardized interfaces, are being substituted by service-based architectures (SBAs), where core functionalities are finer-grained microservices decoupled from the underlying infrastructure. In this way, network functions and services can be distributed, with scaling and fail-over mechanisms, and can be dynamically deployed, updated, or removed to support slicing. A myriad of network functions can be deployed or removed according to traffic flows, thereby increasing the complexity of connection management. In this context, 3GPP Release 16 defines the service communication proxy (SCP) as a unified communication interface for a set of network functions. In this paper, we propose a novel software-defined networking (SDN)-based solution with the same role for a service mesh architecture where network functions can be deployed anywhere in the infrastructure. We demonstrated its efficiency in comparison with alternative architectures.},
+copyright = {http://creativecommons.org/licenses/by-nc-nd/4.0},
+author = {Fondo-Ferreiro, Pablo and Gil-Castiñeira, Felipe and González-Castaño, Francisco Javier and Candal-Ventureira, David},
+title = {A Software-Defined Networking Solution for Interconnecting Network Functions in Service-Based Architectures},
+year = {2024},
+}
+
+@article{ChenJingrong2023RPCa,
+keywords = {Computer Science - Networking and Internet Architecture ;  Computer Science - Operating Systems},
+language = {eng},
+abstract = {Remote Procedure Call (RPC) is a widely used abstraction for cloud computing. The programmer specifies type information for each remote procedure, and a compiler generates stub code linked into each application to marshal and unmarshal arguments into message buffers. Increasingly, however, application and service operations teams need a high degree of visibility and control over the flow of RPCs between services, leading many installations to use sidecars or service mesh proxies for manageability and policy flexibility. These sidecars typically involve inspection and modification of RPC data that the stub compiler had just carefully assembled, adding needless overhead. Further, upgrading diverse application RPC stubs to use advanced hardware capabilities such as RDMA or DPDK is a long and involved process, and often incompatible with sidecar policy control. In this paper, we propose, implement, and evaluate a novel approach, where RPC marshalling and policy enforcement are done as a system service rather than as a library linked into each application. Applications specify type information to the RPC system as before, while the RPC service executes policy engines and arbitrates resource use, and then marshals data customized to the underlying network hardware capabilities. Our system, mRPC, also supports live upgrades so that both policy and marshalling code can be updated transparently to application code. Compared with using a sidecar, mRPC speeds up a standard microservice benchmark, DeathStarBench, by up to 2.5 ×while having a higher level of policy flexibility and availability.},
+copyright = {http://arxiv.org/licenses/nonexclusive-distrib/1.0},
+author = {Chen, Jingrong and Wu, Yongji and Lin, Shihan and Xu, Yechen and Kong, Xinhao and Anderson, Thomas and Lentz, Matthew and Yang, Xiaowei and Zhuo, Danyang},
+title = {Remote Procedure Call as a Managed System Service},
+year = {2023},
+}
+

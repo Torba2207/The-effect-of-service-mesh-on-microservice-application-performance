@@ -162,7 +162,7 @@ The following list presents the 8 articles selected after verification and quali
 = Conclusions
 
 == SLR process
-The systematic literature review process revealed that defining the correct scope of search queries was a significant challenge. The main obstacle was the massive volume of general publications regarding cloud computing, Kubernetes, and microservices that only briefly mentioned service meshes without providing quantitative evaluations. This required rigorous manual filtering of abstracts and full texts to focus strictly on studies that practically evaluated the performance, efficiency, and security overhead of service mesh deployments (such as Istio or Linkerd). Furthermore, the rapid evolution of the technology meant we had to carefully distinguish between older sidecar-heavy architectures and modern optimized approaches.
+The systematic literature review process revealed that defining the correct scope of search queries was a significant challenge. The main obstacle was the massive volume of general publications regarding cloud computing, Kubernetes, and microservices that only briefly mentioned service meshes without providing quantitative evaluations. This required rigorous manual filtering of abstracts and full texts to focus strictly on studies that practically evaluated the performance, efficiency, and security overhead of service mesh deployments (such as Istio or Linkerd).
 
 == SLR results
 The results of the literature review for the 8 selected publications indicate that research on service mesh efficiency in microservice environments is currently focused on three practical directions:
