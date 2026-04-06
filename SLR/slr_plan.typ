@@ -131,9 +131,8 @@ The following data will be extracted from each selected article and recorded in 
   [Step 4], [Title and abstract screening (Round 1)], [Alla Krylova, Pavel Khmialeuski], [Oleksandr Nychyporchuk, Kiryl Pashkevich], [Google Sheets],
   [Step 5], [Full-text retrieval], [Kiryl Pashkevich], [Alla Krylova], [University library access, DOI resolvers],
   [Step 6], [Full-text screening (Round 2) and quality assessment], [Kiryl Pashkevich, Oleksandr Nychyporchuk], [Alla Krylova, Pavel Khmialeuski], [Google Sheets, PDF readers],
-  [Step 7], [Snowballing (forward and backward)], [Pavel Khmialeuski], [Alla Krylova], [Google Scholar, reference lists],
-  [Step 8], [Data extraction], [All team members (divided by articles)], [Oleksandr Nychyporchuk, Kiryl Pashkevich], [Google Sheets template],
-  [Step 9], [Synthesis and reporting], [Kiryl Pashkevich], [Alla Krylova], [Google Docs, LaTeX]
+  [Step 7], [Data extraction], [All team members (divided by articles)], [Oleksandr Nychyporchuk, Kiryl Pashkevich], [Google Sheets template],
+  [Step 8], [Synthesis and reporting], [Kiryl Pashkevich], [Alla Krylova], [Google Docs, LaTeX]
 )
 
 = Systematic Literature Review results
