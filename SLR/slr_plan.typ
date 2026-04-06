@@ -85,8 +85,6 @@ Each article will be assessed against the following criteria (scored 0 or 1 poin
 == Data extraction:
 The following data will be extracted from each selected article and recorded in a structured spreadsheet (Google Sheets).
 
-+ Article metadata:
-  #enum(numbering: "a)")[Article ID: Unique identifier][Authors: Full list of authors][Year: Publication year][Title: Full article title][Source: Journal/conference name][DOI: Digital Object Identifier]
 + Research context
   #set enum(numbering: "a)")
   + Service Mesh type: Specific implementations studied (Istio, Linkerd, Consul, etc.)
