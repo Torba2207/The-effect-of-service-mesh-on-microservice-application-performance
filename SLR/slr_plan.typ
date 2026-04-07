@@ -20,7 +20,7 @@
 The impact of service-mesh solutions on the efficiency of microservice applications
 
 == Supervisor
-Krzysztof Gierłowski (KT)
+Krzysztof Gierłowski (KTI)
 
 == Goals and short description
 Currently, a significant portion of applications deployed in cloud environments utilize microservices architecture. This type of architecture requires decomposing application functionality into component elements, implemented by individual microservices, and then deploying them in an environment that allows the microservices to communicate efficiently and reliably. This task is most often accomplished by orchestration platforms such as Kubernetes. Maintaining the separation and security of applications sharing the same deployment platform is also a key aspect of this type of deployment. Service mesh solutions are often used for this purpose, as they can automatically create secure communication environments for specific applications.
@@ -56,6 +56,7 @@ AND (performance OR latency OR throughput OR overhead OR scalability OR efficien
 + SpringerLink
 + Arxiv
 + IEEE Xplore
++ ACM Digital Library
 
 These 4 databases provide comprehensive coverage of technical literature in computer science, software engineering, and distributed systems, with minimal overlap and complementary strengths.
 
@@ -142,6 +143,7 @@ Number of articles retrieved from databases (before deduplication):
 - SpringerLink: 5
 - Arxiv: 28
 - IEEE Xplore: 179
+- ACM Digital Library: 35
 == Articles selected for data extraction
 The following list presents the 12 articles selected after verification and qualified for data extraction:
 
@@ -212,7 +214,7 @@ The following list presents the 12 articles selected after verification and qual
 To understand the research landscape surrounding service mesh performance in microservice architectures, a quantitative analysis was performed on the search results.
 
 === Initial Search Distribution
-The initial database queries returned a total of 287 articles before deduplication. As shown in @fig:db_counts, IEEE Xplore (179 articles) and Scopus (75 articles) provided the vast majority of the results. This reflects the topic's strong roots in applied computer science, network engineering, and distributed systems. arXiv (28 articles) and SpringerLink (5 articles) yielded fewer direct matches based on our highly specific search strings.
+The initial database queries returned a total of 322 articles before deduplication. As shown in @fig:db_counts, IEEE Xplore (179 articles) and Scopus (75 articles) provided the vast majority of the results. This reflects the topic's strong roots in applied computer science, network engineering, and distributed systems. arXiv (28 articles) and SpringerLink (5 articles) yielded fewer direct matches based on our highly specific search strings.
 
 #figure(
   image("database_counts_pre_dedup.png", width: 80%),

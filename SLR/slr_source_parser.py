@@ -68,8 +68,9 @@ df_ieee = parse_ieee('PaperSources/ieeeXplore_export2026.04.05-11.44.29.csv')
 df_scopus = parse_scopus('PaperSources/scopus_export_Apr 4-2026_53efab7f-674e-47a7-8d40-cd0e2255572b.csv')
 df_primo = parse_bibtex('PaperSources/Primo_BibTeX_Export.bib', 'arXiv')
 df_springer = parse_bibtex('PaperSources/Primo_BibTeX_Export_Spring.bib', 'SpringerLink')
+df_acm = parse_bibtex('PaperSources/ACM_Articles.bib', 'ACM Digital Library')
 
-df_all = pd.concat([df_ieee, df_scopus, df_primo, df_springer], ignore_index=True)
+df_all = pd.concat([df_ieee, df_scopus, df_primo, df_springer, df_acm], ignore_index=True)
 
 sns.set_theme(style="whitegrid")
 
