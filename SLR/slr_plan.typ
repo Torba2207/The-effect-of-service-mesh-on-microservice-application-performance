@@ -126,7 +126,7 @@ The following data will be extracted from each selected article and recorded in 
   inset: 6pt,
   align: horizon,
   [*Step*], [*Description*], [*Executor*], [*Verifier*], [*Tools*],
-  [Step 1], [Database search execution], [Oleksandr Nychyporchuk], [Kiryl Pashkevich], [Scopus, ACM, Web of Science],
+  [Step 1], [Database search execution], [Oleksandr Nychyporchuk], [Kiryl Pashkevich], [Scopus, ACM, IEEE Xplore, arXiv, SpringerLink],
   [Step 2], [Export results and import to reference manager], [Oleksandr Nychyporchuk], [Pavel Khmialeuski], [Zotero/Mendeley],
   [Step 3], [Duplicate removal], [Alla Krylova], [Pavel Khmialeuski], [Zotero, Excel],
   [Step 4], [Title and abstract screening (Round 1)], [Alla Krylova, Pavel Khmialeuski], [Oleksandr Nychyporchuk, Kiryl Pashkevich], [Google Sheets],
