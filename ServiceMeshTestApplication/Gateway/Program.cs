@@ -1,6 +1,8 @@
-var builder = WebApplication.CreateBuilder(args);
+﻿var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddReverseProxy();
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -27,13 +29,13 @@ app.MapGet("/info", () => Results.Ok(new
     version = "1.0.0",
     routes = new[]
     {
-        "/api/permutation -> localhost:5001",
+        "/api/permutations -> localhost:5001",
         "/api/fibonacci -> localhost:5002",
-        "/api/differential-equations -> localhost:5003",
-        "/api/integration -> localhost:5004",
+        "/api/equations -> localhost:5003",
+        "/api/integrate -> localhost:5004",
         "/api/ai -> localhost:5005",
         "/api/video -> localhost:5006",
-        "/api/digital-filters -> localhost:5007"
+        "/api/filters -> localhost:5007"
     }
 }));
 
