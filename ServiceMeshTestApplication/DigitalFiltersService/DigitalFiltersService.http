@@ -1,0 +1,6 @@
+@DigitalFiltersService_HostAddress = http://localhost:5090
+
+GET {{DigitalFiltersService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
