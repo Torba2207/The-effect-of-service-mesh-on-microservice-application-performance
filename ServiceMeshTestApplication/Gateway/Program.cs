@@ -32,7 +32,7 @@ app.MapGet("/info", () => Results.Ok(new
         "/api/permutations -> localhost:5001",
         "/api/fibonacci -> localhost:5002",
         "/api/equations -> localhost:5003",
-        "/api/integrate -> localhost:5004",
+        "/api/integration -> localhost:5004",
         "/api/ai -> localhost:5005",
         "/api/video -> localhost:5006",
         "/api/filters -> localhost:5007"
