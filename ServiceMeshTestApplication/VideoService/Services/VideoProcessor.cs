@@ -125,16 +125,13 @@ public class VideoProcessor
             var videoInfo = await FFProbe.AnalyseAsync(inputPath);
             var frameRate = videoInfo.PrimaryVideoStream?.FrameRate ?? 30;
             var duration = videoInfo.Duration.TotalSeconds;
-            var estimatedFrames = (int)(duration * frameRate);
 
             var outputPattern = Path.Combine(outputDirectory, "frame_%04d.jpg");
             
             var success = await FFMpegArguments
                 .FromFileInput(inputPath)
                 .OutputToFile(outputPattern, overwrite: true, options => options
-                    .WithFrameOutputCount(estimatedFrames)
-                    .WithVideoCodec(VideoCodec.LibX264)
-                    .WithCustomArgument("-vf fps=1"))
+                    .WithCustomArgument("-qscale:v 2"))
                 .ProcessAsynchronously();
 
             if (!success)
