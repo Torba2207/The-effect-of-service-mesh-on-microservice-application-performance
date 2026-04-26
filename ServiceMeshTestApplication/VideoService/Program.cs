@@ -7,6 +7,26 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+builder.Services.AddScoped<VideoService.Services.VideoProcessor>();
+
+builder.Services.AddHttpClient<VideoService.Services.DigitalFiltersClient>(client =>
+{
+    client.BaseAddress = new Uri("http://localhost:5007");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.WebHost.UseUrls("http://localhost:5006");
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -16,7 +36,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
