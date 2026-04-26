@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http.Features;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -11,9 +13,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins(
+            "http://localhost:5006", 
+            "https://localhost:5006",
+            "http://localhost:<swagger-port>",  
+            "https://localhost:<swagger-port>"
+        )
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .WithExposedHeaders("*");
     });
 });
 
@@ -23,6 +31,16 @@ builder.Services.AddHttpClient<VideoService.Services.DigitalFiltersClient>(clien
 {
     client.BaseAddress = new Uri("http://localhost:5007");
     client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 524288000; // 500 MB
+});
+
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 524288000; // 500 MB
 });
 
 builder.WebHost.UseUrls("http://localhost:5006");

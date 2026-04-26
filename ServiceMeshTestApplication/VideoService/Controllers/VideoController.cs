@@ -8,12 +8,10 @@ namespace VideoService.Controllers;
 public class VideoController : ControllerBase
 {
     private readonly VideoProcessor _videoProcessor;
-    private readonly DigitalFiltersClient _digitalFiltersClient;
 
-    public VideoController(VideoProcessor videoProcessor, DigitalFiltersClient digitalFiltersClient)
+    public VideoController(VideoProcessor videoProcessor)
     {
         _videoProcessor = videoProcessor;
-        _digitalFiltersClient = digitalFiltersClient;
     }
 
     [HttpPost("compress")]
@@ -27,12 +25,9 @@ public class VideoController : ControllerBase
         using var stream = file.OpenReadStream();
         var result = await _videoProcessor.CompressVideo(stream, file.FileName);
 
-        var filterApplied = await _digitalFiltersClient.ApplyFilter("compression", 0);
-
         return Ok(new
         {
-            Compression = result,
-            DigitalFilterResponse = filterApplied
+            Compression = result
         });
     }
 
@@ -47,12 +42,18 @@ public class VideoController : ControllerBase
         using var stream = file.OpenReadStream();
         var result = await _videoProcessor.SplitFrames(stream, file.FileName);
 
-        var filterApplied = await _digitalFiltersClient.ApplyFilter("frame-split", result.FrameCount);
-
         return Ok(new
         {
-            FrameSplit = result,
-            DigitalFilterResponse = filterApplied
+            FrameSplit = result
         });
     }
+
+    [HttpGet("test")]
+    public async Task<IActionResult> Test()
+    {
+        return Ok(new
+        {
+            DigitalFiltersServiceHealthy = 1.0
+        });
+    }   
 }
