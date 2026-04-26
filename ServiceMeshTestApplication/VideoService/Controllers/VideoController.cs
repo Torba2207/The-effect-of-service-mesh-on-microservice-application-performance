@@ -46,14 +46,5 @@ public class VideoController : ControllerBase
         {
             FrameSplit = result
         });
-    }
-
-    [HttpGet("test")]
-    public async Task<IActionResult> Test()
-    {
-        return Ok(new
-        {
-            DigitalFiltersServiceHealthy = 1.0
-        });
-    }   
+    } 
 }
