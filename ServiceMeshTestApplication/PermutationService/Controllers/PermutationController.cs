@@ -6,21 +6,12 @@ namespace PermutationService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PermutationController : ControllerBase
+public class PermutationController(PermutationCalculator calculator, ILogger<PermutationController> logger) : ControllerBase
 {
-    private readonly PermutationCalculator _calculator;
-    private readonly ILogger<PermutationController> _logger;
-
-    public PermutationController(PermutationCalculator calculator, ILogger<PermutationController> logger)
-    {
-        _calculator = calculator;
-        _logger = logger;
-    }
-
     [HttpPost("generate")]
-    public ActionResult<ServiceResponse> GeneratePermutations([FromBody] PermutationsRequest request)
+    public async Task<ActionResult<ServiceResponse>> GeneratePermutations([FromBody] PermutationsRequest request)
     {
-        _logger.LogInformation("Permutations requested for set of size {Size}", request.Set.Length);
+        logger.LogInformation("Permutations requested for set of size {Size}", request.Set.Length);
 
         if (request.Set.Length == 0)
         {
@@ -31,9 +22,19 @@ public class PermutationController : ControllerBase
             });
         }
 
+        if (request.Set.Length > 10)
+        {
+            return BadRequest(new ServiceResponse
+            {
+                Success = false,
+                Message = "Set size must be ≤ 10 (O(n!) complexity)"
+            });
+        }
+
         try
         {
-            var (permutations, execTimeMs, cpuUsage, memoryMb) = _calculator.GetAllPermutations(request.Set);
+            var (permutations, execTimeMs, cpuUsage, memoryMb) = await Task.Run(() =>
+                calculator.GetAllPermutations(request.Set));
 
             return Ok(new ServiceResponse
             {
@@ -54,7 +55,7 @@ public class PermutationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating permutations");
+            logger.LogError(ex, "Error generating permutations");
             return StatusCode(500, new ServiceResponse
             {
                 Success = false,
