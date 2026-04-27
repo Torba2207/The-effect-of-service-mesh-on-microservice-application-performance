@@ -1,5 +1,7 @@
 using FFMpegCore;
 using FFMpegCore.Enums;
+using SharedModels.Models;
+using SharedModels.Video;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -48,7 +50,7 @@ public class VideoProcessor
             string.Join("\n", possiblePaths));
     }
 
-    public async Task<VideoCompressionResult> CompressVideo(Stream videoStream, string fileName)
+    public async Task<VideoCompressionDto> CompressVideo(Stream videoStream, string fileName)
     {
         var originalSize = videoStream.Length;
         
@@ -84,7 +86,7 @@ public class VideoProcessor
 
             var compressedSize = new FileInfo(outputPath).Length;
 
-            return new VideoCompressionResult
+            return new VideoCompressionDto
             {
                 OriginalSize = originalSize,
                 CompressedSize = compressedSize,
@@ -106,7 +108,7 @@ public class VideoProcessor
         }
     }
 
-    public async Task<FrameSplitResult> SplitFrames(Stream videoStream, string fileName)
+    public async Task<FrameSplitDto> SplitFrames(Stream videoStream, string fileName)
     {
         var fileSize = videoStream.Length;
         
@@ -141,7 +143,7 @@ public class VideoProcessor
 
             var extractedFrames = Directory.GetFiles(outputDirectory, "*.jpg").Length;
 
-            return new FrameSplitResult
+            return new FrameSplitDto
             {
                 FrameCount = extractedFrames,
                 FileName = fileName,
@@ -159,27 +161,4 @@ public class VideoProcessor
             }
         }
     }
-}
-
-public class VideoCompressionResult
-{
-    public required string FileName { get; set; }
-    public long OriginalSize { get; set; }
-    public long CompressedSize { get; set; }
-    public double CompressionRatio { get; set; }
-    public required string CompressedFilePath { get; set; }
-    public TimeSpan OriginalDuration { get; set; }
-    public double OriginalBitrate { get; set; }
-    public int Width { get; set; }
-    public int Height { get; set; }
-}
-
-public class FrameSplitResult
-{
-    public required string FileName { get; set; }
-    public int FrameCount { get; set; }
-    public long VideoSize { get; set; }
-    public required string FramesDirectory { get; set; }
-    public TimeSpan Duration { get; set; }
-    public double FrameRate { get; set; }
 }
