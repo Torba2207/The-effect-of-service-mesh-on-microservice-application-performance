@@ -22,15 +22,6 @@ public class PermutationController(PermutationCalculator calculator, ILogger<Per
             });
         }
 
-        if (request.Set.Length > 10)
-        {
-            return BadRequest(new ServiceResponse
-            {
-                Success = false,
-                Message = "Set size must be ≤ 10 (O(n!) complexity)"
-            });
-        }
-
         try
         {
             var (permutations, execTimeMs, cpuUsage, memoryMb) = await Task.Run(() =>
