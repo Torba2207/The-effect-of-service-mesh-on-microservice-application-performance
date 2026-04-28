@@ -1,6 +1,6 @@
 ﻿{
   "profiles": {
-    "IntegrationService": {
+    "PermutationService": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

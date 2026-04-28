@@ -29,7 +29,7 @@ app.MapGet("/info", () => Results.Ok(new
     version = "1.0.0",
     routes = new[]
     {
-        "/api/permutations -> localhost:5001",
+        "/api/permutation -> localhost:5001",
         "/api/fibonacci -> localhost:5002",
         "/api/equations -> localhost:5003",
         "/api/integration -> localhost:5004",
