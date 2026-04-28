@@ -1,6 +1,0 @@
-@DifferentialEquationsService_HostAddress = http://localhost:5249
-
-GET {{DifferentialEquationsService_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
