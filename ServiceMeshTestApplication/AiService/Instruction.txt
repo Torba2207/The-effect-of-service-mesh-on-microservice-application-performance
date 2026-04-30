@@ -1,0 +1,21 @@
+Instruction to start up the AI Service in Docker
+All the commands were written as if to be executed in Win PS
+All the comands are to be executed from the level of this folder
+
+docker build -t procedural-ai-server .
+docker run --name "ai-service-container" ` 
+           -p 5005:5005 `
+           -v "${PWD}/app_data:/app/data" `
+           -v "${PWD}/ollama_data:/root/.ollama" `
+           procedural-ai-server
+
+The model used for testing purposes (and the base model of solution) is 4-bit quantized llama3.2:3b
+To use another llm compatible with tools the following line must be added to docker run as one of the arguments
+
+	  -e TARGET_MODEL=(model of choice, example llama3.2:3b-instruct-fp16 planned for the prod run) `
+
+!!!  IMPORTAND  !!!
+IT IS RECOMMENDED TO USE BASE MODEL FOR TESTING PURPOSES (WITHOUT ADDITIONAL PARAMETERS)
+TO BE FUNCTIONAL SERVICE NEEDS APPROXIMATELY 15 GB OF SPACE (IMAGE + CONTAINER) AND 6 GB OF RAM
+  OR MORE
+4 OR MORE CPU CORES ARE RECOMMENDED

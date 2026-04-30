@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+pydantic
+requests
+aiohttp
+langchain-ollama
+langchain-mcp-adapters
+pillow
+numpy
+mcp
+psutil
