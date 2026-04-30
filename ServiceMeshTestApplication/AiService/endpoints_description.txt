@@ -1,0 +1,17 @@
+/ai/generate
+    Accepts POST requests with body of:
+        {
+            'user_input': prompt
+        }
+    where prompt is:
+        - "Give me X random numbers between A and B with seed Y."
+        - "Generate an image, use seed X with width of A and height of B."
+    Returns an array of numbers or the name of generated image with extension
+
+/ai/image/{image_filename}
+    Accepts Get requests
+    Returns base64-encoded image and deletes it on the server
+
+/ai/health
+    Accepts GET requests
+    Returns state of all the needed system components (ollama, api and mcp server)
