@@ -2,7 +2,6 @@
 #set text(font: "Linux Libertine", size: 11pt)
 #set par(justify: true)
 
-
 #align(center)[
   #text(20pt, weight: "bold")[Kubernetes HA Cluster Deployment]
   #v(0.5em)
@@ -18,8 +17,7 @@ This document details the configuration for a 6-node Highly Available Kubernetes
 - *Target User:* `root` directly (bypassing sudo escalation)
 
 = Phase 1: Workspace Preparation
-Ensure infrastructure code is kept separate from application code. We use the stable `v2.30.0` release of Kubespray.
-
+Ensure infrastructure code is kept separate from application code. We use the stable `v2.30.0` release of Kubespray. The Kubespray engine is cloned to a local tools directory, while our cluster inventory is stored in the project repository.
 ```bash
 mkdir -p ~/Tools/k8s-infrastructure
 cd ~/Tools/k8s-infrastructure
@@ -51,13 +49,15 @@ ssh-copy-id -i $KEY root@10.29.20.113
 ```
 #pagebreak()
 = Phase 4: Cluster Configuration
-Create a dedicated inventory space based on the Kubespray sample.
+Create a dedicated inventory space inside the version-controlled project repository based on the Kubespray sample.
 ```bash
-cp -rfp inventory/sample inventory/mycluster
+REPO_DIR="~/Documents/PG/Projects/The-effect-of-service-mesh-on-microservice-application-performance"
+mkdir -p $REPO_DIR/infrastructure/k8s
+cp -rfp ~/Tools/k8s-infrastructure/kubespray/inventory/sample $REPO_DIR/infrastructure/k8s/mycluster
 ```
 Manually define the precise cluster topology by editing the hosts.yaml file:
 ```bash
-nano inventory/mycluster/hosts.yaml
+nano $REPO_DIR/infrastructure/k8s/mycluster/hosts.yaml
 ```
 Replace the file contents with the following YAML structure. Nodes 1-3 act as the Highly Available Control Plane and etcd datastore. Nodes 4-6 act exclusively as Data Plane workers.
 #pagebreak()
@@ -112,14 +112,16 @@ all:
       hosts: {}
 ```
 = Phase 5: Cluster Execution
-Execute the master Ansible playbook. The following command logs directly into the nodes as root (-u root) to bypass privilege escalation timeouts, and explicitly points to the custom SSH identity key.
+Execute the master Ansible playbook from within the Kubespray directory, but point it (-i) to the inventory file stored in the project repository.
 ```bash
-ansible-playbook -i inventory/mycluster/hosts.yaml \
+cd ~/Tools/k8s-infrastructure/kubespray
+
+ansible-playbook -i ~/Documents/PG/Projects/The-effect-of-service-mesh-on-microservice-application-performance/infrastructure/k8s/mycluster/hosts.yaml \
   -u root \
   --private-key=~/Documents/PG/Projects/.sshkeys/pgPB \
   cluster.yml
-```
-= Phase 6: Verification
+  ```
+  = Phase 6: Verification
 Once the Ansible deployment completes successfully, connect to the primary control plane node to verify the cluster state.
 ```bash
 ssh -i ~/Documents/PG/Projects/.sshkeys/pgPB root@10.29.20.101
