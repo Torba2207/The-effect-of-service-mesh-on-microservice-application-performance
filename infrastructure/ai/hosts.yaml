@@ -1,0 +1,4 @@
+all:
+  hosts:
+    ai_node:
+      ansible_host: 10.29.20.120
