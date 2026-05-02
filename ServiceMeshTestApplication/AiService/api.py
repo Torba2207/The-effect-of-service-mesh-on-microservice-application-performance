@@ -101,7 +101,7 @@ async def run_agentic_loop(user_input: str, llm_with_tools, tools):
 # ---------------------------------------------------------
 # ENDPOINTS (Data Formatting)
 # ---------------------------------------------------------
-@app.post("/ai/generate")
+@app.post("/api/Ai/generate")
 async def generate_endpoint(request: ChatRequest):
     start_time = start_telemetry()
     try:
@@ -144,7 +144,7 @@ async def generate_endpoint(request: ChatRequest):
             "Timestamp": timestamp
         })
 
-@app.get("/ai/image/{image_filename}")
+@app.get("/api/Ai/image/{image_filename}")
 def image_acquisition_endpoint(image_filename: str):
     start_time = start_telemetry()
     try:
@@ -191,7 +191,7 @@ def image_acquisition_endpoint(image_filename: str):
             "Timestamp": timestamp
         })
 
-@app.get("/ai/health")
+@app.get("/api/Ai/health")
 def deep_health_check():
     api_status = "healthy"
     mcp_status = "dead"
