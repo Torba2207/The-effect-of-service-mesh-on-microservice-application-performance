@@ -38,8 +38,8 @@ dotnet --version
 ```
 ServiceMeshStudy/
 ├── SharedModels/                  # DTOs shared across services
-├── ApiGateway/                   # YARP reverse proxy (port 5000)
-├── PermutationsService/          # O(n!) permutations (port 5001)
+├── Gateway/                   # YARP reverse proxy (port 5000)
+├── PermutationService/          # O(n!) permutations (port 5001)
 ├── FibonacciService/             # Fibonacci calculations (port 5002)
 ├── DifferentialEquationsService/ # ODE solver (port 5003)
 ├── IntegrationService/           # Numerical integration (port 5004)
