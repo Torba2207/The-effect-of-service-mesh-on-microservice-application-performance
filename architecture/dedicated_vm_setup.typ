@@ -17,19 +17,17 @@ This document details the configuration for a dedicated, standalone AI virtual m
 - *Target User:* `root` directly (bypassing sudo escalation)
 
 = Phase 1: Workspace Preparation
-Create a dedicated directory for the AI infrastructure, keeping it strictly separate from the Kubernetes codebase.
-
+Create a dedicated directory for the AI infrastructure within the main project repository.
 ```bash
-mkdir -p ~/Tools/ai-infrastructure
-cd ~/Tools/ai-infrastructure
+REPO_DIR="~/Documents/PG/Projects/The-effect-of-service-mesh-on-microservice-application-performance"
+mkdir -p $REPO_DIR/infrastructure/ai
+cd $REPO_DIR/infrastructure/ai
 ```
-
 = Phase 2: Inventory Configuration
 Create an Ansible inventory file to define the AI node's IP address.
 ```bash
 nano hosts.yaml
 ```
-
 Add the following configuration, replacing the IP address if the infrastructure changes:
 ```yaml
 all:
@@ -37,7 +35,6 @@ all:
     ai_node:
       ansible_host: 10.29.20.120
 ```
-
 = Phase 3: Playbook Creation
 Create the main Ansible playbook to systematically install prerequisites, configure the official Docker APT repository, and install the Docker engine.
 ```bash
@@ -98,8 +95,9 @@ Insert the following YAML definition:
         enabled: yes
 ```
 = Phase 4: Execution
-Activate the Python virtual environment containing Ansible (from the prior Kubernetes setup), then execute the playbook logging in directly as root.
+Activate the Python virtual environment containing Ansible (from the prior Kubernetes setup), navigate to the project repository, and execute the playbook.
 ```bash
+cd ~/Documents/PG/Projects/The-effect-of-service-mesh-on-microservice-application-performance/infrastructure/ai
 source ~/Tools/k8s-infrastructure/kubespray/venv/bin/activate
 
 ansible-playbook -i hosts.yaml \
@@ -110,7 +108,7 @@ ansible-playbook -i hosts.yaml \
 = Phase 5: Verification
 Connect to the AI node to verify the Docker installation is healthy, properly communicating with systemd, and capable of pulling images from the internet.
 ```bash
-ssh -i ~/Documents/PG/Projects/.sshkeys/pgPB root@10.29.20.200
+ssh -i ~/Documents/PG/Projects/.sshkeys/pgPB root@10.29.20.120
 
 systemctl status docker
 docker compose version
