@@ -1,25 +1,22 @@
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<DifferentialService.Services.DifferentialCalculator>();
+
+builder.Services.AddHttpClient<IntegrationServiceClient>(client =>
+{
+    // Read the gateway address from config[cite: 5]
+    var gatewayUrl = builder.Configuration["GatewayUrl"];
+    client.BaseAddress = new Uri(gatewayUrl ?? "http://localhost:5000/api/integration");
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.MapControllers();
-
 app.Run();
