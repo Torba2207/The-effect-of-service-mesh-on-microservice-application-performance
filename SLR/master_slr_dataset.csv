@@ -1,0 +1,283 @@
+Title,Year,Source,Database
+"Bootstrapping Service Mesh Implementations with Istio: Build reliable, scalable, and secure microservices on Kubernetes with Service Mesh",2023,"Bootstrapping Service Mesh Implementations with Istio: Build reliable, scalable, and secure microservices on Kubernetes with Service Mesh",IEEE
+Latency and RAM Usage Comparison of Advanced and Lightweight Service Mesh,2022,2022 5th International Seminar on Research of Information Technology and Intelligent Systems (ISRITI),IEEE
+Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application,2025,2025 IEEE Colombian Caribbean Conference (C3),IEEE
+Microarchitectural Analysis and Characterization of Performance Overheads in Service Meshes with Kubernetes,2023,2023 3rd Asian Conference on Innovation in Technology (ASIANCON),IEEE
+Simulation of Vulnerability-Driven Trust Evaluation in Microservice Service Meshes,2026,"2026 International Conference on Intelligent and Innovative Technologies in Computing, Electrical and Electronics (IITCEE)",IEEE
+"Microservices with Spring Boot and Spring Cloud: Build resilient and scalable microservices using Spring Cloud, Istio, and Kubernetes",2021,"Microservices with Spring Boot and Spring Cloud: Build resilient and scalable microservices using Spring Cloud, Istio, and Kubernetes",IEEE
+The Utilisation and Implementation of the Istio Framework in the Architectonic Progression of Online Learning Platform,2024,2024 13th International Conference of Information and Communication Technology (ICTech),IEEE
+Analyzing and Monitoring Kubernetes Microservices based on Distributed Tracing and Service Mesh,2022,2022 29th Asia-Pacific Software Engineering Conference (APSEC),IEEE
+Boosting Microservice Resilience: An Evaluation of Istio’s Impact on Kubernetes Clusters Under Chaos,2024,2024 9th International Conference on Fog and Mobile Edge Computing (FMEC),IEEE
+Istio API Gateway Impact to Reduce Microservice Latency and Resource Usage on Kubernetes,2023,2023 International Seminar on Intelligent Technology and Its Applications (ISITIA),IEEE
+Benchmarking Container Orchestration Platforms: A Comparative Analysis of Kubernetes and AWS ECS for Stateful Microservices,2026,2026 IEEE 5th International Conference on AI in Cybersecurity (ICAIC),IEEE
+Performance Comparison of Service Mesh Frameworks: The MTLS Test Case,2025,NOMS 2025-2025 IEEE Network Operations and Management Symposium,IEEE
+Optimizing Scalability and Resilience in Digital Platforms Through Microservice Deployment Strategies,2025,"2025 12th International Conference on Reliability, Infocom Technologies and Optimization (Trends and Future Directions) (ICRITO)",IEEE
+Data Processing Unit (DPU) Based Network Process Offloading for Efficient Service Meshes,2024,2024 IEEE 10th International Conference on Network Softwarization (NetSoft),IEEE
+eZtunnel: Leveraging eBPF to Transparently Offload Service Mesh Data Plane Networking,2024,2024 IEEE 13th International Conference on Cloud Networking (CloudNet),IEEE
+Demonstrating a System for Dynamically Meeting Management Objectives on a Service Mesh,2023,NOMS 2023-2023 IEEE/IFIP Network Operations and Management Symposium,IEEE
+Uncertainty-Aware Hierarchical Graph Transformers for Adaptive Resource Optimization in Service Meshes,2026,2026 International Conference on Communication Networks and Machine Learning (CNML),IEEE
+AI-Enhanced Pod Scheduling: Optimizing MERN and MEAN Stack Performance in Kubernetes,2025,"2025 International Conference on Data Science, Agents & Artificial Intelligence (ICDSAAI)",IEEE
+AI-Driven Secure and Cloud-Native Microservice Architectures for High-Performance Financial and Hardware Accelerator Systems,2025,2025 Tenth International Conference on Science Technology Engineering and Mathematics (ICONSTEM),IEEE
+Critical Limitations of the Least Outstanding Request Load Balancing Policy in Service Meshes for Large-Scale Microservice Applications,2025,IEEE Transactions on Network and Service Management,IEEE
+Latency-Optimized Microservices Orchestration for Real-Time E-Commerce in Multi-Cloud Environments,2025,2025 International Conference on Computer and Applications (ICCA),IEEE
+"Managing Multi-Cloud Deployments on Kubernetes with Istio, Prometheus and Grafana",2022,2022 8th International Conference on Advanced Computing and Communication Systems (ICACCS),IEEE
+A Decentralized Microservice Scheduling Approach Using Service Mesh in Cloud-Edge Systems,2025,2025 IEEE International Conference on Joint Cloud Computing (JCC),IEEE
+Network Policies in Kubernetes: Performance Evaluation and Security Analysis,2021,2021 Joint European Conference on Networks and Communications & 6G Summit (EuCNC/6G Summit),IEEE
+Exploring How Service Meshes Can Help To Facilitate The Development Of Microservices,2024,2024 IEEE 15th International Conference on Software Engineering and Service Science (ICSESS),IEEE
+eSeMeshA: eBPF-Based Service Mesh Acceleration for Cloud-Native Infrastructures,2025,2025 IEEE 11th International Conference on Network Softwarization (NetSoft),IEEE
+Service Mesh and eBPF-Powered Microservices: A Survey and Future Directions,2022,2022 IEEE International Conference on Service-Oriented System Engineering (SOSE),IEEE
+SDN-Based Service Function Chaining in Kubernetes Using Network Service Mesh with Kernel-type Network Interfaces for Industrial IoT,2024,2024 IEEE 10th World Forum on Internet of Things (WF-IoT),IEEE
+Challenges and Opportunities in Performance Benchmarking of Service Mesh for the Edge,2021,2021 IEEE International Conference on Edge Computing (EDGE),IEEE
+A Distributed Microservice Communication Framework for Cloud-Native Networks,2025,"2025 IEEE 4th International Conference on Computing, Communication, Perception and Quantum Technology (CCPQT)",IEEE
+A Comparative Review of Microservices and Monolithic Architectures,2018,2018 IEEE 18th International Symposium on Computational Intelligence and Informatics (CINTI),IEEE
+Vulnerability Assessment of Service Mesh Utilizing Fan-Out Requests,2025,"2025 International Conference on Communication, Computer, and Information Technology (IC3IT)",IEEE
+Meta Learning for Improved Policy Transfer in Changing Network Environments,2025,2025 IEEE 11th International Conference on Network Softwarization (NetSoft),IEEE
+Performance Analysis of Zero-Trust multi-cloud,2021,2021 IEEE 14th International Conference on Cloud Computing (CLOUD),IEEE
+Evaluating the Performance of Sidecar-based and Sidecarless Cloud-native Service Mesh Solutions,2024,2024 IEEE International Conference on Advanced Networks and Telecommunications Systems (ANTS),IEEE
+Research on A Lightweight Service Mesh Architecture Using eBPF,2023,2023 4th International Conference on Computer Engineering and Application (ICCEA),IEEE
+NetMARKS: Network Metrics-AwaRe Kubernetes Scheduler Powered by Service Mesh,2021,IEEE INFOCOM 2021 - IEEE Conference on Computer Communications,IEEE
+Development and Evaluation of Information-Centric Service Mesh Using NDN Function Chaining,2024,2024 IEEE 21st Consumer Communications & Networking Conference (CCNC),IEEE
+An Open Interconnection System for Computing Power Based on Service Mesh,2025,"2025 IEEE 5th International Conference on Power, Electronics and Computer Applications (ICPECA)",IEEE
+Improving the Security of Service Mesh in Kubernetes,2025,2025 IEEE 31th International Conference on Parallel and Distributed Systems (ICPADS),IEEE
+Vulnerability Assessment of Service Mesh-Based Microservices Having Workflow Dependencies,2025,"2025 IEEE International Conference on Distributed Computing, VLSI, Electrical Circuits and Robotics (DISCOVER)",IEEE
+eBPF-Enhanced Complete Observability Solution for Cloud-native Microservices,2024,ICC 2024 - IEEE International Conference on Communications,IEEE
+Cloud-Native Service Mesh Readiness for 5G and Beyond,2023,IEEE Access,IEEE
+DataXc: Flexible and efficient communication in microservices-based stream analytics pipelines,2022,"2022 IEEE Intl Conf on Dependable, Autonomic and Secure Computing, Intl Conf on Pervasive Intelligence and Computing, Intl Conf on Cloud and Big Data Computing, Intl Conf on Cyber Science and Technology Congress (DASC/PiCom/CBDCom/CyberSciTech)",IEEE
+Architectural Trade-off Analysis of Modern Service Mesh Designs: A Qualitative ATAM Study,2025,"2025 2nd International Conference on Computational Intelligence, Communication Technology and Networking (CICTN)",IEEE
+Interference Detection of Colocation Workloads in Cloud Sidecar Clusters,2023,2023 International Conference on High Performance Big Data and Intelligent Systems (HDIS),IEEE
+Service Management in Virtual Machine and Container Mixed Environment using Service Mesh,2021,2021 International Conference on Information Networking (ICOIN),IEEE
+Research on Architecture of Internet of Things Platform Based on Service Mesh,2020,2020 12th International Conference on Measuring Technology and Mechatronics Automation (ICMTMA),IEEE
+A Service Mesh-Driven Continuous Delivery Strategy for Microservices with Intelligent Decision Models,2025,"2025 2nd International Conference on Machine Learning, Pattern Recognition and Automation Engineering (MLPRAE)",IEEE
+HEART: Heterogeneous-Aware Traffic Allocation in Multi-Replica Deployments on Kubernetes,2025,2025 IEEE 18th International Conference on Cloud Computing (CLOUD),IEEE
+Research and Implementation of Online Judgment System Based on Micro Service,2019,2019 IEEE 10th International Conference on Software Engineering and Service Science (ICSESS),IEEE
+A Design of Service Mesh Based 5G Core Network Using Cilium,2023,2023 International Conference on Information Networking (ICOIN),IEEE
+Microservices Architecture in Fintech: A Case Study on Scalable Loan Processing with Classical Design Patterns,2025,"2025 Intelligent Methods, Systems, and Applications​ (IMSA)",IEEE
+Self-Adaptive Circuit Breaker Open-State Interval for Enhancing Resiliency of Microservices,2024,2024 OITS International Conference on Information Technology (OCIT),IEEE
+Reinforcement Learning Based Scheme for On-Demand Vehicular Fog Formation and Micro Services Placement,2022,2022 International Wireless Communications and Mobile Computing (IWCMC),IEEE
+Energy-aware Service Mesh Deployment and Online Request Routing in Edge: a Hierarchical Deep Reinforcement Learning Approach,2026,IEEE Transactions on Mobile Computing,IEEE
+Large-Scale Service Mesh Orchestration With Probabilistic Routing in Cloud Data Centers,2025,IEEE Transactions on Services Computing,IEEE
+A Web-based Orchestrator for Dynamic Service Function Chaining Development with Kubernetes,2022,2022 IEEE 8th International Conference on Network Softwarization (NetSoft),IEEE
+A Mirco-Service Tracing System Based on Istio and Kubernetes,2019,2019 IEEE 10th International Conference on Software Engineering and Service Science (ICSESS),IEEE
+"5G-STREAM: Service Mesh Tailored for Reliable, Efficient and Authorized Microservices in the Cloud",2025,2025 55th Annual IEEE/IFIP International Conference on Dependable Systems and Networks (DSN),IEEE
+Breaking the Vicious Circle: Self-Adaptive Microservice Circuit Breaking and Retry,2023,2023 IEEE International Conference on Cloud Engineering (IC2E),IEEE
+Optimization of Microservices Security,2021,2021 3rd International Conference on Advancements in Computing (ICAC),IEEE
+MicroSplit: Efficient Splitting of Microservices on Edge Clouds,2022,2022 IEEE/ACM 7th Symposium on Edge Computing (SEC),IEEE
+Evaluating Kubernetes CNIs for IoT: A Case Study with Raspberry Pi Clusters and Distributed MariaDB with Galera,2025,2025 LI Latin American Computer Conference (CLEI),IEEE
+Threat Intelligence Sharing Component in the Service Mesh Architecture,2023,2023 10th International Conference on Future Internet of Things and Cloud (FiCloud),IEEE
+Centralised Certificate Revocation Validation Framework for Cloud-Native Service Meshes,2025,2025 2nd International Symposium on Parallel Computing and Distributed Systems (PCDS),IEEE
+NAS: A Novel Network-Aware Kubernetes Scheduling Framework Using eBPF Service Mesh,2025,ICC 2025 - IEEE International Conference on Communications,IEEE
+A Risk Adaptive Access Control Model for the Service Mesh Architecture,2024,2024 IEEE 3rd International Conference on Computing and Machine Intelligence (ICMI),IEEE
+A Framework for Dynamically Meeting Performance Objectives on a Service Mesh,2024,IEEE Transactions on Network and Service Management,IEEE
+From Monolith to Microservices: A Systematic Literature Survey,2024,"2024 IEEE 3rd International Conference on Data, Decision and Systems (ICDDS)",IEEE
+Cost-Effective Cloud-Edge Elasticity for Microservice Applications,2026,IEEE Transactions on Network and Service Management,IEEE
+A Design and Development of Operator for Logical Kubernetes Cluster over Distributed Clouds,2024,NOMS 2024-2024 IEEE Network Operations and Management Symposium,IEEE
+An Anomaly Localization Method for Large-Scale Micro-services,2024,2024 4th International Symposium on Computer Technology and Information Science (ISCTIS),IEEE
+Improving Microservices Security,2025,2025 IEEE Middle East Conference on Communications and Networking (MECOM),IEEE
+μBench: An Open-Source Factory of Benchmark Microservice Applications,2023,IEEE Transactions on Parallel and Distributed Systems,IEEE
+A Runtime Trust Evaluation Mechanism in the Service Mesh Architecture,2023,2023 10th International Conference on Future Internet of Things and Cloud (FiCloud),IEEE
+Weight based Load Balancing in Kubernetes using AWS,2023,2023 International Conference on Intelligent Data Communication Technologies and Internet of Things (IDCIoT),IEEE
+A Hybrid Machine Learning Approach for Service Selection in Sidecar Service Mesh,2025,2025 IEEE International Conference on Data and Software Engineering (ICoDSE),IEEE
+On Improved Efficiency of Zero-Trust Tunnel for Inter-Microservices Communication,2024,2024 IEEE International Conference on High Performance Computing and Communications (HPCC),IEEE
+Exploring Security Enhancements in Kubernetes CNI: A Deep Dive Into Network Policies,2025,IEEE Access,IEEE
+Shimmy: Accelerating Inter-Container Communication for the IoT Edge,2023,GLOBECOM 2023 - 2023 IEEE Global Communications Conference,IEEE
+Reotina: an eBPF-Driven Observability Framework for 5G Networks,2025,2025 25th Asia-Pacific Network Operations and Management Symposium (APNOMS),IEEE
+Micro-Services Internal Load Balancing for Ultra Reliable Low Latency 5G Online Charging System,2024,2024 26th International Conference on Advanced Communications Technology (ICACT),IEEE
+Load Balancing Framework for Scalable Container Orchestration in Large Scale Microservices based Cloud Platforms,2026,2026 International Conference on Electronics and Renewable Systems (ICEARS),IEEE
+Balancing Load: An Adaptive Traffic Management Scheme for Microservices,2023,2022 IEEE 28th International Conference on Parallel and Distributed Systems (ICPADS),IEEE
+Container-Specific Service Mesh-Based System for Mitigating Lateral Movement Attacks,2026,IEEE Transactions on Cloud Computing,IEEE
+Multi-Cloud Connectivity for Kubernetes in 5G Networks,2021,IEEE Communications Magazine,IEEE
+Dynamically meeting performance objectives for multiple services on a service mesh,2022,2022 18th International Conference on Network and Service Management (CNSM),IEEE
+Service Level Objective Adaptive Energy Efficiency Management,2023,2022 IEEE 28th International Conference on Parallel and Distributed Systems (ICPADS),IEEE
+A Study of Service Registration and Discovery Techniques in Microservice Architecture,2022,2022 International Conference on Networking and Network Applications (NaNA),IEEE
+Symmetric Orchestration Under Service Mesh Paradigm: Empowering Massive Online Applications in Edge Clouds,2026,IEEE Transactions on Mobile Computing,IEEE
+Data-driven Adaptation in Microservice-based IoT Architectures,2020,2020 IEEE International Conference on Software Architecture Companion (ICSA-C),IEEE
+Performance Analysis of Different Ingress Controllers Within the Kubernetes Cluster,2024,"2024 IEEE International Conference on Information Technology, Electronics and Intelligent Communication Systems (ICITEICS)",IEEE
+MicroFI: Non-Intrusive and Prioritized Request-Level Fault Injection for Microservice Applications,2024,IEEE Transactions on Dependable and Secure Computing,IEEE
+Microscaler: Cost-Effective Scaling for Microservice Applications in the Cloud With an Online Learning Approach,2022,IEEE Transactions on Cloud Computing,IEEE
+Collaborative Orchestration with Probabilistic Routing for Dynamic Service Mesh in Clouds,2025,IEEE INFOCOM 2025 - IEEE Conference on Computer Communications,IEEE
+Protocol-Independent Context Propagation for Sharing Microservices in Multiple Environments,2023,2023 IEEE International Conference on Cloud Engineering (IC2E),IEEE
+A Qualitative Evaluation of Service Mesh-based Traffic Management for Mobile Edge Cloud,2022,"2022 22nd IEEE International Symposium on Cluster, Cloud and Internet Computing (CCGrid)",IEEE
+ClariNet: Optimizing Cross-Workload Connectivity in VM-Container Hybrid Environments,2025,2025 30th Asia-Pacific Conference on Communications (APCC),IEEE
+Leveraging Large Language Models for Anomaly Detection in Microservices Architectures,2025,2025 IEEE/SBC 37th International Symposium on Computer Architecture and High Performance Computing Workshops (SBAC-PADW),IEEE
+Microscaler: Automatic Scaling for Microservices with an Online Learning Approach,2019,2019 IEEE International Conference on Web Services (ICWS),IEEE
+Graph Attention Networks and Deep Q-Learning for Service Mesh Optimization: A Digital Twinning Approach,2024,ICC 2024 - IEEE International Conference on Communications,IEEE
+Anti-patterns Detection in Microservice-Based Software Architectures Using Graph Analysis,2025,2025 9th Iranian Conference on Advances in Enterprise Architecture (ICAEA),IEEE
+BZTEF: A Blockchain-Based Zero Trust Enforcement Framework for Cloud-Native Environments,2026,2025 IEEE 19th International Conference on Industrial and Information Systems (ICIIS),IEEE
+UAV-Mesh: A Graph-Based Decentralized Service Mesh Framework for UAV Swarms,2025,2025 IEEE International Conference on Web Services (ICWS),IEEE
+Zero Trust Security Model Implementation in Microservices Architectures Using Identity Federation,2025,"2025 2nd International Conference on Recent Trends in Electrical, Electronics and Computing Technologies (ICRTEECT)",IEEE
+Research on Evaluation Model of Microservice Transformation Based on Business Consistency,2025,"2025 4th International Conference on Artificial Intelligence, Internet and Digital Economy (ICAID)",IEEE
+Unlocking Kubernetes Networking Efficiency: Exploring Data Processing Units for Offloading and Enhancing Container Network Interfaces,2023,2023 4th IEEE Global Conference for Advancement in Technology (GCAT),IEEE
+Evaluating 5G Core Service Mesh Encapsulations in Cloud Deployments,2024,2024 IEEE Conference on Network Function Virtualization and Software Defined Networks (NFV-SDN),IEEE
+An Efficient Traffic Steering for Cloud-Native Service Function Chaining,2020,"2020 23rd Conference on Innovation in Clouds, Internet and Networks and Workshops (ICIN)",IEEE
+Adaptive and Application-agnostic Caching in Service Meshes for Resilient Cloud Applications,2021,2021 IEEE 7th International Conference on Network Softwarization (NetSoft),IEEE
+"DevSecOps in Practice with VMware Tanzu: Build, run, and manage secure multi-cloud apps at scale on Kubernetes with the Tanzu portfolio",2023,"DevSecOps in Practice with VMware Tanzu: Build, run, and manage secure multi-cloud apps at scale on Kubernetes with the Tanzu portfolio",IEEE
+Scalable Policy-as-Code Decision Points for Data Products,2025,2025 IEEE International Conference on Web Services (ICWS),IEEE
+BLOC: Balancing Load with Overload Control In the Microservices Architecture,2022,2022 IEEE International Conference on Autonomic Computing and Self-Organizing Systems (ACSOS),IEEE
+Online Policy Adaptation for Networked Systems using Rollout,2024,NOMS 2024-2024 IEEE Network Operations and Management Symposium,IEEE
+Service Mesh: The Rise of Event-Driven Asynchronous Mesh in Cloud Continuum,2026,IT Professional,IEEE
+Empirical Benchmarking of a Low-Latency Cloud-Native Testbed for High-Complexity AI-Enabled Network Functions in B5G Edge,2025,2025 3rd International Conference on Foundation and Large Language Models (FLLM),IEEE
+Automated Canary Analysis for Kubernetes Deployments,2025,2025 IEEE Cloud Summit,IEEE
+Evaluating Mesh Communications in Disaggregated Near-RT RIC for 5G Open RAN: a Functional and Performance Analysis,2024,GLOBECOM 2024 - 2024 IEEE Global Communications Conference,IEEE
+Anomaly Detection in Microservices Architecture Using Graph Neural Networks,2025,"2025 33rd Euromicro International Conference on Parallel, Distributed, and Network-Based Processing (PDP)",IEEE
+Cost Efficient Service Mesh Controller Placement for Edge Native Computing,2022,GLOBECOM 2022 - 2022 IEEE Global Communications Conference,IEEE
+Migration for Cloud-Native VNF in Open Source MANO,2023,2023 International Conference on Future Communications and Networks (FCN),IEEE
+"Service Mesh: Challenges, State of the Art, and Future Research Opportunities",2019,2019 IEEE International Conference on Service-Oriented System Engineering (SOSE),IEEE
+Cloud-native Service Function Chaining for 5G based on Network Service Mesh,2020,ICC 2020 - 2020 IEEE International Conference on Communications (ICC),IEEE
+Service Mesh Controller for Cooperative Load Balancing among Neighboring Edge Servers,2022,2022 IEEE International Symposium on Local and Metropolitan Area Networks (LANMAN),IEEE
+A time-sensitive cloud-native network based on eBPF,2024,2024 27th International Conference on Computer Supported Cooperative Work in Design (CSCWD),IEEE
+Analysis of Potential Threats in NextGen 5G Core,2022,2022 International Symposium on Electronics and Telecommunications (ISETC),IEEE
+Koney: A Cyber Deception Orchestration Framework for Kubernetes,2025,2025 IEEE European Symposium on Security and Privacy Workshops (EuroS&PW),IEEE
+End-to-End Security Policy Automation with Multi-LLM Agents in Cloud-Native Systems,2025,"2025 IEEE 24th International Conference on Trust, Security and Privacy in Computing and Communications (TrustCom)",IEEE
+Comparing Transfer Learning and Rollout for Policy Adaptation in a Changing Network Environment,2024,NOMS 2024-2024 IEEE Network Operations and Management Symposium,IEEE
+ViperProbe: Rethinking Microservice Observability with eBPF,2020,2020 IEEE 9th International Conference on Cloud Networking (CloudNet),IEEE
+"An Empirical Study on Microservices Deployment Trends, Topics and Challenges in Stack Overflow",2025,"2025 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER)",IEEE
+Towards Orchestration in the Cloud-Fog Continuum,2021,SoutheastCon 2021,IEEE
+Decentralized Authentication in Microservice Architectures with SSI and DID in Blockchain,2023,2023 IEEE International Conference on Cloud Computing Technology and Science (CloudCom),IEEE
+cnFlow: An eBPF-Driven Telemetry Framework for Cloud-Native Networks,2025,2025 16th International Conference on Information and Communication Technology Convergence (ICTC),IEEE
+Deploying the observability of the SigSaude system using service mesh,2020,2020 20th International Conference on Computational Science and Its Applications (ICCSA),IEEE
+Kubernetes-Based Network Functions Orchestration for 5G Core Networks with Open Source MANO,2022,2022 International Symposium on Electronics and Telecommunications (ISETC),IEEE
+A Framework for Secure and Scalable State Management in Cloud-Native Multi-Modal AI Agents,2025,"2025 IEEE 16th Annual Ubiquitous Computing, Electronics & Mobile Communication Conference (UEMCON)",IEEE
+Validation and Benchmarking of CNFs in OSM for pure Cloud Native applications in 5G and beyond,2021,2021 International Conference on Computer Communications and Networks (ICCCN),IEEE
+Anomaly Detection and Root Cause Analysis in Cloud-Native Environments Using Large Language Models and Bayesian Networks,2025,IEEE Access,IEEE
+AI-Driven Ground Robots: Mobile Edge Computing and mmWave Communications at Work,2024,IEEE Open Journal of the Communications Society,IEEE
+EAST Experimental Data Gateway Based on RESTful and Microservice Architecture,2023,2023 4th International Conference on Computer Engineering and Application (ICCEA),IEEE
+Intelligent Service Mesh Framework for API Security and Management,2019,"2019 IEEE 10th Annual Information Technology, Electronics and Mobile Communication Conference (IEMCON)",IEEE
+Service Routing in Multi-Tier Edge Computing: A Matching Game Approach,2023,IEEE Journal on Selected Areas in Communications,IEEE
+Securing the Cloud-Native 5G Control Plane,2024,MILCOM 2024 - 2024 IEEE Military Communications Conference (MILCOM),IEEE
+A Comparative Study of Security Mechanisms to Prevent Denial of Service (Dos) Attacks in Kubernetes,2025,2025 13th International Conference in Software Engineering Research and Innovation (CONISOFT),IEEE
+Building an effective KPI monitoring system for an OTT Platform,2024,2024 International Conference on Emerging Systems and Intelligent Computing (ESIC),IEEE
+Adaptive Plugin Architecture Optimization and Cloud-Native Deployment Strategy for AutoML Systems,2025,2025 10th International Conference on Cyber Security and Information Engineering (ICCSIE),IEEE
+"Container Security: Issues, Challenges, and the Road Ahead",2019,IEEE Access,IEEE
+An East-West-Traffic Governance System Based on eBPF and Centralized Gateway,2023,"2023 IEEE International Conference on Sensors, Electronics and Computer Engineering (ICSECE)",IEEE
+Leveraging the cloud-native approach for the design of 5G NextGen Core Functions,2022,2022 14th International Conference on Communications (COMM),IEEE
+"Cloud-Native Network Slicing in 5G-Enabled Iot Systems: Architectures, Mechanisms, and Applications",2026,"2026 5th International Conference on Communication, Computing and Electronics Systems (ICCCES)",IEEE
+Proxyless Zero Trust for Edge and IoT: Decoupling Control and Data Paths,2025,2025 7th International Conference on Blockchain Computing and Applications (BCCA),IEEE
+A Software-Defined Networking Solution for Interconnecting Network Functions in Service-Based Architectures,2022,IEEE Access,IEEE
+VNF Lifecycle Evaluation Study for Virtualized FeMBMS,2022,2022 Joint European Conference on Networks and Communications & 6G Summit (EuCNC/6G Summit),IEEE
+PuzzleMesh: A Puzzle Model to Build Mesh of Agnostic Services for Edge-Fog-Cloud,2023,IEEE Transactions on Services Computing,IEEE
+On design and implementation of a cloud-native B5G mobile core network,2023,2023 IEEE 12th International Conference on Cloud Networking (CloudNet),IEEE
+"DCE: A High-Performance, Scalable, Enterprise-Level Cloud Native Operating System",2023,2023 IEEE 8th International Conference on Smart Cloud (SmartCloud),IEEE
+A Multi-Layered Zero Trust Microsegmentation Solution for Cloud-Native 5G & Beyond Networks,2025,2025 IEEE Wireless Communications and Networking Conference (WCNC),IEEE
+Elastic Scaling of Real-Time Communication Services,2026,IEEE Transactions on Network and Service Management,IEEE
+"Towards a Stateless Cloud Native and Cloud Agnostic Digital Twin Platform for the Digital Product Passport: Out-of-the-box, Reliable, and Scaling",2024,2024 IEEE 29th International Conference on Emerging Technologies and Factory Automation (ETFA),IEEE
+SliMANO: An Expandable Framework for the Management and Orchestration of End-to-end Network Slices,2019,2019 IEEE 8th International Conference on Cloud Networking (CloudNet),IEEE
+Top Design of Digitalization Specialty in a Power Company Based on TOGAF Framework,2025,2025 7th International Conference on Frontier Technologies of Information and Computer (ICFTIC),IEEE
+Evaluating CNI Plugins Features & Tradeoffs for Edge Cloud Applications,2024,2024 IEEE Symposium on Computers and Communications (ISCC),IEEE
+SEAWALL: Seamless Low Latency Cloud Platforms for the Industry 4.0,2022,2022 5th Conference on Cloud and Internet of Things (CIoT),IEEE
+Enhanced client-side internal load balancing for in 5G Online Charging System,2024,"2024 IEEE 48th Annual Computers, Software, and Applications Conference (COMPSAC)",IEEE
+Virtual Reality System Architecture Design for Digital Transformation of Education,2025,2025 IEEE 8th International Conference on Information Systems and Computer Aided Education (ICISCAE),IEEE
+Analyzing the impact of VIM systems over the MEC management and orchestration in vehicular communications,2020,2020 29th International Conference on Computer Communications and Networks (ICCCN),IEEE
+Designing a Multi-Layered Rate Limiting Framework for Resilient Cloud-Native Systems,2025,2025 Fourth International Conference on Smart Technologies and Systems for Next Generation Computing (ICSTSN),IEEE
+Divide and Conquer: Hierarchical Network and Service Coordination,2021,2021 IFIP/IEEE International Symposium on Integrated Network Management (IM),IEEE
+6G Distributed Autonomous Core Network with Proxy Architecture and HTTP/3 Transport,2024,2024 International Conference on Future Communications and Networks (FCN),IEEE
+Adversarial Adaptive Cloud-Native Security: A Dynamic Defense System Based on Online Adversarial Training and Reinforcement Learning,2025,2025 10th International Conference on Computer and Information Processing Technology (ISCIPT),IEEE
+Coupling Orchestration and DNS for Seamless Service Migration in the Edge–Cloud Continuum,2025,2025 IEEE 33rd International Conference on Network Protocols (ICNP),IEEE
+Self-Learning Multi-Objective Service Coordination Using Deep Reinforcement Learning,2021,IEEE Transactions on Network and Service Management,IEEE
+Self-Driving Network and Service Coordination Using Deep Reinforcement Learning,2020,2020 16th International Conference on Network and Service Management (CNSM),IEEE
+Distributed Online Service Coordination Using Deep Reinforcement Learning,2021,2021 IEEE 41st International Conference on Distributed Computing Systems (ICDCS),IEEE
+Zero Touch Rolling Upgrade Cloud-native Network Functions,2025,2025 27th International Conference on Advanced Communications Technology (ICACT),IEEE
+Evolution of Policy Verification and Control for 6G Secure Service Orchestration in Telco Clouds,2025,2025 Joint European Conference on Networks and Communications & 6G Summit (EuCNC/6G Summit),IEEE
+Research on intelligent prediction model of big data mining and cloud computing based on deep learning,2025,4th International Conference on Artificial Intelligence and Autonomous Robot Systems (AIARS 2025),IEEE
+Mesh-Aware Debugging: Identifying Resource Allocation Issues in Distributed Microservices,2025,Acta Polytechnica Hungarica,Scopus
+Research on computing power network technology for stateless computing services; [面向无状态计算服务的算力网络技术研究],2025,Tongxin Xuebao/Journal on Communications,Scopus
+Fine-Grained Management for Microservice Applications with Lazy Configuration Distribution,2023,Electronics (Switzerland),Scopus
+Context-Aware Security Policies for Data-Driven Applications in Cloud-Native Architectures,2025,Journal of Internet Services and Information Security,Scopus
+Microservice Deployment Based on Multiple Controllers for User Response Time Reduction in Edge-Native Computing,2025,Sensors,Scopus
+HADES: An NFV solution for energy-efficient placement and resource allocation in heterogeneous infrastructures,2024,Journal of Network and Computer Applications,Scopus
+Kubernetes as a Standard Container Orchestrator - A Bibliometric Analysis,2022,Journal of Grid Computing,Scopus
+Enhancing Load Balancing in Computer-Aided Medical Systems Using Deep Reinforcement Learning,2024,Computer-Aided Design and Applications,Scopus
+"Evaluate Canary Deployment Techniques Using Kubernetes, Istio, and Liquibase for Cloud Native Enterprise Applications to Achieve Zero Downtime for Continuous Deployments",2024,IEEE Access,Scopus
+Comparison of management and orchestration solutions for the 5G era,2020,Journal of Sensor and Actuator Networks,Scopus
+Explainable GNN-Based Approach to Fault Forecasting in Cloud Service Debugging,2025,IEEE Transactions on Network and Service Management,Scopus
+Network shortcut in data plane of service mesh with eBPF,2024,Journal of Network and Computer Applications,Scopus
+Xel: A cloud-agnostic data platform for the design-driven building of high-availability data science services,2023,Future Generation Computer Systems,Scopus
+Micro Services-Based Integral Architecture for Digital Transformation: a Scalable and Modular Approach,2024,International Journal on Engineering Applications,Scopus
+S-ZAC: Hardening Access Control of Service Mesh Using Intel SGX for Zero Trust in Cloud,2024,Electronics (Switzerland),Scopus
+"Dynamic Optimization in 5G Network Slices: A Comparative Study of Whale Optimization, Particle Swarm Optimization, and Genetic Algorithm",2024,International Journal of Electrical and Electronics Research,Scopus
+A Hybrid Zero Trust Deployment Model for Securing O-RAN Architecture in 6G Networks,2025,Future Internet,Scopus
+PiCoP: Service Mesh for Sharing Microservices in Multiple Environments Using Protocol-Independent Context Propagation,2025,IEEE Transactions on Cloud Computing,Scopus
+A service mesh approach to integrate processing patterns into microservices applications,2024,Cluster Computing,Scopus
+Location Based Indoor and Outdoor Lightweight Activity Recognition System,2022,Electronics (Switzerland),Scopus
+Full-stack vulnerability analysis of the cloud-native platform,2023,Computers and Security,Scopus
+Efficient service mesh traffic management for cloud-native applications,2026,PLOS ONE,Scopus
+Enhancing Microservice Security Through Vulnerability-Driven Trust in the Service Mesh Architecture,2025,Sensors,Scopus
+Verikube: Automatic and Efficient Verification for Container Network Policies,2022,IEICE Transactions on Information and Systems,Scopus
+A Hybrid Model for Real-Time Docker Container Threat Detection and Vulnerability Analysis,2023,International Journal of Intelligent Systems and Applications in Engineering,Scopus
+Cybermycelium: a reference architecture for domain-driven distributed big data systems,2024,Frontiers in Big Data,Scopus
+A Dynamic Management and Integration Framework for Models in Landslide Early Warning System,2023,ISPRS International Journal of Geo-Information,Scopus
+MicroFog: A framework for scalable placement of microservices-based IoT applications in federated Fog environments,2024,Journal of Systems and Software,Scopus
+AI Anomaly Detection for Cloudified Mobile Core Architectures,2023,IEEE Transactions on Network and Service Management,Scopus
+Calculation of utility of network services based on state manifolds,2022,Computer Networks,Scopus
+Architecting Multi-Cluster Layer-2 Connectivity for Cloud-Native Network Slicing,2026,Future Internet,Scopus
+System Interface of Scientific Services of a Digital Platform for Multiscale Modeling,2021,Russian Microelectronics,Scopus
+An Automated Testing Framework for Container-Based Network Services,2021,Journal of Korean Institute of Communications and Information Sciences,Scopus
+Trade-Offs in Kubernetes Security and Energy Consumption,2026,Urban Science,Scopus
+An online and highly-scalable streaming platform for filtering trolls with transfer learning,2023,Journal of Supercomputing,Scopus
+ComEdge: Cloud-Native Platform for Integrated Computing and Communication in Satellite–Terrestrial Network,2023,Electronics (Switzerland),Scopus
+Near real-time optimization of fog service placement for responsive edge computing,2020,Journal of Cloud Computing,Scopus
+On the Measurement of io_uring Performance: a Strategy and Experience in the Envoy Service Mesh,2024,CLEI Eletronic Journal (CLEIej),Scopus
+On practitioners’ concerns when adopting service mesh frameworks,2023,Empirical Software Engineering,Scopus
+Placement of Microservices-based IoT Applications in Fog Computing: A Taxonomy and Future Directions,2023,ACM Computing Surveys,Scopus
+Reinforcement learning based scheme for on-demand vehicular fog formation,2023,Vehicular Communications,Scopus
+Resilient microservices: an investigation into Istio effectiveness in Kubernetes,2026,Cluster Computing,Scopus
+Unveiling Kubernetes CNI: An In-Depth Analysis of Networking Performance and Resource Efficiency,2025,Journal of Korean Institute of Communications and Information Sciences,Scopus
+DEVELOPING INFORMATION TECHNOLOGY FOR EVALUATING AND ENHANCING APPLICATION-LAYER DDOS ATTACK DETECTION METHODS,2024,Radioelectronic and Computer Systems,Scopus
+"Impact of etcd deployment on Kubernetes, Istio, and application performance",2020,Software - Practice and Experience,Scopus
+Benchmarking open source NFV MANO systems: OSM and ONAP,2020,Computer Communications,Scopus
+Performance and Latency Efficiency Evaluation of Kubernetes Container Network Interfaces for Built-In and Custom Tuned Profiles,2024,Electronics (Switzerland),Scopus
+Experiences with Deep Learning Enhanced Steering Mechanisms for Debugging of Fundamental Cloud Services,2023,IEEE Access,Scopus
+SafeTree: Expressive Tree Policies for Microservices,2025,Proceedings of the ACM on Programming Languages,Scopus
+Athena: An Intelligent Multi-x Cloud Native Network Operator,2024,IEEE Journal on Selected Areas in Communications,Scopus
+A Novel Framework for Cross-Cluster Scaling in Cloud-Native 5G NextGen Core,2024,Future Internet,Scopus
+Evaluation of a Smart Intercom Microservice System Based on the Cloud of Things,2023,Electronics (Switzerland),Scopus
+Dynamically Balancing Load with Overload Control for Microservices,2024,ACM Transactions on Autonomous and Adaptive Systems,Scopus
+Technical Report: Performance Comparison of Service Mesh Frameworks: the MTLS Test Case,2024,Unknown,arXiv
+QONNECT: A QoS-Aware Orchestration System for Distributed Kubernetes Clusters,2025,Unknown,arXiv
+Enabling Network Policy Enforcement in Service Meshes,2025,Unknown,arXiv
+RetryGuard: Preventing Self-Inflicted Retry Storms in Cloud Microservices Applications,2025,Unknown,arXiv
+Towards Secure Management of Edge-Cloud IoT Microservices using Policy as Code,2024,Unknown,arXiv
+XLB: A High Performance Layer-7 Load Balancer for Microservices using eBPF-based In-kernel Interposition,2026,Unknown,arXiv
+CARISMA: CAR-Integrated Service Mesh Architecture,2024,Unknown,arXiv
+iDynamics: A Configurable Emulation Framework for Evaluating Microservice Scheduling Policies under Controllable Cloud-Edge Dynamics,2025,Unknown,arXiv
+Security Issues and Challenges in Service Meshes – An Extended Study,2020,Unknown,arXiv
+"Service Mesh: Architectures, Applications, and Implementations",2024,Unknown,arXiv
+Towards Soft Circuit Breaking in Service Meshes via Application-agnostic Caching,2021,Unknown,arXiv
+Model-based Reinforcement Learning for Service Mesh Fault Resiliency in a Web Application-level,2021,Unknown,arXiv
+Sidecars on the Central Lane: Impact of Network Proxies on Microservices,2023,Unknown,arXiv
+Advanced Strategies for Precise and Transparent Debugging of Performance Issues in In-Memory Data Store-Based Microservices,2023,Unknown,arXiv
+HeteroPod: XPU-Accelerated Infrastructure Offloading for Commodity Cloud-Native Applications,2025,Unknown,arXiv
+MANATEE: A DevOps Platform for xApp Lifecycle Management and Testing in Open RAN,2026,Unknown,arXiv
+Towards integrating hardware Data Plane acceleration in Network Functions Virtualization,2022,Unknown,arXiv
+Remote Procedure Call as a Managed System Service,2023,Unknown,arXiv
+"Proceedings of the 6th International Workshop on Edge Systems, Analytics and Networking",2023,"Proceedings of the 6th International Workshop on Edge Systems, Analytics and Networking",ACM Digital Library
+Proceedings of the 1st Workshop on High Availability and Observability of Cloud Systems,2021,Proceedings of the 1st Workshop on High Availability and Observability of Cloud Systems,ACM Digital Library
+Proceedings of the 16th ACM/SPEC International Conference on Performance Engineering,2025,Proceedings of the 16th ACM/SPEC International Conference on Performance Engineering,ACM Digital Library
+Proceedings of the 2022 ACM/SPEC on International Conference on Performance Engineering,2022,Proceedings of the 2022 ACM/SPEC on International Conference on Performance Engineering,ACM Digital Library
+Proceedings of the 2025 Cloud Computing Security Workshop,2025,Proceedings of the 2025 Cloud Computing Security Workshop,ACM Digital Library
+Proceedings of the 2025 2nd International Symposium on Artificial Intelligence for Education,2025,Proceedings of the 2025 2nd International Symposium on Artificial Intelligence for Education,ACM Digital Library
+Proceedings of the 2023 ACM Symposium on Cloud Computing,2023,Proceedings of the 2023 ACM Symposium on Cloud Computing,ACM Digital Library
+Proceedings of the 18th European Workshop on Systems Security,2025,Proceedings of the 18th European Workshop on Systems Security,ACM Digital Library
+Proceedings of the ACM SIGCOMM 2024 Conference,2024,Proceedings of the ACM SIGCOMM 2024 Conference,ACM Digital Library
+Proceedings of the 18th ACM International Conference on Distributed and Event-based Systems,2024,Proceedings of the 18th ACM International Conference on Distributed and Event-based Systems,ACM Digital Library
+Proceedings of the 25th International Middleware Conference,2024,Proceedings of the 25th International Middleware Conference,ACM Digital Library
+2022 18th International Conference on Network and Service Management (CNSM),2022,2022 18th International Conference on Network and Service Management (CNSM),ACM Digital Library
+Proceedings of the 17th International Conference on emerging Networking EXperiments and Technologies,2021,Proceedings of the 17th International Conference on emerging Networking EXperiments and Technologies,ACM Digital Library
+Proceedings of the 12th ACM International Conference on Systems and Storage,2019,Proceedings of the 12th ACM International Conference on Systems and Storage,ACM Digital Library
+"Proceedings of the 30th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 1",2025,"Proceedings of the 30th ACM International Conference on Architectural Support for Programming Languages and Operating Systems, Volume 1",ACM Digital Library
+Proceedings of the 6th International Conference on Sustainable Information Engineering and Technology,2021,Proceedings of the 6th International Conference on Sustainable Information Engineering and Technology,ACM Digital Library
+Proceedings of the ACM SIGCOMM 2025 Conference,2025,Proceedings of the ACM SIGCOMM 2025 Conference,ACM Digital Library
+Proceedings of the Symposium on Architectures for Networking and Communications Systems,2021,Proceedings of the Symposium on Architectures for Networking and Communications Systems,ACM Digital Library
+"Proceedings of the 17th International Conference on Availability, Reliability and Security",2022,"Proceedings of the 17th International Conference on Availability, Reliability and Security",ACM Digital Library
+"Proceedings of the 2023 3rd International Conference on Big Data, Artificial Intelligence and Risk Management",2023,"Proceedings of the 2023 3rd International Conference on Big Data, Artificial Intelligence and Risk Management",ACM Digital Library
+Proceedings of the Twentieth ACM Workshop on Hot Topics in Networks,2021,Proceedings of the Twentieth ACM Workshop on Hot Topics in Networks,ACM Digital Library
+Proceedings of the 22nd ACM Workshop on Hot Topics in Networks,2023,Proceedings of the 22nd ACM Workshop on Hot Topics in Networks,ACM Digital Library
+Proceedings of the ACM SIGCOMM 2025 Posters and Demos,2025,Proceedings of the ACM SIGCOMM 2025 Posters and Demos,ACM Digital Library
+Proceedings of the 23rd ACM Workshop on Hot Topics in Networks,2024,Proceedings of the 23rd ACM Workshop on Hot Topics in Networks,ACM Digital Library
+"Proceedings of the 3rd Workshop on SErverless Systems, Applications and MEthodologies",2025,"Proceedings of the 3rd Workshop on SErverless Systems, Applications and MEthodologies",ACM Digital Library
+Proceedings of the 24th European Conference on Pattern Languages of Programs,2019,Proceedings of the 24th European Conference on Pattern Languages of Programs,ACM Digital Library
+"Proceedings of the 5th workshop on Advanced tools, programming languages, and PLatforms for Implementing and Evaluating algorithms for Distributed systems",2023,"Proceedings of the 5th workshop on Advanced tools, programming languages, and PLatforms for Implementing and Evaluating algorithms for Distributed systems",ACM Digital Library
+Proceedings of the 2025 ACM Symposium on Cloud Computing,2025,Proceedings of the 2025 ACM Symposium on Cloud Computing,ACM Digital Library
+Proceedings of the 2025 Workshop on Re-design Industrial Control Systems with Security,2025,Proceedings of the 2025 Workshop on Re-design Industrial Control Systems with Security,ACM Digital Library
+Proceedings of the 2024 12th International Conference on Communications and Broadband Networking,2024,Proceedings of the 2024 12th International Conference on Communications and Broadband Networking,ACM Digital Library
+Companion of the 2023 ACM/SPEC International Conference on Performance Engineering,2023,Companion of the 2023 ACM/SPEC International Conference on Performance Engineering,ACM Digital Library
+Proceedings of the 2024 ACM Symposium on Cloud Computing,2024,Proceedings of the 2024 ACM Symposium on Cloud Computing,ACM Digital Library
