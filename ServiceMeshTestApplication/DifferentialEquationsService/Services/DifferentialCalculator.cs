@@ -1,4 +1,6 @@
-﻿using SharedModels.Models;
+﻿using System.Globalization;
+using System.Data;
+using SharedModels.Models;
 
 namespace DifferentialService.Services;
 
@@ -13,40 +15,37 @@ public class DifferentialCalculator
 
     public async Task<string> SolveAsync(DifferentialRequest request)
     {
-        // Case: Non-iterative (Direct Integration)
-        // If the function doesn't contain 'y', we don't need Picard iterations.
         if (!request.Function.Contains("y", StringComparison.OrdinalIgnoreCase))
         {
-            var integrationReq = new IntegrationRequest
-            {
-                Function = request.Function, // e.g., "x^2"
-                LowerBound = request.InitialConditionX,
-                UpperBound = request.Range,
-                Steps = 1_000_000
-            };
+            string antiderivative = await _integrationClient.GetAntiderivativeAsync(request.Function);
 
-            string result = _integrationClient.GetIntegralAsync(integrationReq).Result.Data.ToString();
-            return (request.InitialConditionY + result).ToString();
+            double integral = EvaluateExpression(antiderivative, request.Range)
+                            - EvaluateExpression(antiderivative, request.InitialConditionX);
+
+            double result = request.InitialConditionY + integral;
+            return result.ToString(CultureInfo.InvariantCulture);
         }
 
-        // Case: Iterative (Picard Method)
-        string currentY = request.InitialConditionY.ToString();
+        double currentY = request.InitialConditionY;
         for (int i = 0; i < request.Steps; i++)
         {
-            string integrand = request.Function.Replace("y", $"({currentY})");
+            string integrand = request.Function.Replace("y", currentY.ToString(CultureInfo.InvariantCulture));
 
-            var integrationReq = new IntegrationRequest
-            {
-                Function = integrand,
-                LowerBound = request.InitialConditionX,
-                UpperBound = request.Range,
-                Steps = 10_000
-            };
+            string antiderivative = await _integrationClient.GetAntiderivativeAsync(integrand);
 
-            string result = _integrationClient.GetIntegralAsync(integrationReq).Result.Data.ToString();
-            currentY = $"{request.InitialConditionY} + {result}";
+            double integral = EvaluateExpression(antiderivative, request.Range)
+                            - EvaluateExpression(antiderivative, request.InitialConditionX);
+
+            currentY += integral;
         }
+        return currentY.ToString(CultureInfo.InvariantCulture);
+    }
 
-        return currentY;
+    private static double EvaluateExpression(string expression, double x)
+    {
+        string expr = expression.Replace("x", x.ToString(CultureInfo.InvariantCulture));
+        var table = new DataTable();
+        var result = table.Compute(expr, null);
+        return Convert.ToDouble(result);
     }
 }

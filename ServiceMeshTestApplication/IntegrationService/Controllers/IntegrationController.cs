@@ -61,4 +61,35 @@ public class IntegrationController(IntegralCalculator calculator, ILogger<Integr
             });
         }
     }
+
+    [HttpPost("antiderivative")]
+    public ActionResult<ServiceResponse> GetAntiderivative([FromBody] AntiderivativeRequest request)
+    {
+        logger.LogInformation("Antiderivative requested for expression: {Expression}", request.Expression);
+
+        try
+        {
+            var antiderivative = calculator.ComputeAntiderivative(request.Expression);
+            return Ok(new ServiceResponse
+            {
+                Success = true,
+                Message = "Antiderivative computed",
+                ServiceName = "IntegrationService",
+                Data = new
+                {
+                    Original = request.Expression,
+                    Antiderivative = antiderivative
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error computing antiderivative");
+            return BadRequest(new ServiceResponse
+            {
+                Success = false,
+                Message = $"Error: {ex.Message}"
+            });
+        }
+    }
 }
