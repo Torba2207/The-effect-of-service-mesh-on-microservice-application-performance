@@ -1,0 +1,12 @@
+@misc{barr_technical_2024,
+	title = {Technical {Report}: {Performance} {Comparison} of {Service} {Mesh} {Frameworks}: the {MTLS} {Test} {Case}},
+	shorttitle = {Technical {Report}},
+	url = {https://arxiv.org/abs/2411.02267v1},
+	abstract = {Service Mesh has become essential for modern cloud-native applications by abstracting communication between microservices and providing zero-trust security, observability, and advanced traffic control without requiring code changes. This allows developers to leverage new network capabilities and focus on application logic without managing network complexities. However, the additional layer can significantly impact system performance, latency, and resource consumption, posing challenges for cloud managers and operators. In this work, we investigate the impact of the mTLS protocol - a common security and authentication mechanism - on application performance within service meshes. Recognizing that security is a primary motivation for deploying a service mesh, we evaluated the performance overhead introduced by leading service meshes: Istio, Istio Ambient, Linkerd, and Cilium. Our experiments were conducted by testing their performance in service-to-service communications within a Kubernetes cluster. Our experiments reveal significant performance differences (in terms of latency and memory consumption) among the service meshes, rooting from the different architecture of the service mesh, sidecar versus sidecareless, and default extra features hidden in the mTLS implementation. Our results highlight the understanding of the service mesh architecture and its impact on performance.},
+	language = {en},
+	urldate = {2026-04-05},
+	journal = {arXiv.org},
+	author = {Barr, Anat Bremler and Lavi, Ofek and Naor, Yaniv and Rampal, Sanjeev and Tavori, Jhonatan},
+	month = nov,
+	year = {2024},
+}
