@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fibonacci-service
+  labels:
+    app: fibonacci-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: fibonacci-service
+  template:
+    metadata:
+      labels:
+        app: fibonacci-service
+    spec:
+      containers:
+      - name: fibonacci-service
+        image: ghcr.io/torba2207/fibonacci-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5002
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
