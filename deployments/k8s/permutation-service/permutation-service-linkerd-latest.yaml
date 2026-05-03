@@ -1,0 +1,31 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permutation-service
+  namespace: linkerd-test
+  labels:
+    app: permutation-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: permutation-service
+  template:
+    metadata:
+      labels:
+        app: permutation-service
+    spec:
+      containers:
+      - name: permutation-service
+        image: ghcr.io/torba2207/permutation-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5001
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
