@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: permutation-service
+  namespace: istio-test
   labels:
     app: permutation-service
 spec:
