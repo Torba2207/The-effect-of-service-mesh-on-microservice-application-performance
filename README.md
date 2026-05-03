@@ -125,6 +125,20 @@ env DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet run --project DifferentialEquationsSe
 
 ---
 
+### 🐳 Option C — Docker / Container Registry
+
+Run the following commands from the `ServiceMeshTestApplication` directory:
+
+```bash
+# 1. Build and tag the image using lowercase
+docker build -t ghcr.io/torba2207/permutation-service:latest -f PermutationService/Dockerfile .
+
+# 2. Push the image to GHCR
+docker push ghcr.io/torba2207/permutation-service:latest
+```
+
+---
+
 ## 🧪 Testing Endpoints
 
 ### 🔍 Health Checks
