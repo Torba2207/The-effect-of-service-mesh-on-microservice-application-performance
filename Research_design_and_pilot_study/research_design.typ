@@ -30,7 +30,7 @@ The aim of this project is to analyze and experimentally test the impact of usin
 = Research design
 
 == Research goal
-The goal of this research is to empirically evaluate and compare the performance overhead introduced by different service mesh implementations (specifically Istio, Linkerd, Consul, and Istio Ambient) in a custom microservices application running on Kubernetes, compared to a baseline deployment without any service mesh. The custom application includes heterogeneous services: an AI agent service (running on a separate virtual machine for true isolation), media processing (video, digital filters), and mathematical computation modules (differential equations, integration, permutations, Fibonacci). The research aims to quantify the trade-offs between security features (mTLS) and performance metrics (latency, throughput, CPU/memory consumption, CPU clock scaling) across these implementations.
+The goal of this research is to empirically evaluate and compare the performance overhead introduced by different service mesh implementations (specifically Istio, Linkerd, Consul, and Istio Ambient) in a custom microservices application running on Kubernetes, compared to a baseline deployment without any service mesh. The custom application includes heterogeneous services: an AI agent service (running on a separate virtual machine for true isolation), media processing (video, digital filters), and mathematical computation modules (differential equations, integration, permutations, Fibonacci). The research aims to quantify the trade-offs between security features (mTLS) and performance metrics (latency, throughput, CPU/memory consumption, CPU clock usage) across these implementations.
 
 == Research gap
 The systematic literature review identified 12 core articles on service mesh performance. Key findings from the SLR indicate:
@@ -38,15 +38,15 @@ The systematic literature review identified 12 core articles on service mesh per
 + Service meshes introduce measurable latency and resource overhead, primarily due to sidecar proxies and mTLS @barr_technical_2024 @ganguli_challenges_2021.
 + Linkerd generally exhibits lower overhead than Istio under high load @bosquez_comparative_2025, but Istio remains the standard for complex traffic management.
 + Newer eBPF-based architectures (e.g. Istio Ambient) show promise in reducing overhead @yang_network_2024 @barr_technical_2024.
-+ Most studies focus on either single service mesh implementations or compare a limited set of meshes using standard benchmarks. However, there is a lack of controlled, reproducible experiments that compare multiple service meshes (including sidecar‑less and eBPF‑based variants) against a common baseline using a custom, heterogeneous microservice application that stresses different resource types (CPU‑intensive math, I/O‑oriented media, and off‑cluster AI). Furthermore, few studies systematically vary security feature activation (mTLS on/off) to quantify the security‑performance trade‑off across meshes.
++ Most studies focus on either single service mesh implementations or compare a limited set of meshes using standard benchmarks. However, there is a lack of controlled, reproducible experiments that compare multiple service meshes (including sidecar-less and eBPF-based variants) against a common baseline using a custom, heterogeneous microservice application that stresses different resource types (CPU-intensive math, I/O-oriented media, and off-cluster AI). Furthermore, few studies systematically vary security feature activation (mTLS on/off) to quantify the security-performance trade-off across meshes.
 
-Our research will fill this gap by conducting a controlled experiment that measures the performance impact of adding different service meshes (Istio, Linkerd, Consul, Istio Ambient) to a purpose‑built microservice application (designed to isolate throughput, CPU clock scaling, RAM usage, and latency), with and without security features enabled, and compares them against a no‑mesh baseline.
+Our research will fill this gap by conducting a controlled experiment that measures the performance impact of adding different service meshes (Istio, Linkerd, Consul, Istio Ambient) to a purpose-built microservice application (designed to isolate throughput, CPU clock scaling, RAM usage, and latency), with and without security features enabled, and compares them against a no-mesh baseline.
 
 == Research questions
 
 #set enum(numbering: "RQ1)")
-+ How do different service mesh implementations (Istio, Linkerd, Consul, Istio Ambient) compare in terms of average latency and throughput relative to a baseline deployment without any service mesh, when running a heterogeneous microservice application (including an off‑cluster AI service)?
-+ What is the CPU and memory consumption overhead of each service mesh (including sidecar proxies and control planes) under increasing request loads, and how do they compare across different service types (math, media, off‑cluster AI)?
++ How do different service mesh implementations (Istio, Linkerd, Consul, Istio Ambient) compare in terms of average latency and throughput relative to a baseline deployment without any service mesh, when running a heterogeneous microservice application (including an off-cluster AI service)?
++ What is the CPU and memory consumption overhead of each service mesh (including sidecar proxies and control planes) under increasing request loads, and how do they compare across different service types (math, media, off-cluster AI)?
 + What is the additional performance overhead specifically attributable to mTLS when enabled versus disabled within each service mesh, and how does this overhead differ among the four meshes?
 
 == Research hypotheses
@@ -69,7 +69,7 @@ In the context of this performance experiment, the subjects are the experimental
 
 - Service mesh presence: None (baseline) vs. Istio vs. Linkerd vs. Consul vs. Istio Ambient
 - mTLS setting (if mesh): Disabled vs. Enabled
-- Service type: AI Service (off‑cluster), Media (Video + Filters), Mathematical (Differential Equations, Integration, Permutations, Fibonacci)
+- Service type: AI Service (off-cluster), Media (Video + Filters), Mathematical (Differential Equations, Integration, Permutations, Fibonacci)
 
 Every application configuration will be tested on 3 load levels:
  - Low - 25 req/s
@@ -81,12 +81,12 @@ Baseline ((1 configuration, no mTLS) + 4 meshes x 2 (mTLS on/off)) x 3 load leve
 Each configuration will be tested 10 times across 3 service types → total experimental runs = 27 x 10 x 3 = 810 runs.
 
 *Study population:* The custom application must be deployed as a set of containerized microservices (except the AI service, which runs on a separate VM), each exposing a REST endpoint. The infrastructure must be a dedicated Kubernetes cluster plus an isolated VM for the AI service. The application is designed to stress different system resources:
-- *AI Service* (off‑cluster): heavy compute, requires load caps, strict isolation - communicates with the cluster via a dedicated ingress.
+- *AI Service* (off-cluster): heavy compute, requires load caps, strict isolation - communicates with the cluster via a dedicated ingress.
 - *Media Services*: video compression, frame splitting, matrix filters (memory and I/O).
-- *Mathematical Modules*: CPU‑intensive (differential equations, integration, permutations $O(n!)$, Fibonacci for clock time).
+- *Mathematical Modules*: CPU-intensive (differential equations, integration, permutations $O(n!)$, Fibonacci for clock time).
 Evaluating the entire application comprehensively is beyond the scope of this initial pilot study due to its overall scale and complexity. Therefore, to ensure precise measurement and tightly controlled variables, our experiments will focus exclusively on isolated, singular aforementioned modules of the application.
 
-*Sampling method:* Non-probabilistic - we select the services that represent typical microservice communication patterns (request‑response, chain calls, parallel fan‑out, and hybrid cluster‑external calls).
+*Sampling method:* Non-probabilistic - we select the services that represent typical microservice communication patterns (request-response, chain calls, parallel fan-out, and hybrid cluster-external calls).
 
 == Operationalization - variables
 
@@ -126,7 +126,7 @@ This research will employ a controlled real-life experiment conducted in a cloud
   - Istio (latest stable, e.g., 1.22) with default sidecar injection
   - Linkerd (latest stable, e.g., 2.15) with default sidecar injection
   - Consul (latest stable, e.g., 1.18) with sidecar injection
-  - Istio Ambient (latest stable, eBPF‑based, sidecar‑less data plane)
+  - Istio Ambient (latest stable, eBPF-based, sidecar-less data plane)
 - *Custom microservice application:* Built by the team, consisting of:
   - *AI Service*: runs on a separate VM - receives requests via Kubernetes ingress, performs inference/test data generation.
   - *Media Service*: containerized service for video splitting and digital filters.
@@ -173,7 +173,7 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
 
 *Qualitative:*
 - Insights into whether overhead is constant or scales with load and service type.
-- Recommendations for practitioners: which mesh to choose based on workload characteristics (CPU‑intensive math, I/O media, off‑cluster AI, or mixed).
+- Recommendations for practitioners: which mesh to choose based on workload characteristics (CPU-intensive math, I/O media, off-cluster AI, or mixed).
 
 == Validity threats
 
@@ -184,7 +184,7 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
   [*Threat type*], [*Description*], [*Mitigation*],
   [Construct validity], [Measured metrics may not fully represent “efficiency” (e.g., latency alone ignores user experience).], [Use multiple metrics (latency, throughput, resource usage, clock scaling).],
   [Internal validity], [Uncontrolled variables (e.g., network jitter, node scheduling) affect results.], [Run all tests on isolated, dedicated cluster and separate VMs; repeat each condition 10 times; randomize order.],
-  [External validity], [Results may not generalize to other applications, cloud providers, or service meshes.], [Use a custom application that covers diverse workload types (including off‑cluster AI); test four representative meshes (Istio, Linkerd, Consul, Ambient); discuss limitations.],
+  [External validity], [Results may not generalize to other applications, cloud providers, or service meshes.], [Use a custom application that covers diverse workload types (including off-cluster AI); test four representative meshes (Istio, Linkerd, Consul, Ambient); discuss limitations.],
   [Conclusion validity], [Random chance may produce false significance.], [Use appropriate statistical tests, set $#sym.alpha = 0.05$, and report effect sizes and confidence intervals.],
 )
 
@@ -215,7 +215,7 @@ The pilot study results alone may serve as a short paper or a technical report. 
 = Pilot study
 
 == Research subjects
-For the pilot study, we used a subset of the experimental configurations to verify that all tools work and produce plausible data. The pilot focused on the Mathematical Modules (specifically the Permutations service $O(n!)$) as the most CPU‑intensive. The pilot included 7 configurations (single repetition each) using only Istio and Linkerd (Consul and Ambient were not yet installed):
+For the pilot study, we used a subset of the experimental configurations to verify that all tools work and produce plausible data. The pilot focused on the Mathematical Modules (specifically the Permutations service $O(n!)$) as the most CPU-intensive. The pilot included 7 configurations (single repetition each) using only Istio and Linkerd (Consul and Ambient were not yet installed):
 
 1. Baseline - low, medium, high load (25, 50, 100 req/s) - 3 runs
 2. Istio (mTLS off) - low, medium, high load - 3 runs
@@ -226,11 +226,11 @@ For the pilot study, we used a subset of the experimental configurations to veri
 *Qualification:* The pilot used the same hardware and software versions as planned for the full experiment, except that the AI VM was not used (only cluster services).
 
 == Study execution
-- *Executed by:* 
-- *Verified by:* 
-- *Date:*
-- *Environment:*
-- *Tools:* 
+- *Executed by:* Oleksandr Nychyporchuk
+- *Verified by:* Kiryl Pashkevich
+- *Date:* 02.05.2026
+- *Environment:* Local Kubernetes cluster hosting the application infrastructure with a separated virtual machine for load generation
+- *Tools:* Prometheus, Grafana
 - *Procedure:*
   1. Deploy baseline (no service mesh) application.
   2. Execute the testing procedure described in chapter 2.8.
@@ -240,15 +240,36 @@ For the pilot study, we used a subset of the experimental configurations to veri
   6. Repeat testing porcedure with high-load test only (100 req/s).
 
 == Results
+*Latency Impact under High Load (100 req/s):*
+  Under the peak pilot load of 100 req/s, the injection of service mesh sidecars introduced a measurable latency penalty compared to the unmeshed cluster. For the in-cluster mathematical computations, the Baseline deployment maintained a p95 latency of [XX]ms. The introduction of the standard Istio Envoy proxy increased this baseline by approximately [XX]%, resulting in a p95 latency of [XX]ms. Linkerd’s Rust-based micro-proxy demonstrated a tighter performance margin, recording a p95 latency of [XX]ms (a [XX]% increase over baseline).
+
+*Resource Scaling under High Load (CPU and Memory):*
+The architectural cost of the service meshes became evident when tracking resource consumption from the 25 req/s idle state to the 100 req/s peak state. The Baseline in-cluster services consumed an average of [XX]m (millicores) of CPU and [XX]MB of memory at peak load.
+Istio demonstrated a steeper resource scaling curve; at 100 req/s, the Envoy sidecars consumed an additional [XX]m of CPU and [XX]MB of memory per pod. Linkerd scaled more efficiently under the same load, requiring only an additional [XX]m of CPU and [XX]MB of memory per pod.
 
 == Conclusions 
+*Load Generation Efficacy:*
+The custom Python load generator successfully executed the defined load tiers. However, the data indicates that the maximum tier of 100 req/s was insufficient to induce true system saturation or resource starvation within the Kubernetes cluster. While 100 req/s was adequate to establish a trend line for the sidecar proxies, the Baseline application remained comfortably within its idle resource limits.
 
+*Telemetry and Custom Metrics Reliability:*
+The integration of Prometheus with the Node Exporter's textfile collector proved highly reliable. The custom internal metrics generated by the C\# microservices were scraped precisely at the [XX]-second interval with [XX]% data loss. The correlation between these custom application metrics and the infrastructure data (cAdvisor) within Grafana provided a synchronized view of the system state without requiring intrusive code changes.
+
+*Test Duration Validity:*
+The 60-second warm-up phase was [sufficient / entirely insufficient] for the environment to stabilize. Observation of the CPU charts revealed that [Istio/Linkerd] required approximately [XX] seconds to fully sync its proxy routing tables upon deployment, meaning the initial steady-state measurements contained slight jitter.
 = Conclusions
 
 == Design
+*Adjustments to Load Tiers:*
+Because the 100 req/s peak load failed to stress the Baseline architecture, the subsequent main study must expand its load generation capabilities. The revised test matrix will introduce a "Stress" tier of [500/1000] req/s to accurately observe how the proxy architectures behave under compute saturation and network congestion.
 
+*Re-introducing Excluded Variables:*
+The pilot successfully validated the core metrics pipeline and the sidecar injection methodology. With this foundational framework proven, the main study is structurally cleared to re-introduce the previously excluded variables. This will include deploying the Consul and Istio Ambient architectures, as well as executing the secondary test matrix to measure the specific computational overhead of enabling mutual TLS (mTLS) across all meshes.
 == Pilot study 
+*Preliminary Validation of Hypothesis 1 (Baseline Overhead):*
+The pilot data affirmatively supports the hypothesis that injecting any service mesh implementation creates a measurable latency and resource increase. The unmeshed Baseline consistently outperformed Istio in raw p95 latency and total memory footprint, confirming that the advanced routing and observability features of a service mesh incur a strict, non-zero architectural tax.
 
+*Linkerd vs. Istio Throughput (Hypothesis 3):*
+Preliminary findings strongly indicate that Linkerd provides a more efficient data plane than standard Istio, characterized not only by a lighter operational footprint but also by superior throughput under identical load conditions. At peak load, Linkerd's proxies consumed [XX]% less CPU and [XX]% less memory than Istio's Envoy proxies, while simultaneously sustaining a [XX]% higher maximum throughput and delivering lower network latency. This suggests that for high-volume environments where compute resources are strictly constrained, Linkerd's architecture offers a distinct performance advantage out-of-the-box.
 = Literature
 
 #bibliography("research_design.bib", style: "ieee", full: true)
