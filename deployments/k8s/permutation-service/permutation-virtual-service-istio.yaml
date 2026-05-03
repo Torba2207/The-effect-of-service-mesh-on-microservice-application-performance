@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: permutation-vs
+  namespace: istio-test
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - main-gateway   # <--- Points to the shared front door
+  http:
+  - match:
+    - uri:
+        prefix: /api/permutation  # <--- Only catches Permutation traffic
+    route:
+    - destination:
+        host: permutation-service.istio-test.svc.cluster.local
+        port:
+          number: 80
