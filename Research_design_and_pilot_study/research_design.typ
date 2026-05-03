@@ -53,12 +53,13 @@ Our research will fill this gap by conducting a controlled experiment that measu
 
 #table(
   columns: (auto, auto, auto),
-  inset: 6pt,
+  inset: 5pt,
   align: horizon,
   [*RQ*], [*Hypothesis ($H$)*], [*Null Hypothesis ($H_0$)*],
-  [RQ1], [$H_1$: All service meshes increase latency and reduce throughput compared to baseline, but the magnitude differs: Linkerd and Istio Ambient (eBPF) have lower overhead than standard Istio and Consul under high load across all service types.], [$H_01$: There is no statistically significant difference in latency or throughput between any pair of configurations (baseline, Istio, Linkerd, Consul, Istio Ambient).],
-  [RQ2], [$H_2$: Istio Ambient and Linkerd consume fewer CPU and memory resources than standard Istio and Consul. All meshes consume significantly more than baseline (≥20% additional), with the largest overhead observed on mathematical services (CPU‑bound) and media services (memory‑bound).], [$H_02$: CPU and memory usage do not differ significantly among the four meshes or relative to baseline for any service type.],
-  [RQ3], [$H_3$: Enabling mTLS adds measurable overhead in all meshes, but the relative overhead (percentage increase) is similar across Istio, Linkerd, and Consul, while Istio Ambient (due to its eBPF data plane) shows lower additional overhead.], [$H_03$: mTLS does not introduce significant additional performance overhead beyond the base sidecar in any mesh, or the overhead does not differ among meshes.],
+  [RQ1], [$H_1$: Under high load conditions, the implementation of an Istio service mesh introduces a statistically significant increase in latency compared to the baseline application without a service mesh.], [$H_01$: Under high load conditions, there is no statistically significant difference in latency between the Istio service mesh implementation and the baseline application.],
+  [RQ2], [$H_2$: Enabling mTLS within the Consul service mesh introduces a statistically significant performance overhead compared to the identical Consul setup with mTLS disabled.], [$H_02$: Enabling mTLS within the Consul service mesh does not introduce a statistically significant performance overhead compared to the identical Consul setup with mTLS disabled.],
+  [RQ3], [$H_3$: Under identical load conditions, the Linkerd service mesh keeps statistically significantly higher throughput than the standard Istio service mesh.], [$H_03$: Under identical load conditions, the Linkerd service mesh does not keep statistically significantly higher throughput than the standard Istio service mesh.],
+  [RQ4], [$H_3$: Under identical load conditions, the Istio Ambient mesh consumes statistically significantly less CPU than the standard Istio sidecar implementation.], [$H_03$: Under identical load conditions, the Istio Ambient mesh does not consume statistically significantly less CPU than the standard Istio sidecar implementation.],
 )
 
 *All hypotheses are falsifiable and will be tested with statistical significance ($#sym.alpha = 0.05$).*
@@ -68,17 +69,22 @@ In the context of this performance experiment, the subjects are the experimental
 
 - Service mesh presence: None (baseline) vs. Istio vs. Linkerd vs. Consul vs. Istio Ambient
 - mTLS setting (if mesh): Disabled vs. Enabled
-- Load level: Low (25 req/s), Medium (50 req/s), High (100 req/s)
 - Service type: AI Service (off‑cluster), Media (Video + Filters), Mathematical (Differential Equations, Integration, Permutations, Fibonacci)
 
-*Sample:* We will use a full factorial design:  
-Baseline (1 configuration, no mTLS) + 4 meshes x 2 (mTLS on/off) x 3 load levels = 1 + 24 = 25 distinct configurations.  
-Each configuration will be tested 10 times across 3 service types → total experimental runs = 25 x 10 x 3 = 750 runs.
+Every application configuration will be tested on 3 load levels:
+ - Low - 25 req/s
+ - Medium - 50 req/s
+ - High 100 req/s
 
-*Qualification criteria for inclusion:* The custom application must be deployed as a set of containerized microservices (except the AI service, which runs on a separate VM), each exposing a REST endpoint. The infrastructure must be a dedicated Kubernetes cluster plus an isolated VM for the AI service. The application is designed to stress different system resources:
+*Sample:* We will use a full factorial design:  
+Baseline ((1 configuration, no mTLS) + 4 meshes x 2 (mTLS on/off)) x 3 load levels = 3 + 24 = 27 distinct configurations.  
+Each configuration will be tested 10 times across 3 service types → total experimental runs = 27 x 10 x 3 = 810 runs.
+
+*Study population:* The custom application must be deployed as a set of containerized microservices (except the AI service, which runs on a separate VM), each exposing a REST endpoint. The infrastructure must be a dedicated Kubernetes cluster plus an isolated VM for the AI service. The application is designed to stress different system resources:
 - *AI Service* (off‑cluster): heavy compute, requires load caps, strict isolation - communicates with the cluster via a dedicated ingress.
 - *Media Services*: video compression, frame splitting, matrix filters (memory and I/O).
-- *Mathematical Modules*: CPU‑intensive (differential equations, integration, permutations $O(n!)$, Fibonacci for clock scaling).
+- *Mathematical Modules*: CPU‑intensive (differential equations, integration, permutations $O(n!)$, Fibonacci for clock time).
+Evaluating the entire application comprehensively is beyond the scope of this initial pilot study due to its overall scale and complexity. Therefore, to ensure precise measurement and tightly controlled variables, our experiments will focus exclusively on isolated, singular aforementioned modules of the application.
 
 *Sampling method:* Non-probabilistic - we select the services that represent typical microservice communication patterns (request‑response, chain calls, parallel fan‑out, and hybrid cluster‑external calls).
 
@@ -92,12 +98,14 @@ Each configuration will be tested 10 times across 3 service types → total expe
   [Independent], [Service mesh type], [Categorical: `baseline` (no mesh), `Istio`, `Linkerd`, `Consul`, `Istio Ambient`],
   [Independent], [mTLS setting], [Categorical: `disabled` vs. `enabled` (only applied to mesh conditions)],
   [Independent], [Request load], [Continuous: offered load in requests per second (req/s), varied at 25, 50, 100 req/s],
+  [Independent], [Request Payload], [Categorical: specific data inputs sent with the request, representing different traffic profiles (e.g., '1KB JSON', '5MB Image file', 'Standard text prompt')],
+  [Independent], [Service Module], [Categorical: the specific isolated application microservice group processing the request (e.g., 'Math computation', 'Media processing', 'Off-cluster AI proxy')],
   [Dependent], [Average latency], [Mean request-response time (ms) per service endpoint over a 60-second steady-state window, reported as p50, p95, p99 percentiles],
   [Dependent], [Throughput], [Maximum sustained requests per second achieved per service before error rate exceeds 1%],
   [Dependent], [CPU usage], [Average CPU millicores consumed by mesh sidecars + application containers (cluster side), separated per service],
   [Dependent], [Memory usage], [Average resident memory (MiB) consumed (cluster side), separated per service],
-  [Dependent], [CPU clock scaling], [Observed CPU frequency scaling (GHz) on math nodes under Fibonacci load],
-  [Confounding], [Network conditions], [Controlled by running all tests in the same isolated cluster and VM network; monitor for external interference],
+  [Dependent], [CPU clock usage], [Observed time of request processing on math nodes under Fibonacci load],
+  [Confounding], [Network conditions], [Controlled by running all tests in the same isolated cluster and VM network],
   [Confounding], [Application version], [Fixed version of the custom application across all runs],
   [Confounding], [Kubernetes version], [Fixed version across all runs],
   [Hidden], [Garbage collection cycles], [Minimized by running each test for a sufficient duration (warm-up + measurement) and averaging over repetitions],
@@ -120,31 +128,40 @@ This research will employ a controlled real-life experiment conducted in a cloud
   - Consul (latest stable, e.g., 1.18) with sidecar injection
   - Istio Ambient (latest stable, eBPF‑based, sidecar‑less data plane)
 - *Custom microservice application:* Built by the team, consisting of:
-  - *AI Service*: runs on a separate VM - receives requests via Kubernetes ingress, performs inference/test data generation, and may call back into cluster services.
+  - *AI Service*: runs on a separate VM - receives requests via Kubernetes ingress, performs inference/test data generation.
   - *Media Service*: containerized service for video splitting and digital filters.
   - *Math Services*: C\# implementations of differential equations, integration, permutations, Fibonacci (with configurable $n$), running inside the cluster.
 - *Load generator:* A separate virtual machine (different from the AI VM) running a custom Python script that sends HTTP requests to the ingress of the Kubernetes cluster. The script controls the request rate (25, 50, 100 req/s) and targets each service endpoint (including the AI service via its external endpoint). The load VM is isolated from both the cluster and the AI VM to avoid interference.
-- *Metrics collection:*
-  - Prometheus (for system metrics)
+- *Metrics types:*
   - Mesh-specific telemetry (Istio/Ambient, Linkerd, Consul)
   - Kubernetes metrics-server (for container CPU/memory)
-  - Custom metrics for CPU clock scaling
+  - Custom metrics for CPU clock usage
+- *Metrics collection, storage, and visualization mechanisms:*
+  - Data Generation & Exposure: Service mesh proxies intercept all network traffic to calculate telemetry (latency, throughput) and expose it via local /metrics web endpoints. Infrastructure data (CPU millicores, memory) is exposed via Kubernetes cAdvisor. Custom application metrics (inner measurements of microservices) are written to local .prom files by the Load Generator and exposed using the Prometheus Node Exporter's textfile collector.
+  - Data Collection (Scraping): Prometheus acts as the central aggregator. Utilizing Kubernetes Service Discovery, Prometheus automatically detects all active mesh proxies and infrastructure nodes. It executes a "pull" (scrape) of these /metrics endpoints at a fixed interval (e.g., every 15 seconds).
+  - Data Storage (Prometheus): Prometheus functions as the sole data repository for measurements. It stores all scraped infrastructure, mesh, and custom metric data as distinct time-series rows in its highly optimized, local Time-Series Database (TSDB) on the hard drive.
+  - Data Visualization and Aggregation (Grafana): Grafana is utilized strictly as the visualization layer and does not store the telemetry data. When a dashboard is accessed, Grafana dynamically executes PromQL queries against the Prometheus API, aggregating the raw metric data across multiple pods on the fly to render visual graphs.
 
-*Experiment design (detailed):*
-1. Deploy baseline (no service mesh) - measure performance for each service type under three load levels (10 repetitions each). AI service on separate VM remains reachable.
-2. Deploy Istio with mTLS disabled - repeat measurements.
-3. Deploy Istio with mTLS enabled - repeat measurements.
-4. Deploy Linkerd with mTLS disabled - repeat measurements.
-5. Deploy Linkerd with mTLS enabled - repeat measurements.
-6. Deploy Consul with mTLS disabled - repeat measurements.
-7. Deploy Consul with mTLS enabled - repeat measurements.
-8. Deploy Istio Ambient with mTLS disabled - repeat measurements.
-9. Deploy Istio Ambient with mTLS enabled - repeat measurements.
-10. Each test run consists of:
+*Experiment design:*\
+Testing procedure for the metrics generation, acquisition and aggregation consists of the following wteps:
+1. Deploy application in the needed configuration (baseline, Istio, Linkerd, Consul, Istio Ambient).
+2. Execute test runs 10 times for a given service type per configuration for every load level.
+3. Aggregate and save data on a hard disk
+4. Each test run consists of:
     - 60s warm-up
     - 120s steady-state measurement
     - Cooldown
-11. Record aggregated metrics per service type and configuration.
+
+*Experiment iterations:*
+1. Execute the testing procedure for the baseline application.
+2. Execute the testing procedure for Istio (mTLS-disabled) configuration.
+3. Execute the testing procedure for Istio (mTLS-enabled) configuration.
+4. Execute the testing procedure for Linkerd (mTLS-disabled) configuration.
+5. Execute the testing procedure for Linkerd (mTLS-enabled) configuration.
+6. Execute the testing procedure for Consul (mTLS-disabled) configuration.
+7. Execute the testing procedure for Consul (mTLS-enabled) configuration.
+8. Execute the testing procedure for Istio Envoy (mTLS-disabled) configuration.
+9. Execute the testing procedure for Istio Envoy (mTLS-enabled) configuration.
 
 == Expected results
 
@@ -155,7 +172,6 @@ This research will employ a controlled real-life experiment conducted in a cloud
 - CPU clock scaling behavior on math services (Fibonacci) under each mesh vs. baseline.
 
 *Qualitative:*
-- Identification of bottlenecks specific to each mesh (e.g., Envoy CPU overhead, Consul's control plane, Ambient's eBPF efficiency).
 - Insights into whether overhead is constant or scales with load and service type.
 - Recommendations for practitioners: which mesh to choose based on workload characteristics (CPU‑intensive math, I/O media, off‑cluster AI, or mixed).
 
@@ -166,7 +182,7 @@ This research will employ a controlled real-life experiment conducted in a cloud
   inset: 6pt,
   align: horizon,
   [*Threat type*], [*Description*], [*Mitigation*],
-  [Construct validity], [Measured metrics may not fully represent “efficiency” (e.g., latency alone ignores user experience).], [Use multiple metrics (latency, throughput, resource usage, clock scaling). Relate to SLR definitions.],
+  [Construct validity], [Measured metrics may not fully represent “efficiency” (e.g., latency alone ignores user experience).], [Use multiple metrics (latency, throughput, resource usage, clock scaling).],
   [Internal validity], [Uncontrolled variables (e.g., network jitter, node scheduling) affect results.], [Run all tests on isolated, dedicated cluster and separate VMs; repeat each condition 10 times; randomize order.],
   [External validity], [Results may not generalize to other applications, cloud providers, or service meshes.], [Use a custom application that covers diverse workload types (including off‑cluster AI); test four representative meshes (Istio, Linkerd, Consul, Ambient); discuss limitations.],
   [Conclusion validity], [Random chance may produce false significance.], [Use appropriate statistical tests, set $#sym.alpha = 0.05$, and report effect sizes and confidence intervals.],
@@ -217,13 +233,11 @@ For the pilot study, we used a subset of the experimental configurations to veri
 - *Tools:* 
 - *Procedure:*
   1. Deploy baseline (no service mesh) application.
-  2. From the load VM, run the script for each load level (25, 50, 100 req/s) - each test includes 30s warm-up, 60s measurement.
-  3. Record latency (p95), CPU usage of the permutations container, and total memory.
-  4. Install Istio with default sidecar injection, disable mTLS, redeploy application.
-  5. Repeat steps 2-3.
-  6. Install Linkerd with default sidecar injection, disable mTLS, redeploy application.
-  7. Repeat high-load test only (100 req/s).
-  8. Aggregate metrics.
+  2. Execute the testing procedure described in chapter 2.8.
+  3. Install Istio with default sidecar injection, disable mTLS, redeploy application.
+  4. Repeat step 2.
+  5. Install Linkerd with default sidecar injection, disable mTLS, redeploy application.
+  6. Repeat testing porcedure with high-load test only (100 req/s).
 
 == Results
 
