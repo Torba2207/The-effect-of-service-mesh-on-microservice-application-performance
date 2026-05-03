@@ -40,7 +40,7 @@ The systematic literature review identified 12 core articles on service mesh per
 + Newer eBPF-based architectures (e.g. Istio Ambient) show promise in reducing overhead @yang_network_2024 @barr_technical_2024.
 + Most studies focus on either single service mesh implementations or compare a limited set of meshes using standard benchmarks. However, there is a lack of controlled, reproducible experiments that compare multiple service meshes (including sidecar-less and eBPF-based variants) against a common baseline using a custom, heterogeneous microservice application that stresses different resource types (CPU-intensive math, I/O-oriented media, and off-cluster AI). Furthermore, few studies systematically vary security feature activation (mTLS on/off) to quantify the security-performance trade-off across meshes.
 
-Our research will fill this gap by conducting a controlled experiment that measures the performance impact of adding different service meshes (Istio, Linkerd, Consul, Istio Ambient) to a purpose-built microservice application (designed to isolate throughput, CPU clock scaling, RAM usage, and latency), with and without security features enabled, and compares them against a no-mesh baseline.
+Our research will fill this gap by conducting a controlled experiment that measures the performance impact of adding different service meshes (Istio, Linkerd, Consul, Istio Ambient) to a purpose-built microservice application (designed to isolate throughput, CPU clock usage, RAM usage, and latency), with and without security features enabled, and compares them against a no-mesh baseline.
 
 == Research questions
 
@@ -169,10 +169,10 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
 - Latency distributions (p50, p95, p99) per service type for each configuration and load level.
 - Throughput saturation curves.
 - CPU and memory overhead percentages relative to baseline, broken down by service type and mesh.
-- CPU clock scaling behavior on math services (Fibonacci) under each mesh vs. baseline.
+- CPU clock usage behavior on math services (Permutations) under each mesh vs. baseline.
 
 *Qualitative:*
-- Insights into whether overhead is constant or scales with load and service type.
+- Insights into whether the overhead is constant or scales with load and service type.
 - Recommendations for practitioners: which mesh to choose based on workload characteristics (CPU-intensive math, I/O media, off-cluster AI, or mixed).
 
 == Validity threats
@@ -240,9 +240,60 @@ For the pilot study, we used a subset of the experimental configurations to veri
   6. Repeat testing porcedure with high-load test only (100 req/s).
 
 == Results
-*Latency Impact under High Load (100 req/s):*
-  Under the peak pilot load of 100 req/s, the injection of service mesh sidecars introduced a measurable latency penalty compared to the unmeshed cluster. For the in-cluster mathematical computations, the Baseline deployment maintained a p95 latency of [XX]ms. The introduction of the standard Istio Envoy proxy increased this baseline by approximately [XX]%, resulting in a p95 latency of [XX]ms. Linkerd’s Rust-based micro-proxy demonstrated a tighter performance margin, recording a p95 latency of [XX]ms (a [XX]% increase over baseline).
+#figure(
+  grid(
+    columns: (1fr, 1fr),  // Two columns of equal width
+    gutter: 1em,          // The gap between the two charts
 
+    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
+      #align(center + horizon)[
+        *Infographic Placeholder* \
+        _Data coming soon_
+      ]
+    ],
+    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
+      #align(center + horizon)[
+        *Infographic Placeholder* \
+        _Data coming soon_
+      ]
+    ],
+  ),
+  caption: [Latency and throughput of baseline, Istio and Linkerd under high load],
+) <chart-resource-scaling>
+*Latency Impact under High Load (100 req/s):*
+  Under the peak pilot load of 100 req/s, the injection of service mesh sidecars introduced a measurable latency penalty compared to the unmeshed cluster. For the in-cluster mathematical computations, the Baseline deployment maintained a p95 latency of [XX]ms. The introduction of the standard Istio Envoy proxy increased this baseline by approximately [XX]%, resulting in a p95 latency of [XX]ms. Linkerd's Rust-based micro-proxy demonstrated a tighter performance margin, recording a p95 latency of [XX]ms (a [XX]% increase over baseline).
+
+#figure(
+  grid(
+    columns: (1fr, 1fr),  // Two columns of equal width
+    gutter: 1em,          // The gap between the two charts
+    
+    // Graph 1 (Left)
+    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
+      #align(center + horizon)[
+        *Infographic Placeholder* \
+        _Data coming soon_
+      ]
+    ],
+    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
+      #align(center + horizon)[
+        *Infographic Placeholder* \
+        _Data coming soon_
+      ]
+    ],
+
+
+    pad(left: 52.5%, right:-52.5%)[
+      #rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
+        #align(center + horizon)[
+          *Infographic Placeholder* \
+          _Data coming soon_
+        ]
+      ],
+    ]
+  ),
+  caption: [CPU milicores, RAM, CPU time metrics of baseline and Istio under low, medium and high loads],
+) <chart-resource-scaling>
 *Resource Scaling under High Load (CPU and Memory):*
 The architectural cost of the service meshes became evident when tracking resource consumption from the 25 req/s idle state to the 100 req/s peak state. The Baseline in-cluster services consumed an average of [XX]m (millicores) of CPU and [XX]MB of memory at peak load.
 Istio demonstrated a steeper resource scaling curve; at 100 req/s, the Envoy sidecars consumed an additional [XX]m of CPU and [XX]MB of memory per pod. Linkerd scaled more efficiently under the same load, requiring only an additional [XX]m of CPU and [XX]MB of memory per pod.
