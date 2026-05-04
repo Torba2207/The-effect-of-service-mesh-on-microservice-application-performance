@@ -41,6 +41,7 @@ export default function () {
 // k6 run -e TARGET_RPS=200 -e TARGET_URL="http://10.29.20.111:30000/api/permutation/generate" permutation-test.js
 
 // istio
+// kubectl get svc istio-ingressgateway -n istio-system
 // k6 run -e TARGET_RPS=200 -e TARGET_URL="http://10.29.20.111:32364/api/permutation/generate" permutation-test.js
 
 // linkerd
