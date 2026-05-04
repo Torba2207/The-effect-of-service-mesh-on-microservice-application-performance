@@ -233,7 +233,7 @@ For the pilot study, we used a subset of the experimental configurations to veri
 - *Tools:* Prometheus, Grafana
 - *Procedure:*
   1. Deploy baseline (no service mesh) application.
-  2. Execute the testing procedure described in chapter 2.8.
+  2. Execute the testing procedure described in chapter 2.8 - k6 sends request. Javascript file with params. Only one service for permutations. Only k8s Metric Server. No grafana, prometheus, or service-mesh built in observability tools. 5 sec warm up, 30 sec of requests, 40 sec of cooldown
   3. Install Istio with default sidecar injection, disable mTLS, redeploy application.
   4. Repeat step 2.
   5. Install Linkerd with default sidecar injection, disable mTLS, redeploy application.
