@@ -3,11 +3,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: permutation-service
-  namespace: linkerd-test
   labels:
     app: permutation-service
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: permutation-service
