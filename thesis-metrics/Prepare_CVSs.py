@@ -199,8 +199,8 @@ def process_all_logs(input_folder, output_folder):
             process_k6_files(files, target_out_dir)
 
 if __name__ == '__main__':
-    INPUT_DIR = 'thesis/input'
-    OUTPUT_DIR = 'thesis/output'
+    INPUT_DIR = 'input'
+    OUTPUT_DIR = 'output'
     
     process_all_logs(INPUT_DIR, OUTPUT_DIR)
     print("\nAll tasks completed successfully!")
