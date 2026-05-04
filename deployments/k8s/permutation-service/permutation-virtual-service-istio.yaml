@@ -2,7 +2,6 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: permutation-vs
-  namespace: istio-test
 spec:
   hosts:
   - "*"
@@ -14,6 +13,6 @@ spec:
         prefix: /api/permutation  # <--- Only catches Permutation traffic
     route:
     - destination:
-        host: permutation-service.istio-test.svc.cluster.local
+        host: permutation-service
         port:
           number: 80
