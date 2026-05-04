@@ -36,7 +36,7 @@ teardown:
 # 3. PROMETHEUS-LITE (Memory-based monitoring piped to node1)
 monitor:
 	@echo "📊 Installing Prometheus-Lite (RAM-only) via SSH pipe..."
-	cat lite-values.yaml | ssh -i $(SSH_KEY) root@$(NODE1_IP) "cat > /tmp/lite-values.yaml && helm install cluster-monitor prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f /tmp/lite-values.yaml"
+	ssh -i $(SSH_KEY) root@$(NODE1_IP) "helm install cluster-monitor prometheus-community/kube-prometheus-stack -n monitoring --create-namespace -f prometheus-lite-values.yaml"
 	@echo "⏳ Waiting for monitoring stack to initialize..."
 	sleep 20
 
