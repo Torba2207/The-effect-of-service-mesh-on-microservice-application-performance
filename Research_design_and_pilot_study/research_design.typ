@@ -148,7 +148,7 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
 2. Execute test runs 10 times for a given service type per configuration for every load level.
 3. Aggregate and save data on a hard disk
 4. Each test run consists of:
-    - 60s warm-up
+    - 40s warm-up
     - 120s steady-state measurement
     - Cooldown
 
@@ -160,8 +160,8 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
 5. Execute the testing procedure for Linkerd (mTLS-enabled) configuration.
 6. Execute the testing procedure for Consul (mTLS-disabled) configuration.
 7. Execute the testing procedure for Consul (mTLS-enabled) configuration.
-8. Execute the testing procedure for Istio Envoy (mTLS-disabled) configuration.
-9. Execute the testing procedure for Istio Envoy (mTLS-enabled) configuration.
+8. Execute the testing procedure for Istio Ambient (mTLS-disabled) configuration.
+9. Execute the testing procedure for Istio Ambient (mTLS-enabled) configuration.
 
 == Expected results
 
@@ -240,78 +240,73 @@ For the pilot study, we used a subset of the experimental configurations to veri
   6. Repeat testing porcedure with high-load test only (100 req/s).
 
 == Results
-#figure(
-  grid(
-    columns: (1fr, 1fr),  // Two columns of equal width
-    gutter: 1em,          // The gap between the two charts
-
-    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
-      #align(center + horizon)[
-        *Infographic Placeholder* \
-        _Data coming soon_
-      ]
-    ],
-    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
-      #align(center + horizon)[
-        *Infographic Placeholder* \
-        _Data coming soon_
-      ]
-    ],
-  ),
-  caption: [Latency and throughput of baseline, Istio and Linkerd under high load],
-) <chart-resource-scaling>
-*Latency Impact under High Load (100 req/s):*
-  Under the peak pilot load of 100 req/s, the injection of service mesh sidecars introduced a measurable latency penalty compared to the unmeshed cluster. For the in-cluster mathematical computations, the Baseline deployment maintained a p95 latency of [XX]ms. The introduction of the standard Istio Envoy proxy increased this baseline by approximately [XX]%, resulting in a p95 latency of [XX]ms. Linkerd's Rust-based micro-proxy demonstrated a tighter performance margin, recording a p95 latency of [XX]ms (a [XX]% increase over baseline).
+=== CPU Usage Comparison: Idle to Peak Load (100 req/s)
 
 #figure(
-  grid(
-    columns: (1fr, 1fr),  // Two columns of equal width
-    gutter: 1em,          // The gap between the two charts
+  block(width: 100%, {
+    // Row 1: Two images side by side
+    grid(columns: 2, gutter: 1cm,
+      image("comparative_cpu_rps25.png", width: 100%),
+      image("comparative_cpu_rps25.png", width: 100%),
+    )
     
-    // Graph 1 (Left)
-    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
-      #align(center + horizon)[
-        *Infographic Placeholder* \
-        _Data coming soon_
-      ]
-    ],
-    rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
-      #align(center + horizon)[
-        *Infographic Placeholder* \
-        _Data coming soon_
-      ]
-    ],
+    // Row 2: Centered image
+    set align(center)
+    image("comparative_cpu_rps25.png", width: 50%)
+  }),
+  caption: [CPU usage — 25 req/s (top-left), 50 req/s (top-right), 100 req/s (bottom-center)]
+)
 
+The architectural cost of the service mesh becomes evident when tracking CPU consumption from idle to peak load.
 
-    pad(left: 52.5%, right:-52.5%)[
-      #rect(width: 90%, height: 200pt, fill: luma(240), stroke: 1pt + luma(180))[
-        #align(center + horizon)[
-          *Infographic Placeholder* \
-          _Data coming soon_
-        ]
-      ],
-    ]
-  ),
-  caption: [CPU milicores, RAM, CPU time metrics of baseline and Istio under low, medium and high loads],
-) <chart-resource-scaling>
-*Resource Scaling under High Load (CPU and Memory):*
-The architectural cost of the service meshes became evident when tracking resource consumption from the 25 req/s idle state to the 100 req/s peak state. The Baseline in-cluster services consumed an average of [XX]m (millicores) of CPU and [XX]MB of memory at peak load.
-Istio demonstrated a steeper resource scaling curve; at 100 req/s, the Envoy sidecars consumed an additional [XX]m of CPU and [XX]MB of memory per pod. Linkerd scaled more efficiently under the same load, requiring only an additional [XX]m of CPU and [XX]MB of memory per pod.
+#underline[Baseline (No Mesh):] The application alone consumes very little CPU at idle (10.8 m). Under peak load, it scales aggressively to 473.4 m, representing pure application processing without proxy overhead.
+
+#underline[Linkerd:] Starts with an extremely low idle CPU of 3.7 m—even lower than baseline. During the load test, CPU consumption rises smoothly, peaking at 437.0 m. This indicates that the Linkerd-proxy (built in Rust) adds relatively small overhead, with total CPU usage ending slightly lower than baseline.
+
+#underline[Istio:] Has a higher idle CPU baseline of 18.0 m due to the more resource-intensive Envoy proxy. Under peak load, CPU spikes more aggressively, peaking at 401.1 m. While the absolute peak is lower than both baseline and Linkerd, Istio consistently consumes more CPU during the ramp-up phase, showing a higher marginal cost per request at moderate loads.
+
+#strong[Key CPU Insight:] Linkerd is the most efficient overall, showing minimal overhead and a smooth scaling curve. Istio has a higher baseline cost but a lower absolute peak than baseline.
+
+=== Memory Usage Comparison: Idle to Peak Load (100 req/s)
+#figure(
+  block(width: 100%, {
+    // Row 1: Two images side by side
+    grid(columns: 2, gutter: 1cm,
+      image("comparative_memory_rps25.png", width: 100%),
+      image("comparative_memory_rps25.png", width: 100%),
+    )
+    
+    // Row 2: Centered image
+    set align(center)
+    image("comparative_memory_rps25.png", width: 50%)
+  }),
+  caption: [Memory usage — 25 req/s (top-left), 50 req/s (top-right), 100 req/s (bottom-center)]
+)
+
+Memory footprint clearly differentiates the architectures, as proxies have a constant baseline memory cost regardless of traffic.
+
+#underline[Baseline (No Mesh):] Low memory baseline of 120.6 Mi. At peak load, memory usage grows modestly to 122.4 Mi, confirming that stateless applications have a small, stable memory footprint per request.
+
+#underline[Linkerd:] Idle memory is 132.0 Mi, which is 11.4 Mi higher than baseline due to the Linkerd-proxy sidecar. At peak load, memory only rises to 134.1 Mi (only +2.1 Mi from idle). This proves that Linkerd has a very stable memory overhead, and additional traffic does not significantly increase memory usage.
+
+#underline[Istio:] Idle memory is 208.4 Mi, a massive 87.8 Mi higher than baseline, reflecting the larger Envoy proxy. At peak load, memory grows to 210.3 Mi (only +1.9 Mi from idle). Like Linkerd, memory overhead is constant, but the constant itself is 76 Mi higher than Linkerd's overhead.
+
+#strong[Key Memory Insight:] Linkerd introduces a small, constant memory overhead of ~11.4 Mi. Istio introduces a large, constant memory overhead of ~87.8 Mi. Neither mesh increases memory significantly under load; the cost is the proxy's static footprint.
 
 == Conclusions 
-*Load Generation Efficacy:*
-The custom Python load generator successfully executed the defined load tiers. However, the data indicates that the maximum tier of 100 req/s was insufficient to induce true system saturation or resource starvation within the Kubernetes cluster. While 100 req/s was adequate to establish a trend line for the sidecar proxies, the Baseline application remained comfortably within its idle resource limits.
+*CPU Overhead:*
+The service mesh sidecar proxy introduces a measurable CPU overhead that scales with traffic. Linkerd demonstrated the lowest CPU impact, with idle consumption starting below baseline and peak load CPU remaining slightly under the no-mesh configuration. Istio consistently consumed more CPU during the entire ramp-up phase due to its heavier Envoy proxy, resulting in a higher marginal cost per request. Both meshes added overhead, but Linkerd's Rust-based proxy proved significantly more CPU-efficient.
 
-*Telemetry and Custom Metrics Reliability:*
-The integration of Prometheus with the Node Exporter's textfile collector proved highly reliable. The custom internal metrics generated by the C\# microservices were scraped precisely at the [XX]-second interval with [XX]% data loss. The correlation between these custom application metrics and the infrastructure data (cAdvisor) within Grafana provided a synchronized view of the system state without requiring intrusive code changes.
+*Memory Overhead:*
+The memory cost of a service mesh is predominantly a static footprint imposed by the sidecar proxy, not a dynamic cost that grows with traffic. Linkerd introduced a small, constant memory overhead, while Istio imposed a substantially larger constant overhead due to the Envoy proxy's higher baseline memory requirements. In both cases, memory usage remained nearly flat from idle to peak load, confirming that proxy memory consumption is a fixed infrastructure tax independent of request volume.
 
-*Test Duration Validity:*
-The 60-second warm-up phase was [sufficient / entirely insufficient] for the environment to stabilize. Observation of the CPU charts revealed that [Istio/Linkerd] required approximately [XX] seconds to fully sync its proxy routing tables upon deployment, meaning the initial steady-state measurements contained slight jitter.
+*Efficiency Verdict:*
+Linkerd offers the better resource efficiency profile overall, with near-negligible CPU overhead and a modest memory footprint. Istio provides comparable traffic handling but at a consistently higher resource cost, particularly in memory, where its idle overhead alone represents a significant fraction of total pod resources.
 = Conclusions
 
 == Design
 *Adjustments to Load Tiers:*
-Because the 100 req/s peak load failed to stress the Baseline architecture, the subsequent main study must expand its load generation capabilities. The revised test matrix will introduce a "Stress" tier of [500/1000] req/s to accurately observe how the proxy architectures behave under compute saturation and network congestion.
+Because the 100 req/s peak load failed to stress the Baseline architecture, the subsequent main study must expand its load generation capabilities. The revised test matrix will introduce a "Stress" tier of 1000 req/s to accurately observe how the proxy architectures behave under compute saturation and network congestion.
 
 *Re-introducing Excluded Variables:*
 The pilot successfully validated the core metrics pipeline and the sidecar injection methodology. With this foundational framework proven, the main study is structurally cleared to re-introduce the previously excluded variables. This will include deploying the Consul and Istio Ambient architectures, as well as executing the secondary test matrix to measure the specific computational overhead of enabling mutual TLS (mTLS) across all meshes.
@@ -320,7 +315,8 @@ The pilot successfully validated the core metrics pipeline and the sidecar injec
 The pilot data affirmatively supports the hypothesis that injecting any service mesh implementation creates a measurable latency and resource increase. The unmeshed Baseline consistently outperformed Istio in raw p95 latency and total memory footprint, confirming that the advanced routing and observability features of a service mesh incur a strict, non-zero architectural tax.
 
 *Linkerd vs. Istio Throughput (Hypothesis 3):*
-Preliminary findings strongly indicate that Linkerd provides a more efficient data plane than standard Istio, characterized not only by a lighter operational footprint but also by superior throughput under identical load conditions. At peak load, Linkerd's proxies consumed [XX]% less CPU and [XX]% less memory than Istio's Envoy proxies, while simultaneously sustaining a [XX]% higher maximum throughput and delivering lower network latency. This suggests that for high-volume environments where compute resources are strictly constrained, Linkerd's architecture offers a distinct performance advantage out-of-the-box.
+
+Preliminary findings strongly indicate that Linkerd provides a more efficient data plane than standard Istio, characterized by a significantly lighter memory footprint. At peak load (100 req/s), Linkerd's proxies consumed 36% less memory (134.1 Mi vs 210.3 Mi) than Istio's Envoy proxies, while both meshes sustained identical maximum throughput. Istio showed 8% lower CPU consumption (401.1 m vs 437.0 m), likely due to different proxy threading models. This suggests that for memory-constrained environments, Linkerd offers a distinct advantage, while CPU-constrained workloads may benefit from Istio's different scaling characteristics.
 = Literature
 
 #bibliography("research_design.bib", style: "ieee", full: true)
