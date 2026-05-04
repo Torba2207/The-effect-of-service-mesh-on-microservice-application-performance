@@ -1,0 +1,538 @@
+CURRENT   NAME                       CLUSTER          AUTHINFO           NAMESPACE
+          docker-desktop             docker-desktop   docker-desktop     default
+          lke585166-ctx              lke585166        lke585166-admin    default
+*         projekt-badawchy-cluster   cluster.local    kubernetes-admin   
+
+NAME    STATUS   ROLES           AGE     VERSION
+node1   Ready    control-plane   6d21h   v1.34.3
+node2   Ready    control-plane   6d21h   v1.34.3
+node3   Ready    control-plane   6d21h   v1.34.3
+node4   Ready    <none>          6d21h   v1.34.3
+node5   Ready    <none>          6d21h   v1.34.3
+node6   Ready    <none>          6d21h   v1.34.3
+
+NAME              STATUS   AGE
+default           Active   6d21h
+istio-system      Active   44m
+kube-node-lease   Active   6d21h
+kube-public       Active   6d21h
+kube-system       Active   6d21h
+thesis-test       Active   44m
+
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+permutation-service   3/3     3            3           39m
+
+NAMESPACE      NAME                                       READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+istio-system   istio-ingressgateway-85c8f4b645-wlr65      1/1     Running   0          42m     10.233.75.59    node6   <none>           <none>
+istio-system   istiod-6d584f88d4-rmnms                    1/1     Running   0          42m     10.233.97.152   node5   <none>           <none>
+kube-system    calico-kube-controllers-7b7cd6dc87-xcw75   1/1     Running   0          6d21h   10.233.74.65    node4   <none>           <none>
+kube-system    calico-node-9vkx9                          1/1     Running   0          6d21h   10.29.20.111    node4   <none>           <none>
+kube-system    calico-node-bqgmg                          1/1     Running   0          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    calico-node-f7cqk                          1/1     Running   0          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    calico-node-j8qsj                          1/1     Running   0          6d21h   10.29.20.113    node6   <none>           <none>
+kube-system    calico-node-l7ffv                          1/1     Running   0          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    calico-node-t4l87                          1/1     Running   0          6d21h   10.29.20.112    node5   <none>           <none>
+kube-system    coredns-64b5cc5cbc-4lt7k                   1/1     Running   0          6d21h   10.233.74.66    node4   <none>           <none>
+kube-system    coredns-64b5cc5cbc-kfrkm                   1/1     Running   0          6d21h   10.233.75.1     node6   <none>           <none>
+kube-system    dns-autoscaler-5594cbb9c4-k7h55            1/1     Running   0          6d21h   10.233.97.129   node5   <none>           <none>
+kube-system    kube-apiserver-node1                       1/1     Running   0          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    kube-apiserver-node2                       1/1     Running   0          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    kube-apiserver-node3                       1/1     Running   0          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    kube-controller-manager-node1              1/1     Running   1          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    kube-controller-manager-node2              1/1     Running   1          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    kube-controller-manager-node3              1/1     Running   1          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    kube-proxy-8754j                           1/1     Running   0          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    kube-proxy-87czc                           1/1     Running   0          6d21h   10.29.20.111    node4   <none>           <none>
+kube-system    kube-proxy-8h7hh                           1/1     Running   0          6d21h   10.29.20.112    node5   <none>           <none>
+kube-system    kube-proxy-98r6b                           1/1     Running   0          6d21h   10.29.20.113    node6   <none>           <none>
+kube-system    kube-proxy-hj2pr                           1/1     Running   0          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    kube-proxy-n4b2p                           1/1     Running   0          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    kube-scheduler-node1                       1/1     Running   1          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    kube-scheduler-node2                       1/1     Running   1          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    kube-scheduler-node3                       1/1     Running   1          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    metrics-server-5b57c547cb-khhjp            1/1     Running   0          4h10m   10.233.74.80    node4   <none>           <none>
+kube-system    nginx-proxy-node4                          1/1     Running   0          6d21h   10.29.20.111    node4   <none>           <none>
+kube-system    nginx-proxy-node5                          1/1     Running   0          6d21h   10.29.20.112    node5   <none>           <none>
+kube-system    nginx-proxy-node6                          1/1     Running   0          6d21h   10.29.20.113    node6   <none>           <none>
+kube-system    nodelocaldns-2dqsq                         1/1     Running   0          6d21h   10.29.20.102    node2   <none>           <none>
+kube-system    nodelocaldns-5fsnk                         1/1     Running   0          6d21h   10.29.20.111    node4   <none>           <none>
+kube-system    nodelocaldns-6qh8t                         1/1     Running   0          6d21h   10.29.20.101    node1   <none>           <none>
+kube-system    nodelocaldns-9bm6l                         1/1     Running   0          6d21h   10.29.20.113    node6   <none>           <none>
+kube-system    nodelocaldns-tgq55                         1/1     Running   0          6d21h   10.29.20.103    node3   <none>           <none>
+kube-system    nodelocaldns-xktw2                         1/1     Running   0          6d21h   10.29.20.112    node5   <none>           <none>
+thesis-test    permutation-service-5f7b4b958f-9fkk2       2/2     Running   0          41m     10.233.75.55    node6   <none>           <none>
+thesis-test    permutation-service-5f7b4b958f-bzkh9       2/2     Running   0          41m     10.233.74.87    node4   <none>           <none>
+thesis-test    permutation-service-5f7b4b958f-vnqk7       2/2     Running   0          41m     10.233.97.162   node5   <none>           <none>
+
+NAMESPACE      NAME                                 TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                                      AGE     SELECTOR
+default        kubernetes                           ClusterIP      10.233.0.1      <none>        443/TCP                                      6d21h   <none>
+istio-system   istio-ingressgateway                 LoadBalancer   10.233.40.63    <pending>     15021:30355/TCP,80:30499/TCP,443:30465/TCP   42m     app=istio-ingressgateway,istio=ingressgateway
+istio-system   istiod                               ClusterIP      10.233.52.148   <none>        15010/TCP,15012/TCP,443/TCP,15014/TCP        42m     app=istiod,istio=pilot
+istio-system   istiod-revision-tag-default          ClusterIP      10.233.3.138    <none>        15010/TCP,15012/TCP,443/TCP,15014/TCP        42m     app=istiod,istio.io/rev=default
+kube-system    cluster-monitor-kube-prome-kubelet   ClusterIP      None            <none>        10250/TCP,4194/TCP,10255/TCP                 8h      <none>
+kube-system    coredns                              ClusterIP      10.233.0.3      <none>        53/UDP,53/TCP,9153/TCP                       6d21h   k8s-app=kube-dns
+kube-system    metrics-server                       ClusterIP      10.233.20.84    <none>        443/TCP                                      4h11m   k8s-app=metrics-server
+thesis-test    permutation-service                  ClusterIP      10.233.38.93    <none>        80/TCP                                       42m     app=permutation-service
+
+NAMESPACE     NAME             GATEWAYS           HOSTS   AGE
+thesis-test   permutation-vs   ["main-gateway"]   ["*"]   45m
+
+
+Name:               node1
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node1
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.101/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.102.128
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:30:06 +0200
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node1
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:09 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:02 +0200   Mon, 27 Apr 2026 20:32:02 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:02 +0200   Mon, 27 Apr 2026 20:30:05 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:02 +0200   Mon, 27 Apr 2026 20:30:05 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:02 +0200   Mon, 27 Apr 2026 20:30:05 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:02 +0200   Mon, 27 Apr 2026 20:32:00 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.101
+  Hostname:    node1
+Capacity:
+  cpu:                4
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8131456Ki
+  pods:               110
+Allocatable:
+  cpu:                3400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7242624Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                63833942-f6df-dcdd-d2a3-0e66f8dd3a58
+  Boot ID:                    9912f6db-8eb8-464b-9f10-2030fa2d8da6
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (6 in total)
+  Namespace                   Name                             CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                             ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-node-f7cqk                150m (4%)     0 (0%)      64M (0%)         500M (6%)      6d22h
+  kube-system                 kube-apiserver-node1             250m (7%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-controller-manager-node1    200m (5%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-proxy-hj2pr                 0 (0%)        0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-scheduler-node1             100m (2%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 nodelocaldns-6qh8t               100m (2%)     0 (0%)      70Mi (0%)        200Mi (2%)     6d22h
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests        Limits
+  --------           --------        ------
+  cpu                800m (23%)      0 (0%)
+  memory             137400320 (1%)  709715200 (9%)
+  ephemeral-storage  0 (0%)          0 (0%)
+  hugepages-1Gi      0 (0%)          0 (0%)
+  hugepages-2Mi      0 (0%)          0 (0%)
+Events:              <none>
+
+
+Name:               node2
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node2
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.102/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.75.64
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:30:25 +0200
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node2
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:05 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:03 +0200   Mon, 27 Apr 2026 20:32:03 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:30:25 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:30:25 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:30:25 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:32:01 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.102
+  Hostname:    node2
+Capacity:
+  cpu:                4
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8131456Ki
+  pods:               110
+Allocatable:
+  cpu:                3400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7242624Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                29503942-8caf-d73b-948f-abce4c1c51f8
+  Boot ID:                    9ce7f511-6a21-440a-9bfb-03f64c6bcd9b
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (6 in total)
+  Namespace                   Name                             CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                             ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-node-l7ffv                150m (4%)     0 (0%)      64M (0%)         500M (6%)      6d22h
+  kube-system                 kube-apiserver-node2             250m (7%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-controller-manager-node2    200m (5%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-proxy-8754j                 0 (0%)        0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-scheduler-node2             100m (2%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 nodelocaldns-2dqsq               100m (2%)     0 (0%)      70Mi (0%)        200Mi (2%)     6d22h
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests        Limits
+  --------           --------        ------
+  cpu                800m (23%)      0 (0%)
+  memory             137400320 (1%)  709715200 (9%)
+  ephemeral-storage  0 (0%)          0 (0%)
+  hugepages-1Gi      0 (0%)          0 (0%)
+  hugepages-2Mi      0 (0%)          0 (0%)
+Events:              <none>
+
+
+Name:               node3
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node3
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.103/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.71.0
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:30:34 +0200
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node3
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:05 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:02 +0200   Mon, 27 Apr 2026 20:32:02 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:10 +0200   Mon, 27 Apr 2026 20:30:34 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:10 +0200   Mon, 27 Apr 2026 20:30:34 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:10 +0200   Mon, 27 Apr 2026 20:30:34 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:10 +0200   Mon, 27 Apr 2026 20:32:00 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.103
+  Hostname:    node3
+Capacity:
+  cpu:                4
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8131456Ki
+  pods:               110
+Allocatable:
+  cpu:                3400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7242624Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                eb893942-3039-9a5b-54a3-355d6d5baf76
+  Boot ID:                    c1c8783b-0d53-4698-be92-77193cc2b4de
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (6 in total)
+  Namespace                   Name                             CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                             ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-node-bqgmg                150m (4%)     0 (0%)      64M (0%)         500M (6%)      6d22h
+  kube-system                 kube-apiserver-node3             250m (7%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-controller-manager-node3    200m (5%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-proxy-n4b2p                 0 (0%)        0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 kube-scheduler-node3             100m (2%)     0 (0%)      0 (0%)           0 (0%)         6d22h
+  kube-system                 nodelocaldns-tgq55               100m (2%)     0 (0%)      70Mi (0%)        200Mi (2%)     6d22h
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests        Limits
+  --------           --------        ------
+  cpu                800m (23%)      0 (0%)
+  memory             137400320 (1%)  709715200 (9%)
+  ephemeral-storage  0 (0%)          0 (0%)
+  hugepages-1Gi      0 (0%)          0 (0%)
+  hugepages-2Mi      0 (0%)          0 (0%)
+Events:              <none>
+
+
+Name:               node4
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node4
+                    kubernetes.io/os=linux
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.111/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.74.64
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:31:10 +0200
+Taints:             <none>
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node4
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:07 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:04 +0200   Mon, 27 Apr 2026 20:32:04 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:08 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:08 +0200   Mon, 04 May 2026 13:27:40 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:08 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:08 +0200   Mon, 27 Apr 2026 20:32:02 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.111
+  Hostname:    node4
+Capacity:
+  cpu:                8
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8130048Ki
+  pods:               110
+Allocatable:
+  cpu:                7400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7241216Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                25783942-30a2-2c83-fdfd-595de09579ef
+  Boot ID:                    30e4d46c-c212-4b0b-8a68-768d49a05c6d
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (8 in total)
+  Namespace                   Name                                        CPU Requests  CPU Limits   Memory Requests  Memory Limits  Age
+  ---------                   ----                                        ------------  ----------   ---------------  -------------  ---
+  kube-system                 calico-kube-controllers-7b7cd6dc87-xcw75    30m (0%)      1 (13%)      64M (0%)         256M (3%)      6d22h
+  kube-system                 calico-node-9vkx9                           150m (2%)     0 (0%)       64M (0%)         500M (6%)      6d22h
+  kube-system                 coredns-64b5cc5cbc-4lt7k                    100m (1%)     0 (0%)       70Mi (0%)        300Mi (4%)     6d22h
+  kube-system                 kube-proxy-87czc                            0 (0%)        0 (0%)       0 (0%)           0 (0%)         6d22h
+  kube-system                 metrics-server-5b57c547cb-khhjp             100m (1%)     0 (0%)       200Mi (2%)       0 (0%)         4h18m
+  kube-system                 nginx-proxy-node4                           25m (0%)      0 (0%)       32M (0%)         0 (0%)         6d22h
+  kube-system                 nodelocaldns-5fsnk                          100m (1%)     0 (0%)       70Mi (0%)        200Mi (2%)     6d22h
+  thesis-test                 permutation-service-5f7b4b958f-bzkh9        200m (2%)     2500m (33%)  256Mi (3%)       1536Mi (21%)   49m
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests         Limits
+  --------           --------         ------
+  cpu                705m (9%)        3500m (47%)
+  memory             784951296 (10%)  2890900736 (38%)
+  ephemeral-storage  0 (0%)           0 (0%)
+  hugepages-1Gi      0 (0%)           0 (0%)
+  hugepages-2Mi      0 (0%)           0 (0%)
+Events:              <none>
+
+
+Name:               node5
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node5
+                    kubernetes.io/os=linux
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.112/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.97.128
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:31:10 +0200
+Taints:             <none>
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node5
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:10 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:02 +0200   Mon, 27 Apr 2026 20:32:02 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:06 +0200   Mon, 04 May 2026 13:25:15 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:06 +0200   Mon, 27 Apr 2026 20:32:00 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.112
+  Hostname:    node5
+Capacity:
+  cpu:                8
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8130048Ki
+  pods:               110
+Allocatable:
+  cpu:                7400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7241216Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                ce703942-bb7f-1257-f204-7254bb21e159
+  Boot ID:                    f48b7b6b-f5d6-485f-9576-a5515446bb01
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (7 in total)
+  Namespace                   Name                                    CPU Requests  CPU Limits   Memory Requests  Memory Limits  Age
+  ---------                   ----                                    ------------  ----------   ---------------  -------------  ---
+  istio-system                istiod-6d584f88d4-rmnms                 500m (6%)     0 (0%)       2Gi (28%)        0 (0%)         49m
+  kube-system                 calico-node-t4l87                       150m (2%)     0 (0%)       64M (0%)         500M (6%)      6d22h
+  kube-system                 dns-autoscaler-5594cbb9c4-k7h55         20m (0%)      0 (0%)       10Mi (0%)        0 (0%)         6d22h
+  kube-system                 kube-proxy-8h7hh                        0 (0%)        0 (0%)       0 (0%)           0 (0%)         6d22h
+  kube-system                 nginx-proxy-node5                       25m (0%)      0 (0%)       32M (0%)         0 (0%)         6d22h
+  kube-system                 nodelocaldns-xktw2                      100m (1%)     0 (0%)       70Mi (0%)        200Mi (2%)     6d22h
+  thesis-test                 permutation-service-5f7b4b958f-vnqk7    200m (2%)     2500m (33%)  256Mi (3%)       1536Mi (21%)   49m
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests         Limits
+  --------           --------         ------
+  cpu                995m (13%)       2500m (33%)
+  memory             2534966Ki (35%)  2320327936 (31%)
+  ephemeral-storage  0 (0%)           0 (0%)
+  hugepages-1Gi      0 (0%)           0 (0%)
+  hugepages-2Mi      0 (0%)           0 (0%)
+Events:              <none>
+
+
+Name:               node6
+Roles:              <none>
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=node6
+                    kubernetes.io/os=linux
+Annotations:        node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 10.29.20.113/24
+                    projectcalico.org/IPv4VXLANTunnelAddr: 10.233.75.0
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Mon, 27 Apr 2026 20:31:10 +0200
+Taints:             <none>
+Unschedulable:      false
+Lease:
+  HolderIdentity:  node6
+  AcquireTime:     <unset>
+  RenewTime:       Mon, 04 May 2026 18:33:11 +0200
+Conditions:
+  Type                 Status  LastHeartbeatTime                 LastTransitionTime                Reason                       Message
+  ----                 ------  -----------------                 ------------------                ------                       -------
+  NetworkUnavailable   False   Mon, 27 Apr 2026 20:32:03 +0200   Mon, 27 Apr 2026 20:32:03 +0200   CalicoIsUp                   Calico is running on this node
+  MemoryPressure       False   Mon, 04 May 2026 18:33:05 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientMemory   kubelet has sufficient memory available
+  DiskPressure         False   Mon, 04 May 2026 18:33:05 +0200   Mon, 04 May 2026 13:27:06 +0200   KubeletHasNoDiskPressure     kubelet has no disk pressure
+  PIDPressure          False   Mon, 04 May 2026 18:33:05 +0200   Mon, 27 Apr 2026 20:31:10 +0200   KubeletHasSufficientPID      kubelet has sufficient PID available
+  Ready                True    Mon, 04 May 2026 18:33:05 +0200   Mon, 27 Apr 2026 20:32:01 +0200   KubeletReady                 kubelet is posting ready status
+Addresses:
+  InternalIP:  10.29.20.113
+  Hostname:    node6
+Capacity:
+  cpu:                8
+  ephemeral-storage:  11218472Ki
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             8130048Ki
+  pods:               110
+Allocatable:
+  cpu:                7400m
+  ephemeral-storage:  9290367779
+  hugepages-1Gi:      0
+  hugepages-2Mi:      0
+  memory:             7241216Ki
+  pods:               110
+System Info:
+  Machine ID:                 9ee926e842ff457ba3f37cd0be830273
+  System UUID:                5be53942-8a94-9742-cee2-05a577483c90
+  Boot ID:                    5f6d4524-04dc-4a68-b8b2-9e8b9da0028e
+  Kernel Version:             6.8.0-31-generic
+  OS Image:                   Ubuntu 24.04 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://2.2.1
+  Kubelet Version:            v1.34.3
+  Kube-Proxy Version:         
+Non-terminated Pods:          (7 in total)
+  Namespace                   Name                                     CPU Requests  CPU Limits   Memory Requests  Memory Limits  Age
+  ---------                   ----                                     ------------  ----------   ---------------  -------------  ---
+  istio-system                istio-ingressgateway-85c8f4b645-wlr65    100m (1%)     2 (27%)      128Mi (1%)       1Gi (14%)      49m
+  kube-system                 calico-node-j8qsj                        150m (2%)     0 (0%)       64M (0%)         500M (6%)      6d22h
+  kube-system                 coredns-64b5cc5cbc-kfrkm                 100m (1%)     0 (0%)       70Mi (0%)        300Mi (4%)     6d22h
+  kube-system                 kube-proxy-98r6b                         0 (0%)        0 (0%)       0 (0%)           0 (0%)         6d22h
+  kube-system                 nginx-proxy-node6                        25m (0%)      0 (0%)       32M (0%)         0 (0%)         6d22h
+  kube-system                 nodelocaldns-9bm6l                       100m (1%)     0 (0%)       70Mi (0%)        200Mi (2%)     6d22h
+  thesis-test                 permutation-service-5f7b4b958f-9fkk2     200m (2%)     2500m (33%)  256Mi (3%)       1536Mi (21%)   49m
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests       Limits
+  --------           --------       ------
+  cpu                675m (9%)      4500m (60%)
+  memory             630326Ki (8%)  3708642560 (50%)
+  ephemeral-storage  0 (0%)         0 (0%)
+  hugepages-1Gi      0 (0%)         0 (0%)
+  hugepages-2Mi      0 (0%)         0 (0%)
+Events:              <none>
