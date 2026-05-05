@@ -59,7 +59,7 @@ Our research will fill this gap by conducting a controlled experiment that measu
   [RQ1], [$H_1$: Under high load conditions, the implementation of an Istio service mesh introduces a statistically significant increase in latency compared to the baseline application without a service mesh.], [$H_01$: Under high load conditions, there is no statistically significant difference in latency between the Istio service mesh implementation and the baseline application.],
   [RQ2], [$H_2$: Enabling mTLS within the Consul service mesh introduces a statistically significant performance overhead compared to the identical Consul setup with mTLS disabled.], [$H_02$: Enabling mTLS within the Consul service mesh does not introduce a statistically significant performance overhead compared to the identical Consul setup with mTLS disabled.],
   [RQ3], [$H_3$: Under identical load conditions, the Linkerd service mesh keeps statistically significantly higher throughput than the standard Istio service mesh.], [$H_03$: Under identical load conditions, the Linkerd service mesh does not keep statistically significantly higher throughput than the standard Istio service mesh.],
-  [RQ4], [$H_3$: Under identical load conditions, the Istio Ambient mesh consumes statistically significantly less CPU than the standard Istio sidecar implementation.], [$H_03$: Under identical load conditions, the Istio Ambient mesh does not consume statistically significantly less CPU than the standard Istio sidecar implementation.],
+  [RQ4], [$H_4$: Under identical load conditions, the Istio Ambient mesh consumes statistically significantly less CPU than the standard Istio sidecar implementation.], [$H_04$: Under identical load conditions, the Istio Ambient mesh does not consume statistically significantly less CPU than the standard Istio sidecar implementation.],
 )
 
 *All hypotheses are falsifiable and will be tested with statistical significance ($#sym.alpha = 0.05$).*
@@ -142,7 +142,7 @@ This research will employ a controlled real-life experiment conducted in a cloud
   - Data Storage (Prometheus): Prometheus functions as the sole data repository for measurements. It stores all scraped infrastructure, mesh, and custom metric data as distinct time-series rows in its highly optimized, local Time-Series Database (TSDB) on the hard drive.
   - Data Visualization and Aggregation (Grafana): Grafana is utilized strictly as the visualization layer and does not store the telemetry data. When a dashboard is accessed, Grafana dynamically executes PromQL queries against the Prometheus API, aggregating the raw metric data across multiple pods on the fly to render visual graphs.
 
-*Experiment design:*\
+*Experiment design:*
 Testing procedure for the metrics generation, acquisition and aggregation consists of the following wteps:
 1. Deploy application in the needed configuration (baseline, Istio, Linkerd, Consul, Istio Ambient).
 2. Execute test runs 10 times for a given service type per configuration for every load level.
@@ -150,7 +150,7 @@ Testing procedure for the metrics generation, acquisition and aggregation consis
 4. Each test run consists of:
     - 40s warm-up
     - 120s steady-state measurement
-    - Cooldown
+    - 60s cooldown
 
 *Experiment iterations:*
 1. Execute the testing procedure for the baseline application.
@@ -219,7 +219,7 @@ For the pilot study, we used a subset of the experimental configurations to veri
 
 1. Baseline - low, medium, high load (25, 50, 100 req/s) - 3 runs
 2. Istio (mTLS off) - low, medium, high load - 3 runs
-3. Linkerd (mTLS off) - high load only (100 req/s) - 1 run
+3. Linkerd (mTLS off) - high load only (25, 50, 100 req/s) - 3 runs
 
 *We omitted mTLS-on conditions and other service types (AI, Media) as well as Consul and Istio Ambient in the pilot due to time constraints. These will be included in the full experiment.*
 
@@ -237,7 +237,7 @@ For the pilot study, we used a subset of the experimental configurations to veri
   3. Install Istio with default sidecar injection, disable mTLS, redeploy application.
   4. Repeat step 2.
   5. Install Linkerd with default sidecar injection, disable mTLS, redeploy application.
-  6. Repeat testing porcedure with high-load test only (100 req/s).
+  6. Repeat step 2.
 
 == Results
 === CPU Usage Comparison: Idle to Peak Load (100 req/s)
@@ -306,7 +306,7 @@ Linkerd offers the better resource efficiency profile overall, with near-negligi
 
 == Design
 *Adjustments to Load Tiers:*
-Because the 100 req/s peak load failed to stress the Baseline architecture, the subsequent main study must expand its load generation capabilities. The revised test matrix will introduce a "Stress" tier of 1000 req/s to accurately observe how the proxy architectures behave under compute saturation and network congestion.
+Because the 100 req/s peak load failed to stress the Baseline architecture, the subsequent main study must expand its load generation capabilities. The revised test matrix will introduce a "Stress" tier of 400-1000 req/s to accurately observe how the proxy architectures behave under compute saturation and network congestion.
 
 *Re-introducing Excluded Variables:*
 The pilot successfully validated the core metrics pipeline and the sidecar injection methodology. With this foundational framework proven, the main study is structurally cleared to re-introduce the previously excluded variables. This will include deploying the Consul and Istio Ambient architectures, as well as executing the secondary test matrix to measure the specific computational overhead of enabling mutual TLS (mTLS) across all meshes.
@@ -317,6 +317,5 @@ The pilot data affirmatively supports the hypothesis that injecting any service 
 *Linkerd vs. Istio Throughput (Hypothesis 3):*
 
 Preliminary findings strongly indicate that Linkerd provides a more efficient data plane than standard Istio, characterized by a significantly lighter memory footprint. At peak load (100 req/s), Linkerd's proxies consumed 36% less memory (134.1 Mi vs 210.3 Mi) than Istio's Envoy proxies, while both meshes sustained identical maximum throughput. Istio showed 8% lower CPU consumption (401.1 m vs 437.0 m), likely due to different proxy threading models. This suggests that for memory-constrained environments, Linkerd offers a distinct advantage, while CPU-constrained workloads may benefit from Istio's different scaling characteristics.
-= Literature
 
 #bibliography("research_design.bib", style: "ieee", full: true)
