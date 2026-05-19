@@ -49,7 +49,7 @@ metrics:
 	sleep 15
 
 # 4. PHASE 1: BASELINE (No Mesh)
-baseline: teardown clean-nodes metrics
+baseline: teardown clean-nodes monitor
 	@echo "🚀 Deploying Baseline Environment..."
 	kubectl create namespace $(TEST_NS)
 	kubectl apply -f $(APP_DIR)/permutation-service-latest.yaml -n $(TEST_NS)
@@ -58,7 +58,7 @@ baseline: teardown clean-nodes metrics
 	@echo "🎯 Baseline Ready. You can now run your k6 script."
 
 # 5. PHASE 2: ISTIO
-istio: teardown clean-nodes metrics
+istio: teardown clean-nodes monitor
 	@echo "🕸️ Installing Istio Control Plane..."
 	istioctl install --set profile=default -y
 	kubectl create namespace $(TEST_NS)
@@ -72,7 +72,7 @@ istio: teardown clean-nodes metrics
 	@echo "🎯 Istio Environment Ready. You can now run your k6 script."
 
 # 6. PHASE 3: LINKERD
-linkerd: teardown clean-nodes metrics
+linkerd: teardown clean-nodes monitor
 	@echo "🕸️ Installing Linkerd Control Plane..."
 	linkerd install --crds | kubectl apply -f -
 	linkerd install | kubectl apply -f -
