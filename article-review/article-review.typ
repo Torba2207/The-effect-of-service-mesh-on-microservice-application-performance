@@ -34,7 +34,7 @@ Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Ar
 Kevin Bosquez, Joffre Monar, Ximena Caiza, and Lucía Núñez.
 
 == Reference
-2025 IEEE Colombian Caribbean Conference (C3).
+2025 IEEE Colombian Caribbean Conference (C3), Santa Marta, Colombia, 2025, pp. 1-6, doi: 10.1109/C366505.2025.11340184.
 
 #outline(
   title: [Contents]
@@ -63,11 +63,11 @@ While the paper addresses an important practical problem, its execution suffers 
 
 = Conclusions
 
-== Article design or review
+== Article review
 Critiquing this article provided highly relevant lessons for executing performance benchmarks on distributed architectures. It highlighted critical pitfalls to avoid in our own research: test parameters (like duration and user count) must be strictly controlled across all scenarios, baselines must be consistently reported, and time-series data is essential to capture the true behavior of service meshes under load, rather than relying solely on potentially misleading averages.
 
 == Final course conclusions
 
 
 = Literature
-+ Bosquez, K., Monar, J., Caiza, X., & Núñez, L. (2025). Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application. *2025 IEEE Colombian Caribbean Conference (C3)*. DOI: 10.1109/C366505.2025.11340184.
++ K. Bosquez, X. Caiza, L. Núñez and J. Monar, "Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application," 2025 IEEE Colombian Caribbean Conference (C3), Santa Marta, Colombia, 2025, pp. 1-6, doi: 10.1109/C366505.2025.11340184.
