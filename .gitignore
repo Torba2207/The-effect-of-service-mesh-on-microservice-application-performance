@@ -79,6 +79,7 @@ Publish/
 .builds
 *.trace
 
+
 # Benchmark results
 BenchmarkDotNet.Artifacts/
 
@@ -120,3 +121,6 @@ traces/
 
 # Health check / temporary data
 healthchecksdb
+
+# PDF / documentation outputs
+*.pdf
