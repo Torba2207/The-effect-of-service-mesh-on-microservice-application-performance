@@ -4,7 +4,7 @@
 
 #align(horizon)[
 #align(center)[#text(size: 20pt)[= Wpływ rozwiązań service mesh na efektywność działania aplikacji mikrousługowych]]
-#align(center)[#text(size: 18pt)[== Harmonogram 0.1]]
+#align(center)[#text(size: 18pt)[== Harmonogram 1.1]]
 #align(center)[#text(size: 16pt)[=== Oleksandr Nychyporchuk, Alla Krylova, Kiryl Pashkevich, Pavel Khmialeuski]]]
 #pagebreak()
 
@@ -20,13 +20,13 @@
   
   [11.04.2026], [Opis planowanej architektury środowiska oraz określenie optymalnych zasobów dla zabezpieczenia stabilnej pracy aplikacji], [Plik PDF z opisem planowanej architektury oraz zdefiniowanymi wymaganiami zasobowymi wraz z uzasadnieniem],
   
-  [25.04.2026], [Konfiguracja środowiska na przydzielonych maszynach wirtualnych], [Krótki raport PDF z potwierdzeniem działania klastra oraz skrypty konfiguracyjne],
+  [04.05.2026], [Konfiguracja środowiska na przydzielonych maszynach wirtualnych], [Krótki raport PDF z potwierdzeniem działania klastra oraz skrypty konfiguracyjne],
   
-  [30.04.2026], [Implementacja n wybranych mikrousług aplikacji i ich wdrożenie], [Kod źródłowy mikrousług (link do repozytorium) oraz manifesty wdrożeniowe],
+  [04.05.2026], [Implementacja n wybranych mikrousług aplikacji i ich wdrożenie], [Kod źródłowy mikrousług (link do repozytorium) oraz manifesty wdrożeniowe],
   
   [10.05.2026], [Pilotażowe badania wydajności bez użycia service mesh], [Raport PDF z wynikami pomiarów bazowych (np. opóźnienia, przepustowość, zużycie CPU/RAM) i surowe logi z testów],
   
-  [30.05.2026], [Pomiary wydajności z użyciem różnych rozwiązań service mesh], [Raport PDF z wynikami dla różnych rozwiązań service mesh oraz pliki konfiguracyjne],
+  [08.06.2026], [Pomiary wydajności z użyciem różnych rozwiązań service mesh], [Raport PDF z wynikami dla różnych rozwiązań service mesh oraz pliki konfiguracyjne],
   
-  [05.06.2026], [Podsumowanie pomiarów wydajności, wnioskowanie], [Ostateczny raport PDF z zestawieniem wyników (tabele, wykresy porównawcze) i wnioskami]
+  [08.06.2026], [Podsumowanie pomiarów wydajności, wnioskowanie], [Ostateczny raport PDF z zestawieniem wyników (tabele, wykresy porównawcze) i wnioskami]
 )
