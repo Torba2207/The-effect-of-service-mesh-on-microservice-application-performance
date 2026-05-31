@@ -31,7 +31,7 @@ Currently, a significant portion of applications deployed in cloud environments 
 Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application.
 
 == Authors
-Kevin Bosquez, Joffre Monar, Ximena Caiza, and Lucía Núñez.
+Kevin Bosquez, Ximena Caiza, Lucía Núñez and Joffre Monar.
 
 == Reference
 2025 IEEE Colombian Caribbean Conference (C3), Santa Marta, Colombia, 2025, pp. 1-6, doi: 10.1109/C366505.2025.11340184.
@@ -41,12 +41,27 @@ Kevin Bosquez, Joffre Monar, Ximena Caiza, and Lucía Núñez.
 )
 
 == Positioning of each element of research design and execution
-The research problem and context are defined in Sections I and II. The experimental methodology is explicitly mapped in Section III, utilizing PRISMA for literature review alongside DSR and SEMMA for the quantitative analysis. Execution elements and data collection are detailed in Section IV. However, the paper critically lacks a dedicated "Threats to Validity" or limitations section, which is a standard requirement for empirical software engineering research to discuss the boundaries and potential flaws of the test environment.
+#table(
+  columns: (auto, auto),
+  inset: 6pt,
+  align: horizon,
+  [*Chapter*], [*What's included*],
+  [Abstract], [Summarizes the overarching *research goal* to compare Linkerd and Istio, addressing the *research gap* regarding a lack of practical performance evidence. It briefly outlines the *research methodology* and *experiment structure*, including generalized results at the end of the chapter.],
+  [I. Introduction], [Provides the context needed for sufficient understanding of the following chapters. Defines the general *research goal* of comparing Istio and Linkerd, and poses the main *research question* regarding latency and RAM usage. It also identifies the *research gap* concerning the lack of practical comparative evidence and introduces the mixed research methods (PRISMA, DSR, SEMMA).],
+  [II. Background], [Elaborates on the *research gap* (Sections C and D) by explaining the current problem of lacking objective performance data under realistic load conditions. It reviews existing literature (Section E) to contextualize the study and justify the need for empirical testing.],
+  [III. Methodology], [Details the *research methods* and *research plan* through the DSR framework and SEMMA phases. Here the research subject is clearly defined (Online Boutique application), and *research tools* (metrics-server, Kubernetes) and the operationalization of *dependent variables* (measuring CPU, RAM, and latency under controlled loads) are clearly described.],
+  [IV. Results], [Presents the quantitative data gathered from the real-life experiments across low, medium, and high load scenarios. Here are reported in detail the measurements for the operationalized *dependent variables* (new variable mentioned - errors during test execution).],
+  [V. Discussion], [Interprets the *experimental findings* and cross-references them with existing literature to address the overall *research goal*. It clearly contrasts the resource efficiency of Linkerd against the complex, feature-rich nature of Istio to establish optimal application contexts.],
+  [VI. Conclusions], [Provides a final summary that answers the primary *research questions* based on the empirical evidence gathered. It highlights the definitive advantages of each service mesh and proposes avenues for future study.],
+  [Acknowledgement], [Recognizes the institutional support, acknowledges the backing necessary to successfully conduct this research.],
+  [References], [Lists the bibliographic references utilized to establish the theoretical framework and conduct the *systematic literature review* (PRISMA). These scholarly sources form the basis for identifying the initial *research gap*.]
+)
 
 == Strengths
 - Employs a comprehensive mixed-method framework, combining systematic literature review with structured experimental design.
 - Evaluates performance against internationally recognized software quality standards (ISO/IEC 25010).
 - Utilizes a standardized, recognizable reference application (Online Boutique) for its load testing.
+- Includes a well-defined abstract with a sufficiently detailed description of the research goal, research gap and research conclusions.
 
 == Weaknesses
 Despite its structured approach, the execution and reporting of the experiments contain significant methodological flaws:
@@ -57,6 +72,11 @@ Despite its structured approach, the execution and reporting of the experiments 
 - *Unreported Test Iterations:* The paper does not state how many times the load tests were executed, making it impossible to determine the statistical significance or variance of the reported averages.
 - *Inconsistent Data Presentation:* Table IV (Medium load) omits the "Errors" metric entirely, despite it being tracked in the low and high load tables. Furthermore, while "No mesh" baseline data is plotted in the histograms, it is inexplicably excluded from the comparative tables, limiting the reader's ability to assess absolute overhead.
 - *Hardware Bottlenecks:* The testing infrastructure reached up to 90% CPU utilization during high-load tests with Istio, suggesting that hardware constraints, rather than the software alone, may have skewed the latency and error rate metrics.
+- *Fragmented Variable Operationalization:* The document lacks a centralized section that explicitly defines and aggregates all independent, dependent, confounding, and hidden variables. This scattershot approach forces the reader to piece together the experimental parameters, reducing the overall clarity of the research design.
+- *Omission of Key Methodological Elements:* The study skips critical structural components of a rigorous formal experiment, specifically the formulation of falsifiable research hypotheses and a dedicated analysis of validity threats. Without identifying construct, internal, and conclusion validity threats (and how to mitigate them), the study's methodological rigor is significantly weakened.
+- *Unquantified Overhead of Advanced Features:* Although the authors repeatedly use Istio's robust feature set to justify its higher resource consumption, they do not explicitly test or measure the performance cost of these specific capabilities. As a result, the analysis is incomplete, leaving potential implementers without the empirical data needed to decide if those advanced features are worth the computational overhead.
+- *Ambiguous Hardware Configuration:* The study provides only minimum hardware requirements instead of the precise specifications used in the test environment. This omission creates a significant obstacle for independent researchers attempting to replicate the experiment and accurately compare future performance results.
+
 
 == Evaluation
 While the paper addresses an important practical problem, its execution suffers from severe methodological inconsistencies. The failure to standardize test durations, the asymmetric breakdown of proxy resource consumption, and the reliance on opaque averages without time-series data or stated iteration counts severely undermine the reliability of the conclusions. It serves as a useful preliminary indicator of Linkerd's lightweight nature, but the data lacks the rigor required for definitive architectural decision-making.
