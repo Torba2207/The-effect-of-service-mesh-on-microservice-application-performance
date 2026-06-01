@@ -87,7 +87,8 @@ While the paper addresses an important practical problem, its execution suffers 
 Critiquing this article provided highly relevant lessons for executing performance benchmarks on distributed architectures. It highlighted critical pitfalls to avoid in our own research: test parameters (like duration and user count) must be strictly controlled across all scenarios, baselines must be consistently reported, and time-series data is essential to capture the true behavior of service meshes under load, rather than relying solely on potentially misleading averages.
 
 == Final course conclusions
+The critique of this article provided a practical application of the core principles taught in "Research Methods in Informatics." Evaluating a study so closely aligned with our own research goals demonstrated that understanding how to conduct, analyze, and report an experiment is just as critical as the technical implementation itself.
 
-
+By analyzing the paper’s flaws against the subject's objectives, we gained a deeper understanding of proper research design. The study's use of mixed methods like PRISMA and DSR reflected the data collection and literature review techniques covered in the course. However, its methodological shortcomings—such as asymmetric data reporting, a lack of time-series analysis, and the omission of validity threats—highlighted the vital importance of strict experimental control, transparent data processing, and rigorous reporting standards. Ultimately, this exercise has taught us how to avoid critical pitfalls in data analysis and presentation, providing a solid methodological blueprint for execution in our own research project.
 = Literature
 + K. Bosquez, X. Caiza, L. Núñez and J. Monar, "Comparative Evaluation of Linkerd and Istio Service Meshes in a Microservices Architecture Application," 2025 IEEE Colombian Caribbean Conference (C3), Santa Marta, Colombia, 2025, pp. 1-6, doi: 10.1109/C366505.2025.11340184.
