@@ -1,0 +1,27 @@
+---
+- name: Deploy Baseline Environment (Declarative)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_ns: thesis-test
+    app_dir: ../k8s
+  tasks:
+    - name: Ensure thesis namespace exists
+      kubernetes.core.k8s:
+        name: "{{ test_ns }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Apply All Baseline App Deployments and Services
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ test_ns }}"
+        src: "{{ item }}"
+      loop:
+        - "{{ app_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ app_dir }}/permutation-service/permutation-service-service.yaml"
+        - "{{ app_dir }}/fibonacci-service/fibonacci-service-deployment.yaml"
+        - "{{ app_dir }}/fibonacci-service/fibonacci-service-service.yaml"
+        - "{{ app_dir }}/integration-service/integration-service-deployment.yaml"
+        - "{{ app_dir }}/integration-service/integration-service-service.yaml"
