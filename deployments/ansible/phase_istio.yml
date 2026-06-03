@@ -1,0 +1,40 @@
+---
+- name: Deploy Istio Environment (Hybrid)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_ns: thesis-test
+    app_dir: ../k8s/permutation-service
+    istio_dir: ../istio
+  tasks:
+    - name: Ensure istio-system namespace exists
+      kubernetes.core.k8s:
+        name: istio-system
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Install Istio Control Plane (Imperative CLI)
+      ansible.builtin.command: istioctl install --set profile=default -y
+
+    - name: Ensure thesis namespace exists with Istio injection label
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ test_ns }}"
+            labels:
+              istio-injection: enabled
+
+    - name: Apply Istio App Deployments and configs
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ test_ns }}"
+        src: "{{ item }}"
+      loop:
+        - "{{ app_dir }}/permutation-service-istio-latest.yaml"
+        - "{{ app_dir }}/permutation-service-istio-service.yaml"
+        - "{{ istio_dir }}/istio-main-gateway.yaml"
+        - "{{ app_dir }}/permutation-virtual-service-istio.yaml"
