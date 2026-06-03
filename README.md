@@ -189,12 +189,34 @@ Processes media streams while collecting detailed CPU usage (%) and delta Memory
 ```bash
 curl -X POST http://localhost:5000/api/video/compress \
   -F "file=@/path/to/video.mp4"
-
-#### Split Video Frames
-curl -X POST http://localhost:5000/api/video/split-frames \
-  -F "file=@/path/to/video.mp4"
+```
 
 ---
+
+### 🎨 Digital Filters Service
+
+Applies raw 2D kernel matrix math convolutions or structural image processing.
+
+#### Get Available Filters
+```bash
+curl http://localhost:5000/api/filters/available
+# Expected response: ["blur", "sharpen", "edgedetection", "grayscale"]
+```
+
+#### Apply Filter to Raw Matrix
+```
+curl -X POST http://localhost:5000/api/filters/apply \
+  -H "Content-Type: application/json" \
+  -d '{"matrix": [[10,20,30],[40,50,60],[70,80,90]], "filterType": "blur", "startRow": 0, "endRow": 3, "startCol": 0, "endCol": 3}'
+```
+
+#### Apply Filter directly to an Image file
+Applies processing and responds directly with a down-stream lossless PNG output file stream.
+```
+curl -X POST http://localhost:5000/api/filters/apply \
+  -H "Content-Type: application/json" \
+  -d '{"matrix": [[10,20,30],[40,50,60],[70,80,90]], "filterType": "blur", "startRow": 0, "endRow": 3, "startCol": 0, "endCol": 3}'
+```
 
 ## 🛠️ Troubleshooting
 
