@@ -1,0 +1,34 @@
+---
+- name: Teardown All Meshes and Applications
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_ns: thesis-test
+  tasks:
+    - name: Ensure thesis namespace is absent
+      kubernetes.core.k8s:
+        name: "{{ test_ns }}"
+        api_version: v1
+        kind: Namespace
+        state: absent
+        wait: true
+        wait_timeout: 60
+      ignore_errors: true
+
+    - name: Uninstall Istio (Imperative CLI)
+      ansible.builtin.command: istioctl uninstall --purge -y
+      ignore_errors: true
+
+    - name: Ensure Istio system namespace is absent
+      kubernetes.core.k8s:
+        name: istio-system
+        api_version: v1
+        kind: Namespace
+        state: absent
+        wait: true
+        wait_timeout: 60
+      ignore_errors: true
+
+    - name: Uninstall Linkerd (Imperative CLI)
+      ansible.builtin.shell: linkerd uninstall | kubectl delete -f -
+      ignore_errors: true
