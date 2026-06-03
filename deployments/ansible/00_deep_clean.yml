@@ -1,0 +1,12 @@
+---
+- name: Deep Clean Worker Nodes (Imperative Administration)
+  hosts: workers
+  gather_facts: false
+  tasks:
+    - name: Prune containerd images
+      ansible.builtin.command: crictl rmi --prune
+      ignore_errors: true
+
+    - name: Truncate large pod logs
+      ansible.builtin.shell: find /var/log/pods -type f -name '*.log' -exec truncate -s 0 {} +
+      ignore_errors: true
