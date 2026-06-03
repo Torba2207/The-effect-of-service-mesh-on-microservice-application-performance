@@ -12,5 +12,5 @@ spec:
     - name: http
       port: 80
       targetPort: 5004
-      nodePort: 30002
+      nodePort: 30004
       protocol: TCP
