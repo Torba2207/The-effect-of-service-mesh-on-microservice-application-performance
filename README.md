@@ -181,6 +181,21 @@ curl -X POST http://localhost:5000/api/fibonacci/calculate -H "Content-Type: app
 
 ---
 
+### 📹 Video Service
+
+Processes media streams while collecting detailed CPU usage (%) and delta Memory consumption (MB).
+
+#### Compress Video
+```bash
+curl -X POST http://localhost:5000/api/video/compress \
+  -F "file=@/path/to/video.mp4"
+
+#### Split Video Frames
+curl -X POST http://localhost:5000/api/video/split-frames \
+  -F "file=@/path/to/video.mp4"
+
+---
+
 ## 🛠️ Troubleshooting
 
 ### ❌ Port Already in Use
