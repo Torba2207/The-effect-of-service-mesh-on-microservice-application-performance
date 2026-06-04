@@ -1,6 +1,9 @@
-﻿using System.Globalization;
-using System.Data;
+﻿using Microsoft.Extensions.Logging;
 using SharedModels.Models;
+using System.Data;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace DifferentialService.Services;
 
@@ -15,35 +18,56 @@ public class DifferentialCalculator
 
     public async Task<string> SolveAsync(DifferentialRequest request)
     {
+        string antiderivative = "";
         if (!request.Function.Contains("y", StringComparison.OrdinalIgnoreCase))
         {
-            string antiderivative = await _integrationClient.GetAntiderivativeAsync(request.Function);
-
-            double integral = EvaluateExpression(antiderivative, request.Range)
-                            - EvaluateExpression(antiderivative, request.InitialConditionX);
-
-            double result = request.InitialConditionY + integral;
-            return result.ToString(CultureInfo.InvariantCulture);
+            antiderivative = await _integrationClient.GetAntiderivativeAsync(request.Function);
         }
-
-        double currentY = request.InitialConditionY;
-        for (int i = 0; i < request.Steps; i++)
+        else
         {
-            string integrand = request.Function.Replace("y", currentY.ToString(CultureInfo.InvariantCulture));
+            string currentY = request.InitialConditionY.ToString();
+            string modifiedFunc = request.Function.Replace("y", request.InitialConditionY.ToString());
+            string currentEquation = request.Function;
+            for (int i = 0; i < request.Steps; i++)
+            {
+                string integrand = (i == 0 ? modifiedFunc : $"{modifiedFunc}+{currentY}");
 
-            string antiderivative = await _integrationClient.GetAntiderivativeAsync(integrand);
+                antiderivative = await _integrationClient.GetAntiderivativeAsync(integrand);
 
-            double integral = EvaluateExpression(antiderivative, request.Range)
-                            - EvaluateExpression(antiderivative, request.InitialConditionX);
-
-            currentY += integral;
+                currentY = antiderivative;
+            }
+            antiderivative =  $"{request.InitialConditionY}+{currentY}";
         }
-        return currentY.ToString(CultureInfo.InvariantCulture);
-    }
 
+        if (request.InitialConditionX == request.Range)
+            return antiderivative;
+        return (
+                EvaluateExpression(antiderivative, request.Range)
+                - EvaluateExpression(antiderivative, request.InitialConditionX)
+               ).ToString();
+    }
     private static double EvaluateExpression(string expression, double x)
     {
         string expr = expression.Replace("x", x.ToString(CultureInfo.InvariantCulture));
+
+        // Regex matches: a number (integer or decimal), followed by '^', followed by an optional negative sign and digits
+        string powerPattern = @"(?<base>\d+(\.\d+)?)\^(?<pow>-?\d+)";
+
+        while (Regex.IsMatch(expr, powerPattern))
+        {
+            expr = Regex.Replace(expr, powerPattern, match =>
+            {
+                double numBase = double.Parse(match.Groups["base"].Value, CultureInfo.InvariantCulture);
+                double numPow = double.Parse(match.Groups["pow"].Value, CultureInfo.InvariantCulture);
+
+                // Calculate the actual power numerically
+                double powerResult = Math.Pow(numBase, numPow);
+
+                // Return it as a plain decimal string for the DataTable to read
+                return powerResult.ToString("F15", CultureInfo.InvariantCulture);
+            });
+        }
+
         var table = new DataTable();
         var result = table.Compute(expr, null);
         return Convert.ToDouble(result);

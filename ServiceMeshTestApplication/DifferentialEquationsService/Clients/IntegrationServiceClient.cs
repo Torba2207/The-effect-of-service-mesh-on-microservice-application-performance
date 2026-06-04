@@ -29,4 +29,24 @@ public class IntegrationServiceClient
 
         throw new Exception("Antiderivative property not found in response");
     }
+
+    public async Task<double> SolveEquationAsync(string expression, double initialX, double range, int steps)
+    {
+        var request = new IntegrationRequest { Function = expression, LowerBound = initialX, UpperBound = range, Steps = steps };
+        var response = await _httpClient.PostAsJsonAsync("api/integration/calculate", request);
+        response.EnsureSuccessStatusCode();
+
+        var serviceResponse = await response.Content.ReadFromJsonAsync<ServiceResponse>();
+        if (serviceResponse == null || !serviceResponse.Success)
+            throw new Exception("Integration service failed: " + serviceResponse?.Message);
+
+        // Извлекаем строку первообразной – пробуем оба варианта регистра
+        var dataElement = JsonSerializer.SerializeToElement(serviceResponse.Data);
+        if (dataElement.TryGetProperty("result", out JsonElement integrationProp))
+            return integrationProp.GetDouble()!;
+        if (dataElement.TryGetProperty("Result", out integrationProp))
+            return integrationProp.GetDouble()!;
+
+        throw new Exception("Antiderivative property not found in response");
+    }
 }
