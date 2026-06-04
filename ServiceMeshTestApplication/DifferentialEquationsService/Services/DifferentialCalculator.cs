@@ -16,7 +16,7 @@ public class DifferentialCalculator
         _integrationClient = integrationClient;
     }
 
-    private async Task<string> SolveEquation(DifferentialRequest request)
+    public async Task<string> SolveAsync(DifferentialRequest request)
     {
         string antiderivative = "";
         if (!request.Function.Contains("y", StringComparison.OrdinalIgnoreCase))
@@ -46,13 +46,6 @@ public class DifferentialCalculator
                 - EvaluateExpression(antiderivative, request.InitialConditionX)
                ).ToString();
     }
-
-    public async Task<string> SolveAsync(DifferentialRequest request)
-    {
-            return await SolveEquation(request);
-        //return await SolveAntiderivative(request.Function);
-    }
-
     private static double EvaluateExpression(string expression, double x)
     {
         string expr = expression.Replace("x", x.ToString(CultureInfo.InvariantCulture));
