@@ -1,0 +1,33 @@
+---
+- name: Deploy AI Service via Docker Compose
+  hosts: ai_vms
+  become: yes
+  tasks:
+    - name: Create project directories for volumes
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0777' 
+      loop:
+        - /opt/service-mesh-thesis/app_data
+        - /opt/service-mesh-thesis/ollama_data
+
+    - name: Create docker-compose.yml
+      copy:
+        dest: /opt/service-mesh-thesis/docker-compose.yml
+        content: |
+          services:
+            ai-service:
+              image: ghcr.io/torba2207/procedural-ai-server:latest
+              container_name: ai-service-container
+              restart: always
+              ports:
+                - "5005:5005"
+              volumes:
+                - ./app_data:/app/data
+                - ./ollama_data:/root/.ollama
+
+    - name: Pull latest image and start the container
+      command: docker compose up -d --pull always
+      args:
+        chdir: /opt/service-mesh-thesis

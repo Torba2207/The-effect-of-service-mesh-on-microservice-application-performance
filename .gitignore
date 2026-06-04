@@ -124,3 +124,6 @@ healthchecksdb
 
 # PDF / documentation outputs
 *.pdf
+
+# venv
+.venv/

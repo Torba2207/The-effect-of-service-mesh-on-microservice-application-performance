@@ -28,6 +28,8 @@ if [ ! -f "$ENGINE_BIN" ]; then
     else
         DOWNLOAD_URL="https://ollama.com/download/ollama-linux-amd64.tar.zst"
     fi
+
+    mkdir -p "$ENGINE_DIR"
     
     # Download the compressed engine directly into the mapped folder
     curl -L "$DOWNLOAD_URL" -o "$ENGINE_DIR/ollama.tar.zst"

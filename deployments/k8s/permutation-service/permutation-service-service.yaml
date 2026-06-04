@@ -12,5 +12,5 @@ spec:
     - name: http
       port: 80
       targetPort: 5001
-      nodePort: 30000     # <-- The port your external VM will hit
+      nodePort: 30001     # <-- The port your external VM will hit
       protocol: TCP

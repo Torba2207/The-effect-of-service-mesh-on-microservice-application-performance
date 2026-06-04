@@ -1,0 +1,43 @@
+---
+- name: Apply Baseline Deployments and Services
+  hosts: localhost
+  gather_facts: false
+  vars:
+    # Set to thesis-test if you want to reuse the namespace from phase_baseline.yml
+    namespace: thesis-test
+    k8s_dir: "{{ playbook_dir }}/../k8s"
+  tasks:
+    - name: Create namespace if it does not exist
+      kubernetes.core.k8s:
+        name: "{{ namespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: Apply all baseline deployments and services
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ namespace }}"
+        src: "{{ item }}"
+      loop:
+        # Differential Equations Service
+        - "{{ k8s_dir }}/differential-equations-service/differential-equations-service-deployment.yaml"
+        - "{{ k8s_dir }}/differential-equations-service/differential-equations-service-service.yaml"
+        
+        # Fibonacci Service
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-deployment.yaml"
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-service.yaml"
+        
+        # Integration Service
+        - "{{ k8s_dir }}/integration-service/integration-service-deployment.yaml"
+        - "{{ k8s_dir }}/integration-service/integration-service-service.yaml"
+        
+        # Permutation Service (Baseline)
+        - "{{ k8s_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ k8s_dir }}/permutation-service/permutation-service-service.yaml"
+        
+        # Video Service
+        - "{{ k8s_dir }}/video-service/video-service-deployment.yaml"
+        - "{{ k8s_dir }}/video-service/video-service-service.yaml"
+        # AI Service (External)
+        - "{{ k8s_dir }}/ai-service/ai-service-external.yaml"
