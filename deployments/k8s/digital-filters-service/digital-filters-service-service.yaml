@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-filters-service
+  labels:
+    app: digital-filters-service
+spec:
+  ports:
+  - port: 5007
+    targetPort: 5007
+    protocol: TCP
+  selector:
+    app: digital-filters-service
+  type: ClusterIP

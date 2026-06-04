@@ -1,28 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: video-service
+  name: digital-filters-service
   labels:
-    app: video-service
+    app: digital-filters-service
 spec:
   replicas: 5
   selector:
     matchLabels:
-      app: video-service
+      app: digital-filters-service
   template:
     metadata:
       labels:
-        app: video-service
+        app: digital-filters-service
     spec:
       containers:
-      - name: video-service
-        image: ghcr.io/torba2207/video-service:latest
+      - name: digital-filters-service
+        image: ghcr.io/torba2207/digital-filters-service:latest
         imagePullPolicy: Always
-        env:
-        - name: DigitalFiltersServiceUrl
-          value: "http://digital-filters-service:5007"
         ports:
-        - containerPort: 5006
+        - containerPort: 5007
         resources:
           requests:
             cpu: "100m"
