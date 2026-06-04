@@ -5,7 +5,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -13,12 +12,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:5006", 
-            "https://localhost:5006",
-            "http://localhost:<swagger-port>",  
-            "https://localhost:<swagger-port>"
-        )
+        policy.AllowAnyOrigin()
               .AllowAnyMethod()
               .AllowAnyHeader()
               .WithExposedHeaders("*");
@@ -29,7 +23,9 @@ builder.Services.AddScoped<VideoService.Services.VideoProcessor>();
 
 builder.Services.AddHttpClient<VideoService.Services.DigitalFiltersClient>(client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5007");
+    // Read the DigitalFiltersService address from config
+    var digitalFiltersUrl = builder.Configuration["DigitalFiltersServiceUrl"];
+    client.BaseAddress = new Uri(digitalFiltersUrl ?? "http://localhost:5007");
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 
@@ -42,8 +38,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.Limits.MaxRequestBodySize = 524288000; // 500 MB
 });
-
-builder.WebHost.UseUrls("http://localhost:5006");
 
 var app = builder.Build();
 
