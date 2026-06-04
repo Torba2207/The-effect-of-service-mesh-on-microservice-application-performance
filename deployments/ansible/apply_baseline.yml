@@ -39,3 +39,5 @@
         # Video Service
         - "{{ k8s_dir }}/video-service/video-service-deployment.yaml"
         - "{{ k8s_dir }}/video-service/video-service-service.yaml"
+        # AI Service (External)
+        - "{{ k8s_dir }}/ai-service/ai-service-external.yaml"
