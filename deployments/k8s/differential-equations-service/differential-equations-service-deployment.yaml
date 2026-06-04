@@ -18,6 +18,9 @@ spec:
       - name: differential-equations-service
         image: ghcr.io/torba2207/differential-equations-service:latest
         imagePullPolicy: Always
+        env:
+        - name: GatewayUrl
+          value: "http://integration-service/"
         ports:
         - containerPort: 5003
         resources:
