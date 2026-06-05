@@ -5,10 +5,12 @@ metadata:
   labels:
     app: digital-filters-service
 spec:
-  ports:
-  - port: 5007
-    targetPort: 5007
-    protocol: TCP
+  type: NodePort
   selector:
     app: digital-filters-service
-  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5007
+      nodePort: 30007
+      protocol: TCP
