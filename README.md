@@ -264,7 +264,7 @@ curl -X POST http://localhost:5000/api/permutation/generate \
 Ask the AI service to generate a small integer array, then produce all permutations of that array and return a `ServiceResponse` summary.
 
 ```bash
-curl -X POST http://localhost:5000/api/Permutation/generate-from-ai \
+curl -X POST http://localhost:5000/api/permutation/generate-from-ai \
   -H "Content-Type: application/json" \ 
   -d '{"count": 3, "minVal": 1, "maxVal": 10, "seed": 42}'
 ```
@@ -621,16 +621,3 @@ export AiService__BaseUrl="http://ai-service:5005"
 ```cmd
 set AiService__BaseUrl=http://ai-service:5005
 ```
-
-2) Update `appsettings.json` (for development)
-
-```json
-{
-  "AiService": {
-    "BaseUrl": "http://localhost:5005"
-  }
-}
-
-
-
-
