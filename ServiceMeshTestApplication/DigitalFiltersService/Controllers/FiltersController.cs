@@ -27,29 +27,38 @@ public class FiltersController : ControllerBase
                 return BadRequest(new { error = "Matrix cannot be null or empty" });
             }
 
-            int rows = request.Matrix.GetLength(0);
-            int cols = request.Matrix.GetLength(1);
+            int rows = request.Matrix.Length;
+            int cols = request.Matrix[0].Length;
+            for (int r = 1; r < rows; r++)
+            {
+                if (request.Matrix[r].Length != cols)
+                    return BadRequest(new { error = "All rows in the matrix must have the same length" });
+            }
 
-            // Set default end bounds if not specified
             if (request.EndRow == 0) request.EndRow = rows;
             if (request.EndCol == 0) request.EndCol = cols;
 
-            byte[,] processedMatrix = request.FilterType.ToLowerInvariant() switch
+            var input2D = JaggedTo2D(request.Matrix);
+
+            byte[,] processed2D = request.FilterType.ToLowerInvariant() switch
             {
-                "blur" => MatrixFilter.ApplyBlurFilter(request.Matrix, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
-                "sharpen" => MatrixFilter.ApplySharpenFilter(request.Matrix, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
-                "edgedetection" or "edge" => MatrixFilter.ApplyEdgeDetectionFilter(request.Matrix, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
-                "grayscale" => MatrixFilter.ApplyGrayscaleFilter(request.Matrix, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
+                "blur" => MatrixFilter.ApplyBlurFilter(input2D, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
+                "sharpen" => MatrixFilter.ApplySharpenFilter(input2D, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
+                "edgedetection" or "edge" => MatrixFilter.ApplyEdgeDetectionFilter(input2D, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
+                "grayscale" => MatrixFilter.ApplyGrayscaleFilter(input2D, request.StartRow, request.EndRow, request.StartCol, request.EndCol),
                 _ => throw new ArgumentException($"Unknown filter type: {request.FilterType}")
             };
 
-            _logger.LogInformation("Applied {FilterType} filter to matrix ({Rows}x{Cols})", 
+            _logger.LogInformation("Applied {FilterType} filter to matrix ({Rows}x{Cols})",
                 request.FilterType, rows, cols);
+
+            var processedJagged = ToJagged(processed2D);
 
             return Ok(new FilterResponse
             {
-                ProcessedMatrix = processedMatrix,
-                FilterApplied = request.FilterType
+                ProcessedMatrix = processedJagged,
+                FilterApplied = request.FilterType,
+                ProcessedAt = DateTime.UtcNow
             });
         }
         catch (ArgumentException ex)
@@ -82,7 +91,6 @@ public class FiltersController : ControllerBase
                 return BadRequest(new { error = "Filter type is required" });
             }
 
-            // Validate image format
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".bmp" };
             var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(extension))
@@ -90,7 +98,6 @@ public class FiltersController : ControllerBase
                 return BadRequest(new { error = "Only JPG, PNG, and BMP images are supported" });
             }
 
-            // Load image and convert to matrix
             byte[,] matrix;
             using (var stream = image.OpenReadStream())
             using (var loadedImage = await Image.LoadAsync<Rgb24>(stream))
@@ -101,7 +108,6 @@ public class FiltersController : ControllerBase
             int rows = matrix.GetLength(0);
             int cols = matrix.GetLength(1);
 
-            // Apply filter
             byte[,] processedMatrix = filterType.ToLowerInvariant() switch
             {
                 "blur" => MatrixFilter.ApplyBlurFilter(matrix, 0, rows, 0, cols),
@@ -111,15 +117,13 @@ public class FiltersController : ControllerBase
                 _ => throw new ArgumentException($"Unknown filter type: {filterType}")
             };
 
-            // Convert matrix back to image
             using var resultImage = MatrixToImage(processedMatrix);
             using var outputStream = new MemoryStream();
-            
-            // Save as PNG for lossless quality
+
             await resultImage.SaveAsPngAsync(outputStream);
             outputStream.Position = 0;
 
-            _logger.LogInformation("Applied {FilterType} filter to image {FileName} ({Rows}x{Cols})", 
+            _logger.LogInformation("Applied {FilterType} filter to image {FileName} ({Rows}x{Cols})",
                 filterType, image.FileName, rows, cols);
 
             return File(outputStream.ToArray(), "image/png", $"filtered_{Path.GetFileNameWithoutExtension(image.FileName)}.png");
@@ -153,7 +157,6 @@ public class FiltersController : ControllerBase
             for (int x = 0; x < width; x++)
             {
                 var pixel = image[x, y];
-                // Convert to grayscale using standard luminosity method
                 matrix[y, x] = (byte)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
             }
         }
@@ -177,5 +180,41 @@ public class FiltersController : ControllerBase
         }
 
         return image;
+    }
+
+    private static byte[,] JaggedTo2D(int[][] jagged)
+    {
+        if (jagged == null || jagged.Length == 0) return new byte[0, 0];
+        int rows = jagged.Length;
+        int cols = jagged[0].Length;
+        var result = new byte[rows, cols];
+        for (int i = 0; i < rows; i++)
+        {
+            if (jagged[i].Length != cols)
+                throw new ArgumentException("All rows in the jagged array must have the same length", nameof(jagged));
+            for (int j = 0; j < cols; j++)
+            {
+                int val = jagged[i][j];
+                if (val < 0 || val > 255)
+                    throw new ArgumentException("Matrix values must be in range 0..255", nameof(jagged));
+                result[i, j] = (byte)val;
+            }
+        }
+        return result;
+    }
+
+    private static int[][] ToJagged(byte[,] matrix)
+    {
+        if (matrix == null) return Array.Empty<int[]>();
+        int rows = matrix.GetLength(0);
+        int cols = matrix.GetLength(1);
+        var jagged = new int[rows][];
+        for (int i = 0; i < rows; i++)
+        {
+            jagged[i] = new int[cols];
+            for (int j = 0; j < cols; j++)
+                jagged[i][j] = matrix[i, j];
+        }
+        return jagged;
     }
 }
