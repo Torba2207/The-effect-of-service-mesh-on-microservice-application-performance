@@ -20,5 +20,5 @@ subsets:
   - addresses:
       - ip: 10.29.20.120  
     ports:
-      - name: http      # <--- THIS IS THE MAGIC FIX
+      - name: http
         port: 5005

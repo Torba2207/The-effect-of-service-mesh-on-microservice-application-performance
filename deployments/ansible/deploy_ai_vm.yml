@@ -3,31 +3,68 @@
   hosts: ai_vms
   become: yes
   tasks:
-    - name: Create project directories for volumes
+    - name: Create project directories for isolated volumes
       file:
         path: "{{ item }}"
         state: directory
         mode: '0777' 
       loop:
-        - /opt/service-mesh-thesis/app_data
-        - /opt/service-mesh-thesis/ollama_data
+        - /opt/service-mesh-thesis/app_data_1
+        - /opt/service-mesh-thesis/ollama_data_1
+        - /opt/service-mesh-thesis/app_data_2
+        - /opt/service-mesh-thesis/ollama_data_2
+
+    - name: Create Nginx configuration file
+      copy:
+        dest: /opt/service-mesh-thesis/nginx.conf
+        content: |
+          events {}
+          http {
+              upstream ai_backend {
+                  server ai-service-1:5005;
+                  server ai-service-2:5005;
+              }
+              server {
+                  listen 80;
+                  location / {
+                      proxy_pass http://ai_backend;
+                  }
+              }
+          }
 
     - name: Create docker-compose.yml
       copy:
         dest: /opt/service-mesh-thesis/docker-compose.yml
         content: |
           services:
-            ai-service:
+            ai-service-1:
               image: ghcr.io/torba2207/procedural-ai-server:latest
-              container_name: ai-service-container
+              container_name: ai-service-1
               restart: always
-              ports:
-                - "5005:5005"
               volumes:
-                - ./app_data:/app/data
-                - ./ollama_data:/root/.ollama
+                - ./app_data_1:/app/data
+                - ./ollama_data_1:/root/.ollama
+                
+            ai-service-2:
+              image: ghcr.io/torba2207/procedural-ai-server:latest
+              container_name: ai-service-2
+              restart: always
+              volumes:
+                - ./app_data_2:/app/data
+                - ./ollama_data_2:/root/.ollama
 
-    - name: Pull latest image and start the container
-      command: docker compose up -d --pull always
+            load-balancer:
+              image: nginx:alpine
+              container_name: ai-load-balancer
+              ports:
+                - "5005:80"
+              volumes:
+                - ./nginx.conf:/etc/nginx/nginx.conf:ro
+              depends_on:
+                - ai-service-1
+                - ai-service-2
+
+    - name: Pull latest images and start the containers
+      command: docker compose up -d --pull always --remove-orphans
       args:
         chdir: /opt/service-mesh-thesis
