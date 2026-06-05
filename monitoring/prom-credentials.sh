@@ -1,0 +1,2 @@
+kubectl get secret cluster-monitor-grafana -n monitoring -o jsonpath="{.data.admin-user}" | base64 --decode ; echo
+kubectl get secret cluster-monitor-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
