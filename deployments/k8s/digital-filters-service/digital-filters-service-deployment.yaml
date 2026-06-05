@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-filters-service
+  labels:
+    app: digital-filters-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: digital-filters-service
+  template:
+    metadata:
+      labels:
+        app: digital-filters-service
+    spec:
+      containers:
+      - name: digital-filters-service
+        image: ghcr.io/torba2207/digital-filters-service:fix-v1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5007
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"

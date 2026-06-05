@@ -36,6 +36,10 @@
         - "{{ k8s_dir }}/permutation-service/permutation-service-latest.yaml"
         - "{{ k8s_dir }}/permutation-service/permutation-service-service.yaml"
         
+        # Digital Filters Service
+        - "{{ k8s_dir }}/digital-filters-service/digital-filters-service-deployment.yaml"
+        - "{{ k8s_dir }}/digital-filters-service/digital-filters-service-service.yaml"
+        
         # Video Service
         - "{{ k8s_dir }}/video-service/video-service-deployment.yaml"
         - "{{ k8s_dir }}/video-service/video-service-service.yaml"

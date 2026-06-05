@@ -27,6 +27,8 @@
         - "{{ app_dir }}/integration-service/integration-service-service.yaml"
         - "{{ app_dir }}/differential-equations-service/differential-equations-service-deployment.yaml"
         - "{{ app_dir }}/differential-equations-service/differential-equations-service-service.yaml"
+        - "{{ app_dir }}/digital-filters-service/digital-filters-service-deployment.yaml"
+        - "{{ app_dir }}/digital-filters-service/digital-filters-service-service.yaml"
         - "{{ app_dir }}/video-service/video-service-deployment.yaml"
         - "{{ app_dir }}/video-service/video-service-service.yaml"
         - "{{ app_dir }}/ai-service/ai-service-external.yaml"

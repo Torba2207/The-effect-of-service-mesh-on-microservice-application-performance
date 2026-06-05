@@ -4,7 +4,6 @@ public class MatrixFilter
 {
     public static byte[,] ApplyBlurFilter(byte[,] matrix, int startRow, int endRow, int startCol, int endCol)
     {
-        // 3x3 Gaussian blur kernel
         double[,] kernel = {
             { 1.0/16, 2.0/16, 1.0/16 },
             { 2.0/16, 4.0/16, 2.0/16 },
@@ -16,7 +15,6 @@ public class MatrixFilter
 
     public static byte[,] ApplySharpenFilter(byte[,] matrix, int startRow, int endRow, int startCol, int endCol)
     {
-        // 3x3 Sharpen kernel
         double[,] kernel = {
             {  0, -1,  0 },
             { -1,  5, -1 },
@@ -28,7 +26,6 @@ public class MatrixFilter
 
     public static byte[,] ApplyEdgeDetectionFilter(byte[,] matrix, int startRow, int endRow, int startCol, int endCol)
     {
-        // 3x3 Sobel edge detection kernel (simplified)
         double[,] kernel = {
             { -1, -1, -1 },
             { -1,  8, -1 },
@@ -40,7 +37,6 @@ public class MatrixFilter
 
     public static byte[,] ApplyGrayscaleFilter(byte[,] matrix, int startRow, int endRow, int startCol, int endCol)
     {
-        // Simple grayscale by averaging (assuming RGB channels)
         int rows = matrix.GetLength(0);
         int cols = matrix.GetLength(1);
         byte[,] result = new byte[rows, cols];
@@ -51,7 +47,7 @@ public class MatrixFilter
         {
             for (int j = Math.Max(0, startCol); j < Math.Min(cols, endCol); j++)
             {
-                result[i, j] = matrix[i, j]; // Simplified - in real scenario would average RGB
+                result[i, j] = matrix[i, j];
             }
         }
 
@@ -65,20 +61,25 @@ public class MatrixFilter
         int kernelSize = kernel.GetLength(0);
         int kernelOffset = kernelSize / 2;
 
+        double fullKernelSum = 0;
+        for (int ki = 0; ki < kernelSize; ki++)
+            for (int kj = 0; kj < kernelSize; kj++)
+                fullKernelSum += kernel[ki, kj];
+
         byte[,] result = new byte[rows, cols];
         Array.Copy(matrix, result, matrix.Length);
 
-        // Ensure bounds are within matrix dimensions
-        startRow = Math.Max(kernelOffset, startRow);
-        endRow = Math.Min(rows - kernelOffset, endRow);
-        startCol = Math.Max(kernelOffset, startCol);
-        endCol = Math.Min(cols - kernelOffset, endCol);
+        startRow = Math.Max(0, startRow);
+        endRow = Math.Min(rows, endRow);
+        startCol = Math.Max(0, startCol);
+        endCol = Math.Min(cols, endCol);
 
         for (int i = startRow; i < endRow; i++)
         {
             for (int j = startCol; j < endCol; j++)
             {
                 double sum = 0;
+                double weightSum = 0;
 
                 for (int ki = 0; ki < kernelSize; ki++)
                 {
@@ -89,12 +90,26 @@ public class MatrixFilter
 
                         if (row >= 0 && row < rows && col >= 0 && col < cols)
                         {
-                            sum += matrix[row, col] * kernel[ki, kj];
+                            double w = kernel[ki, kj];
+                            sum += matrix[row, col] * w;
+                            weightSum += w;
                         }
                     }
                 }
 
-                result[i, j] = (byte)Math.Clamp(sum, 0, 255);
+                double value;
+                if (Math.Abs(fullKernelSum) > 1e-12)
+                {
+                    if (Math.Abs(weightSum) > 1e-12)
+                        value = sum * (fullKernelSum / weightSum);
+                    else
+                        value = matrix[i, j];
+                }
+                else
+                {
+                    value = sum;
+                }
+                result[i, j] = (byte)Math.Clamp((int)Math.Round(value), 0, 255);
             }
         }
 

@@ -16,6 +16,7 @@
         - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-deployment.yaml"
         - "{{ k8s_dir }}/integration-service/integration-service-deployment.yaml"
         - "{{ k8s_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ k8s_dir }}/digital-filters-service/digital-filters-service-deployment.yaml"
         - "{{ k8s_dir }}/video-service/video-service-deployment.yaml"
 
     - name: Force Rollout Restart (picks up new images if YAML tag didn't change)
@@ -25,5 +26,6 @@
         fibonacci-service
         integration-service
         permutation-service
+        digital-filters-service
         video-service
         -n {{ namespace }}

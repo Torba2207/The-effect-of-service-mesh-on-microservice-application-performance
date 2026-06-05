@@ -38,14 +38,14 @@ dotnet --version
 ```
 ServiceMeshStudy/
 ├── SharedModels/                  # DTOs shared across services
-├── Gateway/                   # YARP reverse proxy (port 5000)
-├── PermutationService/          # O(n!) permutations (port 5001)
-├── FibonacciService/             # Fibonacci calculations (port 5002)
-├── DifferentialEquationsService/ # ODE solver (port 5003)
-├── IntegrationService/           # Numerical integration (port 5004)
-├── AiService/                    # Test data generator (port 5005)
-├── VideoService/                 # Video processing (port 5006)
-├── DigitalFiltersService/        # Matrix filters (port 5007)
+├── Gateway/                       # YARP reverse proxy (port 5000)
+├── PermutationService/            # O(n!) permutation calculations (port 5001)
+├── FibonacciService/              # Fibonacci sequence calculations (port 5002)
+├── DifferentialEquationsService/  # ODE numerical solver (port 5003)
+├── IntegrationService/            # Numerical integration solver (port 5004)
+├── AiService/                     # AI-based data generation (port 5005)
+├── VideoService/                  # Video compression & processing (port 5006)
+├── DigitalFiltersService/         # Image filtering & convolution (port 5007)
 ```
 
 💡 All services are **independent Web APIs**, and the gateway routes incoming traffic.
@@ -153,7 +153,7 @@ curl http://localhost:5000/Video/health
 curl http://localhost:5000/Filters/health
 ```
 
-✅ Expected:
+✅ Expected Response:
 
 ```json
 { "status": "healthy" }
@@ -163,59 +163,133 @@ curl http://localhost:5000/Filters/health
 
 ### ➗ Integration Service
 
-Use this command to try calculating the integral of a chosen function
+Calculate the integral of a function using numerical integration:
+
 ```bash
-curl -X POST http://localhost:5000/api/integration/calculate -H "Content-Type: application/json" -d '{"function":"x^2","lowerBound":0,"upperBound":1,"steps":1000000}'
+curl -X POST http://localhost:5000/api/integration/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"function":"x^2","lowerBound":0,"upperBound":1,"steps":1000000}'
 ```
-✔ Result: `0.333333...`
 
+✅ Expected Response (Approximate Result: 0.333):
 
-Use this command to try getting a derivative of the chosen function
+```json
+{
+  "success": true,
+  "message": "Integral calculated successfully",
+  "data": {
+    "function": "x^2",
+    "lowerBound": 0,
+    "upperBound": 1,
+    "steps": 1000000,
+    "result": 0.3333333333332426
+  },
+  "executionTimeMs": 83,
+  "cpuUsagePercent": 60.24,
+  "memoryUsageMb": 0,
+  "serviceName": "IntegrationService",
+  "timestamp": "2026-06-03T21:05:33.4852247Z"
+}
+```
+
+Calculate the antiderivative of a function:
+
 ```bash
-curl -X POST http://localhost:5000/api/integration/antiderivative -H "Content-Type: application/json" -d '{"Expression":"x^2"}'
+curl -X POST http://localhost:5000/api/integration/antiderivative \
+  -H "Content-Type: application/json" \
+  -d '{"Expression":"x^2"}'
 ```
-✔ Result: `0.333333...3*x^3`
 
+✅ Expected Result: Antiderivative expression (e.g., `(1/3)*x^3`)
 
 ---
 
 ### 📈 Differential Equations
 
-Use this command to try iteratively solving the chosen differential equation (result - equation)
+Numerically solve a differential equation (dy/dx = f(x,y)):
+
 ```bash
-curl -X POST http://localhost:5000/api/equations/solve -H "Content-Type: application/json" -d '{"function":"x^2","initialConditionY":1,"steps":5}'
+curl -X POST http://localhost:5000/api/equations/solve \
+  -H "Content-Type: application/json" \
+  -d '{"function":"x^2","initialConditionY":1,"steps":5}'
 ```
-✔ Result: `0.333333...3*x^3`
 
-Use the same command as above with additional parameters (doubles initialConditionX and range) - to get the calculation of integral of equation
+✅ Expected Response (Approximate Result):
+
+```json
+{
+  "success": true,
+  "result": "0.3333333333333333",
+  "executionTimeMs": 15,
+  "cpuUsagePercent": 25.50,
+  "serviceName": "DifferentialEquationsService"
+}
+```
+
+Solve ODE with initial conditions and range:
+
 ```bash
-curl -X POST http://localhost:5000/api/equations/solve -H "Content-Type: application/json" -d '{"function":"x^2","initialConditionX":0,"initialConditionY":0,"range":2,"steps":5}'
+curl -X POST http://localhost:5000/api/equations/solve \
+  -H "Content-Type: application/json" \
+  -d '{"function":"x^2","initialConditionX":0,"initialConditionY":0,"range":2,"steps":5}'
 ```
-✔ Result: `0,33333333333333`
 
+✅ Note: The `steps` parameter is only required when the equation contains Y (e.g., "dy/dx = y + x"). Otherwise, it represents the range multiplier.
 
-Important! Steps field only matters when the equation contains Y - if the original equation is "dy/dx = y + x", "y + x" must be sent as function 
 ---
 
 ### 🔢 Permutations
 
+Generate all permutations of a set (O(n!) time complexity - use small sets):
+
 ```bash
-curl -X POST http://localhost:5000/api/permutation/generate -H "Content-Type: application/json" -d '{"set":[1,2,3]}'
+curl -X POST http://localhost:5000/api/permutation/generate \
+  -H "Content-Type: application/json" \
+  -d '{"set":[1,2,3]}'
+```
+
+✅ Expected Response (Approximate Result for [1,2,3] = 6 permutations):
+
+```json
+{
+  "success": true,
+  "count": 6,
+  "permutations": [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]],
+  "executionTimeMs": 8,
+  "cpuUsagePercent": 15.30,
+  "serviceName": "PermutationService"
+}
 ```
 
 ---
 
-### 🔁 Fibonacci (large input)
+### 🔁 Fibonacci (Large Numbers)
+
+Calculate Fibonacci numbers with support for very large n values:
 
 ```bash
-curl -X POST http://localhost:5000/api/fibonacci/calculate -H "Content-Type: application/json" -d '{"n": 10000}'
+curl -X POST http://localhost:5000/api/fibonacci/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"n": 100}'
+```
+
+✅ Expected Response (Approximate Result for n=100 = large integer):
+
+```json
+{
+  "success": true,
+  "result": "354224848179261915075",
+  "executionTimeMs": 42,
+  "cpuUsagePercent": 35.80,
+  "serviceName": "FibonacciService"
+}
 ```
 
 ---
 
 ### 📹 Video Service
 
-Processes media streams while collecting detailed CPU usage (%) and delta Memory consumption (MB).
+Video processing service for compression and frame analysis. Collects CPU and memory metrics during processing.
 
 #### Compress Video
 ```bash
@@ -223,91 +297,273 @@ curl -X POST http://localhost:5000/api/video/compress \
   -F "file=@/path/to/video.mp4"
 ```
 
+✅ Expected Response (Approximate Result):
+
+```json
+{
+  "success": true,
+  "originalSizeBytes": 52428800,
+  "compressedSizeBytes": 15728640,
+  "compressionRatio": 0.30,
+  "executionTimeMs": 5420,
+  "cpuUsagePercent": 85.50,
+  "memoryUsageMb": 124.5,
+  "serviceName": "VideoService",
+  "timestamp": "2026-06-03T21:10:15.1234567Z"
+}
+```
+
+#### Split Video into Frames
+```bash
+curl -X POST http://localhost:5000/api/video/split-frames \
+  -F "file=@/path/to/video.mp4"
+```
+
 ---
 
 ### 🎨 Digital Filters Service
 
-Applies raw 2D kernel matrix math convolutions or structural image processing.
+Image and matrix filtering service using convolution kernels for various filter types.
 
 #### Get Available Filters
 ```bash
 curl http://localhost:5000/api/filters/available
-# Expected response: ["blur", "sharpen", "edgedetection", "grayscale"]
+```
+
+✅ Expected Response:
+
+```json
+["blur", "sharpen", "edgedetection", "grayscale"]
 ```
 
 #### Apply Filter to Raw Matrix
-```
+```bash
 curl -X POST http://localhost:5000/api/filters/apply \
   -H "Content-Type: application/json" \
-  -d '{"matrix": [[10,20,30],[40,50,60],[70,80,90]], "filterType": "blur", "startRow": 0, "endRow": 3, "startCol": 0, "endCol": 3}'
+  -d '{
+    "matrix": [[10,20,30],[40,50,60],[70,80,90]],
+    "filterType": "blur",
+    "startRow": 0,
+    "endRow": 3,
+    "startCol": 0,
+    "endCol": 3
+  }'
 ```
 
-#### Apply Filter directly to an Image file
-Applies processing and responds directly with a down-stream lossless PNG output file stream.
+✅ Expected Response (Blur filter reduces intensity variation):
+
+```json
+{
+  "success": true,
+  "resultMatrix": [[20,30,25],[35,50,45],[60,70,65]],
+  "executionTimeMs": 12,
+  "cpuUsagePercent": 45.20,
+  "serviceName": "DigitalFiltersService"
+}
 ```
-curl -X POST http://localhost:5000/api/filters/apply \
-  -H "Content-Type: application/json" \
-  -d '{"matrix": [[10,20,30],[40,50,60],[70,80,90]], "filterType": "blur", "startRow": 0, "endRow": 3, "startCol": 0, "endCol": 3}'
+
+#### Apply Filter to Image File
+```bash
+curl -X POST http://localhost:5000/api/filters/apply-image \
+  -F "file=@/path/to/image.png" \
+  -F "filterType=sharpen"
 ```
+
+✅ Expected Response: PNG image file stream (processed image)
 
 ### 🔢 AI Service
 
-Use this command to start process of data generation by AI Service
-```bash
-curl -X POST http://localhost:5000/api/ai/generate -H "Content-Type: application/json" -d '{"user_input": prompt}'
-```
-where prompt is:
- - Give me X random numbers between Y and Z with seed A. - result: an array (list) of numbers will be returned
- - Generate an image, use seed A with width of X and height of Y. - result: the filename of the generated image will be returned
+AI-powered data generation service for random numbers and synthetic image generation.
 
-Use this command to get the image generated by AI Service
+Generate random numbers:
 ```bash
-curl -X GET http://localhost:5000/api/ai/image/(imageName).png
+curl -X POST http://localhost:5000/api/ai/generate \
+  -H "Content-Type: application/json" \
+  -d '{"user_input": "Give me 10 random numbers between 1 and 100 with seed 42"}'
 ```
-✔ Result: image generated as a base64 string
 
----
+✅ Expected Response:
+
+```json
+{
+  "success": true,
+  "result": [42, 81, 15, 92, 38, 56, 7, 88, 23, 61],
+  "executionTimeMs": 25,
+  "serviceName": "AiService"
+}
+```
+
+Generate synthetic image:
+```bash
+curl -X POST http://localhost:5000/api/ai/generate \
+  -H "Content-Type: application/json" \
+  -d '{"user_input": "Generate an image with seed 42 width 512 height 512"}'
+```
+
+✅ Expected Response:
+
+```json
+{
+  "success": true,
+  "imageName": "generated_42_512_512.png",
+  "executionTimeMs": 156,
+  "serviceName": "AiService"
+}
+```
+
+Retrieve generated image:
+```bash
+curl http://localhost:5000/api/ai/image/generated_42_512_512.png
+```
+
+✅ Expected Response: Base64-encoded PNG image or image data
 
 ## 🛠️ Troubleshooting
 
 ### ❌ Port Already in Use
 
-* Change port:
+**Problem**: "Address already in use" error when starting a service
+
+**Solution**: Change the port in `launchSettings.json` or use environment variables:
 
 ```bash
+# Start on a different port
 dotnet run --urls "http://localhost:5008"
 ```
 
-* Update gateway config
+Alternatively, kill the process using the port:
+```bash
+# On Linux/Mac
+sudo lsof -i :5006
+sudo kill -9 <PID>
+
+# On Windows
+netstat -ano | findstr :5006
+taskkill /PID <PID> /F
+```
+
+**Prevention in containers**: Use service discovery (DNS names like `http://video-service:5006`) instead of hardcoded `localhost`.
 
 ---
 
-### ⚠️ 502 / 503 Errors
+### ⚠️ 502 / 503 Errors (Service Unavailable)
 
-* Service not running
-* Port mismatch
-* Check gateway logs (YARP debug enabled)
+**Problem**: Gateway returns "Bad Gateway" or "Service Unavailable"
+
+**Common Causes**:
+1. Backend service not running
+2. Port mismatch between gateway config and service
+3. Service crashed due to invalid input
+
+**Debugging**:
+```bash
+# Check if service is responding
+curl http://localhost:5006/health
+
+# Check gateway logs for service addresses
+# In Gateway/appsettings.json, verify all service URLs
+
+# Check service logs for errors
+dotnet run --project VideoService/VideoService.csproj
+```
+
+**Example Error Flow**:
+```
+Request: curl http://localhost:5000/api/video/compress ...
+↓
+Gateway routes to: http://localhost:5006
+↓
+If 5006 not running → 502 Bad Gateway
+↓
+Solution: Start VideoService on port 5006
+```
+
+**In containers**: Use service DNS names instead of localhost - the container orchestrator handles discovery.
 
 ---
 
 ### 🌐 IPv6 Issues
 
+**Problem**: Address family not supported errors or connection timeouts
+
+**Solution**: Disable IPv6 for .NET:
+
 ```bash
-DOTNET_SYSTEM_NET_DISABLEIPV6=1
+# Linux/Mac
+export DOTNET_SYSTEM_NET_DISABLEIPV6=1
+dotnet run
+
+# Windows
+set DOTNET_SYSTEM_NET_DISABLEIPV6=1
+dotnet run
+```
+
+Or add to launchSettings.json:
+```json
+"environmentVariables": {
+  "ASPNETCORE_ENVIRONMENT": "Development",
+  "DOTNET_SYSTEM_NET_DISABLEIPV6": "1"
+}
 ```
 
 ---
 
 ### 📉 Unsupported Functions
 
-Supported:
+**Problem**: "Function not supported" or calculation errors
 
-* `x^2`, `sin`, `cos`, `exp`, `1/x`
+**Supported Mathematical Functions**:
 
-For advanced:
+| Category | Functions | Examples |
+|----------|-----------|----------|
+| **Polynomials** | `x^n` where n is an integer | `x^2`, `x^3`, `x^0.5` |
+| **Trigonometric** | `sin`, `cos`, `tan` | `sin(x)`, `cos(2*x)` |
+| **Exponential/Log** | `exp`, `ln`, `log` | `exp(x)`, `ln(x)` |
+| **Rational** | `1/x`, `1/(x^2)` | Division by zero causes error |
+| **Constants** | `pi`, `e` | Work with trig/exp functions |
 
-* `/evaluate`
-* `/antiderivative`
+**Supported Operations**:
+- Addition: `x + 1`
+- Subtraction: `x - 1`
+- Multiplication: `x * 2` or `2x`
+- Division: `1/x`
+- Exponentiation: `x^2`
+- Composition: `sin(x^2 + 1)`
+
+**NOT Supported**:
+- Piecewise functions: `if x > 0 then x else -x`
+- Implicit equations: `x^2 + y^2 = 1`
+- Higher-order derivatives
+- Inverse functions as notation: `x^(-1)` should be `1/x`
+
+**Workarounds**:
+```bash
+# WRONG: x^(-1)
+# RIGHT: 1/x
+
+# WRONG: arcsin(x)
+# RIGHT: Use Integration/Antiderivative for related calculations
+
+# WRONG: |x| (absolute value)
+# RIGHT: Use x if x > 0, otherwise approximate with x^2 or use sqrt(x^2)
+```
+
+**Error Examples**:
+```bash
+# This works:
+{"function":"x^2+2*sin(x)","lowerBound":0,"upperBound":1,"steps":1000}
+
+# This fails:
+{"function":"if x>0 then x else 0","lowerBound":0,"upperBound":1,"steps":1000}
+# Error: Function parsing not supported for conditional logic
+
+# This works:
+{"function":"1/x","lowerBound":0.1,"upperBound":1,"steps":1000}
+
+# This fails:
+{"function":"1/x","lowerBound":-1,"upperBound":1,"steps":1000}
+# Error: Division by zero at x=0
+```
 
 ---
 
