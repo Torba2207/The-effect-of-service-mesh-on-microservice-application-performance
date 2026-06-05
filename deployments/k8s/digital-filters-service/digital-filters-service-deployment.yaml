@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: digital-filters-service
-        image: ghcr.io/torba2207/digital-filters-service:latest
+        image: ghcr.io/torba2207/digital-filters-service:fix-v1
         imagePullPolicy: Always
         ports:
         - containerPort: 5007
