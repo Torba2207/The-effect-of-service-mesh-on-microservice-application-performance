@@ -12,5 +12,5 @@ spec:
     - name: http
       port: 80
       targetPort: 5001
-      nodePort: 30100     # Distinct from baseline (30000)
+      nodePort: 30101     # Distinct from baseline (30000)
       protocol: TCP

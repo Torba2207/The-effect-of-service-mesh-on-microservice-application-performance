@@ -1,29 +1,25 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: permutation-service
+  name: digital-filters-service
   labels:
-    app: permutation-service
+    app: digital-filters-service
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
-      app: permutation-service
+      app: digital-filters-service
   template:
     metadata:
       labels:
-        app: permutation-service
+        app: digital-filters-service
     spec:
       containers:
-      - name: permutation-service
-        image: ghcr.io/torba2207/permutation-service:latest
+      - name: digital-filters-service
+        image: ghcr.io/torba2207/digital-filters-service:fix-v1
         imagePullPolicy: Always
-        env:
-        - name: AI_SERVICE_BASEURL
-          value: "http://ai-service/"
         ports:
-        - containerPort: 5001
+        - containerPort: 5007
         resources:
           requests:
             cpu: "100m"

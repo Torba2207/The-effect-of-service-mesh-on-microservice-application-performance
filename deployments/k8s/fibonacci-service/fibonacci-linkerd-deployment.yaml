@@ -1,29 +1,25 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: permutation-service
+  name: fibonacci-service
   labels:
-    app: permutation-service
+    app: fibonacci-service
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
-      app: permutation-service
+      app: fibonacci-service
   template:
     metadata:
       labels:
-        app: permutation-service
+        app: fibonacci-service
     spec:
       containers:
-      - name: permutation-service
-        image: ghcr.io/torba2207/permutation-service:latest
+      - name: fibonacci-service
+        image: ghcr.io/torba2207/fibonacci-service:latest
         imagePullPolicy: Always
-        env:
-        - name: AI_SERVICE_BASEURL
-          value: "http://ai-service/"
         ports:
-        - containerPort: 5001
+        - containerPort: 5002
         resources:
           requests:
             cpu: "100m"
