@@ -17,7 +17,14 @@ public class AiServiceClient
     public async Task<int[]> GenerateRandomArrayAsync(int count, int minVal, int maxVal, int seed, CancellationToken ct = default)
     {
         var prompt = $"Give me {count} integers between {minVal} and {maxVal} with seed {seed}";
-        var payload = new { user_input = prompt };
+        var payload = new 
+        {
+            user_input = prompt,
+            Count = count,
+            MinVal = minVal,
+            MaxVal = maxVal,
+            Seed = seed
+        };
 
         _logger.LogInformation("Calling AI service: {Url} prompt={Prompt}", new Uri(_http.BaseAddress, "api/Ai/generate"), prompt);
 
