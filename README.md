@@ -4,6 +4,12 @@ A **.NET 8 microservices sample** demonstrating an API Gateway (**YARP**) routin
 
 This project is designed to run **with or without a service mesh** (e.g., Istio, Linkerd) to measure **performance differences** such as latency, CPU, and memory usage.
 
+## ⚡ Quick Start for Teammates
+
+For full environment bootstrap (VPN, Linux/Windows scripts, GHCR, Ansible/Kubernetes flow), use:
+
+**[`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md)**
+
 ---
 
 ## 📋 Requirements
