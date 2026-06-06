@@ -3,6 +3,7 @@ bin/
 obj/
 out/
 artifacts/
+ServiceMeshTestApplication/AiService/data
 
 # User-specific files
 *.rsuser

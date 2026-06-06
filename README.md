@@ -4,6 +4,12 @@ A **.NET 8 microservices sample** demonstrating an API Gateway (**YARP**) routin
 
 This project is designed to run **with or without a service mesh** (e.g., Istio, Linkerd) to measure **performance differences** such as latency, CPU, and memory usage.
 
+## ⚡ Quick Start for Teammates
+
+For full environment bootstrap (VPN, Linux/Windows scripts, GHCR, Ansible/Kubernetes flow), use:
+
+**[`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md)**
+
 ---
 
 ## 📋 Requirements
@@ -258,6 +264,35 @@ curl -X POST http://localhost:5000/api/permutation/generate \
   "executionTimeMs": 8,
   "cpuUsagePercent": 15.30,
   "serviceName": "PermutationService"
+}
+```
+
+Ask the AI service to generate a small integer array, then produce all permutations of that array and return a `ServiceResponse` summary.
+
+```bash
+curl -X POST http://localhost:5000/api/permutation/generate-from-ai \
+  -H "Content-Type: application/json" \ 
+  -d '{"count": 3, "minVal": 1, "maxVal": 10, "seed": 42}'
+```
+
+
+✅ Expected Response (Approximate Result for [1,2,3] = 6 permutations):
+
+```json
+{
+  "success": true,
+  "message": "Generated 6 permutations for AI-generated set",
+  "data": {
+    "originalSet": [2,1,5],
+    "permutationCount": 6,
+    "firstPermutation": [2,1,5],
+    "lastPermutation": [5,2,1]
+  },
+  "executionTimeMs": 103,
+  "cpuUsagePercent": 0,
+  "memoryUsageMb": 0.01568603515625,
+  "serviceName": "PermutationService",
+  "timestamp": "2026-06-05T15:53:25.1314944Z"
 }
 ```
 
@@ -573,3 +608,22 @@ Or add to launchSettings.json:
 * **Ports**: `launchSettings.json`
 * **Shared DTOs**: `SharedModels`
 
+## Configuration required for AI integration (important)
+
+The PermutationService calls the AI service through a typed `HttpClient` whose base address is read from configuration. In production you must provide the AI service base URL via configuration or environment variable — otherwise the service will fall back to a local default.
+
+Why
+- The code reads configuration key `AiService:BaseUrl` (or environment variable `AI_SERVICE_BASEURL`) and registers a typed `HttpClient<AiServiceClient>` with that base address.
+- Do not hardcode `localhost` in production. Set the correct URL (gateway or service DNS) for your environment.
+
+Options to configure
+
+1) Set an environment variable (recommended for containers / cloud)
+- Linux / macOS:
+```bash
+export AiService__BaseUrl="http://ai-service:5005"
+```
+- Windows:
+```cmd
+set AiService__BaseUrl=http://ai-service:5005
+```
