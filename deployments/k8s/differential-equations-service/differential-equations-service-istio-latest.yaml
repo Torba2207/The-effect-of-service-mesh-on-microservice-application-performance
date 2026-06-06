@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: differential-equations-service
+  labels:
+    app: differential-equations-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: differential-equations-service
+  template:
+    metadata:
+      labels:
+        app: differential-equations-service
+    spec:
+      containers:
+      - name: differential-equations-service
+        image: ghcr.io/torba2207/differential-equations-service:latest
+        imagePullPolicy: Always
+        env:
+        - name: GatewayUrl
+          value: "http://integration-service/"
+        ports:
+        - containerPort: 5003
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
