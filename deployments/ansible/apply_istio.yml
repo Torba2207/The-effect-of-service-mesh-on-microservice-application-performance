@@ -39,6 +39,11 @@
         - "{{ k8s_dir }}/integration-service/integration-service-istio-latest.yaml"
         - "{{ k8s_dir }}/integration-service/integration-service-istio-service.yaml"
         - "{{ k8s_dir }}/integration-service/integration-virtual-service-istio.yaml"
+
+        # Fibonacci Service
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-istio-latest.yaml"
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-istio-service.yaml"
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-virtual-service-istio.yaml"
         
         # AI Service (External Bridge)
         - "{{ k8s_dir }}/ai-service/ai-service-external.yaml"
