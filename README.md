@@ -153,6 +153,18 @@ docker push ghcr.io/torba2207/permutation-service:latest
 kubectl get svc istio-ingressgateway -n istio-system
 ```
 
+### k8s cluster shell
+```bash
+kubectl run curl-test --image=curlimages/curl -i --tty --rm -n thesis-test -- sh
+```
+
+### Check AI Service being k8s cluster shell
+```bash
+curl http://ai-service/api/Ai/health
+
+curl -i -X POST http://ai-service/api/Ai/generate -H "Content-Type: application/json" -d '{"user_input": "Give me 10 random numbers between 1 and 100 with seed 42"}'
+```
+
 ### 🔍 Health Checks
 
 ```bash
@@ -221,7 +233,7 @@ curl -X POST http://localhost:5000/api/integration/antiderivative \
 Numerically solve a differential equation (dy/dx = f(x,y)):
 
 ```bash
-curl -X POST http://localhost:5000/api/equations/solve \
+curl -X POST http://localhost:5000/api/differential/solve \
   -H "Content-Type: application/json" \
   -d '{"function":"x^2","initialConditionY":1,"steps":5}'
 ```
@@ -241,7 +253,7 @@ curl -X POST http://localhost:5000/api/equations/solve \
 Solve ODE with initial conditions and range:
 
 ```bash
-curl -X POST http://localhost:5000/api/equations/solve \
+curl -X POST http://localhost:5000/api/differential/solve \
   -H "Content-Type: application/json" \
   -d '{"function":"x^2","initialConditionX":0,"initialConditionY":0,"range":2,"steps":5}'
 ```
@@ -460,6 +472,17 @@ curl http://localhost:5000/api/ai/image/generated_42_512_512.png
 ✅ Expected Response: Base64-encoded PNG image or image data
 
 ## 🛠️ Troubleshooting
+
+### If Pods stucked in pulling images
+
+```bash
+ansible workers -i inventory.ini -b -m systemd -a "name=containerd state=restarted"
+```
+
+### If Stucked on terminating
+```bash
+ansible workers -i inventory.ini -b -m systemd -a "name=containerd state=restarted"
+```
 
 ### ❌ Port Already in Use
 
