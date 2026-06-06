@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-service
+  labels:
+    app: video-service
+spec:
+  type: ClusterIP  # Changed from NodePort so Istio manages external access
+  selector:
+    app: video-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5006
+      protocol: TCP

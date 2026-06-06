@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-filters-service
+  labels:
+    app: digital-filters-service
+spec:
+  type: ClusterIP  # Changed from NodePort so Istio manages external access
+  selector:
+    app: digital-filters-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5007
+      protocol: TCP

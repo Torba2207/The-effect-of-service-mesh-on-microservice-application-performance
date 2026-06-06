@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     test_ns: thesis-test
-    app_dir: ../k8s/permutation-service
+    app_dir: ../k8s/
     istio_dir: ../istio
   tasks:
     - name: Ensure istio-system namespace exists
@@ -34,7 +34,24 @@
         namespace: "{{ test_ns }}"
         src: "{{ item }}"
       loop:
-        - "{{ app_dir }}/permutation-service-istio-latest.yaml"
-        - "{{ app_dir }}/permutation-service-istio-service.yaml"
+        - "{{ app_dir }}/permutation-service/permutation-service-istio-latest.yaml"
+        - "{{ app_dir }}/permutation-service/permutation-service-istio-service.yaml"
         - "{{ istio_dir }}/istio-main-gateway.yaml"
-        - "{{ app_dir }}/permutation-virtual-service-istio.yaml"
+        - "{{ app_dir }}/permutation-service/permutation-virtual-service-istio.yaml"
+        - "{{ app_dir }}/integration-service/integration-service-istio-latest.yaml"
+        - "{{ app_dir }}/integration-service/integration-service-istio-service.yaml"
+        - "{{ app_dir }}/integration-service/integration-virtual-service-istio.yaml"
+        - "{{ app_dir }}/fibonacci-service/fibonacci-service-istio-latest.yaml"
+        - "{{ app_dir }}/fibonacci-service/fibonacci-service-istio-service.yaml"
+        - "{{ app_dir }}/fibonacci-service/fibonacci-virtual-service-istio.yaml"
+        - "{{ app_dir }}/differential-equations-service/differential-equations-service-istio-latest.yaml"
+        - "{{ app_dir }}/differential-equations-service/differential-equations-service-istio-service.yaml"
+        - "{{ app_dir }}/differential-equations-service/differential-equations-virtual-service-istio.yaml"
+        - "{{ app_dir }}/digital-filters-service/digital-filters-service-istio-latest.yaml"
+        - "{{ app_dir }}/digital-filters-service/digital-filters-service-istio-service.yaml"
+        - "{{ app_dir }}/digital-filters-service/digital-filters-virtual-service-istio.yaml"
+        - "{{ app_dir }}/video-service/video-service-istio-latest.yaml"
+        - "{{ app_dir }}/video-service/video-service-istio-service.yaml"
+        - "{{ app_dir }}/video-service/video-virtual-service-istio.yaml"
+        - "{{ app_dir }}/ai-service/ai-service-external.yaml"
+        - "{{ app_dir }}/ai-service/ai-virtual-service-istio.yaml"

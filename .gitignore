@@ -128,3 +128,5 @@ healthchecksdb
 
 # venv
 .venv/
+
+.env

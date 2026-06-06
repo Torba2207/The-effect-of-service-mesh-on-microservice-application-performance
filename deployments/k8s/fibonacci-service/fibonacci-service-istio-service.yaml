@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fibonacci-service
+  labels:
+    app: fibonacci-service
+spec:
+  type: ClusterIP  # Changed from NodePort so Istio manages external access
+  selector:
+    app: fibonacci-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5002
+      protocol: TCP

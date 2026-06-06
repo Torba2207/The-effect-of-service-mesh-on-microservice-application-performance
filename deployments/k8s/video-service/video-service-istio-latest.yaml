@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-service
+  labels:
+    app: video-service
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: video-service
+  template:
+    metadata:
+      labels:
+        app: video-service
+    spec:
+      containers:
+      - name: video-service
+        image: ghcr.io/torba2207/video-service:fix-beta-v2
+        imagePullPolicy: Always
+        env:
+        - name: DigitalFiltersServiceUrl
+          value: "http://digital-filters-service/"
+        ports:
+        - containerPort: 5006
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"

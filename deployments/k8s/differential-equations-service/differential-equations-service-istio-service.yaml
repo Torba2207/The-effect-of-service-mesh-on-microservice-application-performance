@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: differential-equations-service
+  labels:
+    app: differential-equations-service
+spec:
+  type: ClusterIP  # Changed from NodePort so Istio manages external access
+  selector:
+    app: differential-equations-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5003
+      protocol: TCP
