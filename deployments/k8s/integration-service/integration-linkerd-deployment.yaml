@@ -1,29 +1,25 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: permutation-service
+  name: integration-service
   labels:
-    app: permutation-service
+    app: integration-service
 spec:
-  replicas: 3
+  replicas: 5
   selector:
     matchLabels:
-      app: permutation-service
+      app: integration-service
   template:
     metadata:
       labels:
-        app: permutation-service
+        app: integration-service
     spec:
       containers:
-      - name: permutation-service
-        image: ghcr.io/torba2207/permutation-service:latest
+      - name: integration-service
+        image: ghcr.io/torba2207/integration-service:latest
         imagePullPolicy: Always
-        env:
-        - name: AI_SERVICE_BASEURL
-          value: "http://ai-service/"
         ports:
-        - containerPort: 5001
+        - containerPort: 5004
         resources:
           requests:
             cpu: "100m"
