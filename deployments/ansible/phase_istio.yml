@@ -53,3 +53,4 @@
         - "{{ app_dir }}/video-service/video-service-istio-latest.yaml"
         - "{{ app_dir }}/video-service/video-service-istio-service.yaml"
         - "{{ app_dir }}/video-service/video-virtual-service-istio.yaml"
+        - "{{ app_dir }}/ai-service/ai-service-external.yaml"
