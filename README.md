@@ -147,6 +147,12 @@ docker push ghcr.io/torba2207/permutation-service:latest
 
 ## 🧪 Testing Endpoints
 
+### Locatig the Istio Gateway
+
+```bash
+kubectl get svc istio-ingressgateway -n istio-system
+```
+
 ### 🔍 Health Checks
 
 ```bash
