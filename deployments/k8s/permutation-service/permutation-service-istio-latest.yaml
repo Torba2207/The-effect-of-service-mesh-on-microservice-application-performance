@@ -18,6 +18,9 @@ spec:
       - name: permutation-service
         image: ghcr.io/torba2207/permutation-service:latest
         imagePullPolicy: Always
+        env:
+        - name: AI_SERVICE_BASEURL
+          value: "http://ai-service/"
         ports:
         - containerPort: 5001
         resources:
