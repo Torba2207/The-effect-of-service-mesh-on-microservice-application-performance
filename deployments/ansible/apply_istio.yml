@@ -30,23 +30,11 @@
         namespace: "{{ namespace }}"
         src: "{{ item }}"
       loop:
-        # Permutation Service
-        - "{{ k8s_dir }}/permutation-service/permutation-service-istio-latest.yaml"
-        - "{{ k8s_dir }}/permutation-service/permutation-service-istio-service.yaml"
-        - "{{ k8s_dir }}/permutation-service/permutation-virtual-service-istio.yaml"
         
-        # Integration Service
-        - "{{ k8s_dir }}/integration-service/integration-service-istio-latest.yaml"
-        - "{{ k8s_dir }}/integration-service/integration-service-istio-service.yaml"
-        - "{{ k8s_dir }}/integration-service/integration-virtual-service-istio.yaml"
-
-        # Fibonacci Service
-        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-istio-latest.yaml"
-        - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-istio-service.yaml"
-        - "{{ k8s_dir }}/fibonacci-service/fibonacci-virtual-service-istio.yaml"
         
         # AI Service (External Bridge)
         - "{{ k8s_dir }}/ai-service/ai-service-external.yaml"
+        - "{{ k8s_dir }}/ai-service/ai-virtual-service-istio.yaml"
         
         # -------------------------------------------------------------
         # NOTE: Add the remaining services (Fibonacci, Video, etc.) 
