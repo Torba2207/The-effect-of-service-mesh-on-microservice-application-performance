@@ -4,7 +4,7 @@
   gather_facts: false
   vars:
     test_ns: thesis-test
-    app_dir: ../k8s/
+    app_dir: ../k8s
     istio_dir: ../istio
   tasks:
     - name: Ensure istio-system namespace exists
