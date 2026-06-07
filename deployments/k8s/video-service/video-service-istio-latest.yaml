@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: video-service
-        image: ghcr.io/torba2207/video-service:fix-beta-v2
+        image: ghcr.io/torba2207/video-service:latest
         imagePullPolicy: Always
         env:
         - name: DigitalFiltersServiceUrl
