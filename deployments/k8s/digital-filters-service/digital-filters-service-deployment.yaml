@@ -18,6 +18,9 @@ spec:
       - name: digital-filters-service
         image: ghcr.io/torba2207/digital-filters-service:fix-v1
         imagePullPolicy: Always
+        env:
+        - name: AI_SERVICE_BASEURL
+          value: "http://ai-service/"
         ports:
         - containerPort: 5007
         resources:
