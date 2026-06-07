@@ -6,6 +6,15 @@
     test_ns: thesis-test
     app_dir: ../k8s
   tasks:
+    - name: Install NGINX Ingress Controller for Baremetal
+      ansible.builtin.shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+
+    - name: Wait for NGINX Ingress Controller to become ready
+      ansible.builtin.shell: kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
+
+    - name: Ensure NGINX Controller uses static NodePorts (30080 HTTP, 30443 HTTPS)
+      ansible.builtin.shell: kubectl patch svc ingress-nginx-controller -n ingress-nginx --type='json' -p='[{"op":"replace","path":"/spec/ports/0/nodePort","value":30080},{"op":"replace","path":"/spec/ports/1/nodePort","value":30443}]'
+
     - name: Ensure thesis namespace exists
       kubernetes.core.k8s:
         name: "{{ test_ns }}"
@@ -32,3 +41,4 @@
         - "{{ app_dir }}/video-service/video-service-deployment.yaml"
         - "{{ app_dir }}/video-service/video-service-service.yaml"
         - "{{ app_dir }}/ai-service/ai-service-external.yaml"
+        - "{{ app_dir }}/ingress/main-ingress-nginx.yaml"
