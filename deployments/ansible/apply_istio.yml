@@ -37,7 +37,7 @@
         - "{{ k8s_dir }}/ai-service/ai-virtual-service-istio.yaml"
 
         # Permutation Service
-        - "{{ k8s_dir }}/permutation-service/permutation-service-istio-latest.yaml"
+        - "{{ k8s_dir }}/permutation-service/permutation-service-istio-deployment.yaml"
         - "{{ k8s_dir }}/permutation-service/permutation-service-istio-service.yaml"
         - "{{ k8s_dir }}/permutation-service/permutation-virtual-service-istio.yaml"
         

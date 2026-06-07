@@ -5,7 +5,7 @@ metadata:
   labels:
     app: digital-filters-service
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: digital-filters-service
@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: digital-filters-service
-        image: ghcr.io/torba2207/digital-filters-service:fix-v1
+        image: ghcr.io/torba2207/digital-filters-service:latest
         imagePullPolicy: Always
         env:
         - name: AI_SERVICE_BASEURL

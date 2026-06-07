@@ -5,7 +5,7 @@ metadata:
   labels:
     app: differential-equations-service
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: differential-equations-service

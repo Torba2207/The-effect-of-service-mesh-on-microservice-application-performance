@@ -19,7 +19,7 @@
         namespace: "{{ test_ns }}"
         src: "{{ item }}"
       loop:
-        - "{{ app_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ app_dir }}/permutation-service/permutation-service-deployment.yaml"
         - "{{ app_dir }}/permutation-service/permutation-service-service.yaml"
         - "{{ app_dir }}/fibonacci-service/fibonacci-service-deployment.yaml"
         - "{{ app_dir }}/fibonacci-service/fibonacci-service-service.yaml"
