@@ -15,7 +15,7 @@
         - "{{ k8s_dir }}/differential-equations-service/differential-equations-service-deployment.yaml"
         - "{{ k8s_dir }}/fibonacci-service/fibonacci-service-deployment.yaml"
         - "{{ k8s_dir }}/integration-service/integration-service-deployment.yaml"
-        - "{{ k8s_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ k8s_dir }}/permutation-service/permutation-service-deployment.yaml"
         - "{{ k8s_dir }}/digital-filters-service/digital-filters-service-deployment.yaml"
         - "{{ k8s_dir }}/video-service/video-service-deployment.yaml"
 
