@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
 using DigitalFiltersService.Filters;
+using DigitalFiltersService.Services;
+using Microsoft.AspNetCore.Mvc;
 using SharedModels;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,11 +11,104 @@ namespace DigitalFiltersService.Controllers;
 [Route("api/[controller]")]
 public class FiltersController : ControllerBase
 {
-    private readonly ILogger<FiltersController> _logger;
+    private readonly AiServiceClient _aiClient;
 
-    public FiltersController(ILogger<FiltersController> logger)
+    public FiltersController(AiServiceClient aiClient)
     {
-        _logger = logger;
+        _aiClient = aiClient;
+    }
+
+    [HttpPost("apply-ai-matrix")]
+    public async Task<ActionResult<FilterResponse>> ApplyAiMatrix([FromBody] CustomMatrixFilterRequest request, CancellationToken ct)
+    {
+        try
+        {
+            if (request.KernelSize <= 0 || request.KernelSize % 2 == 0)
+            {
+                return BadRequest(new { error = "Kernel size must be a positive odd number (e.g., 3, 5, 7)." });
+            }
+
+            // Generate a matrix from AI (AI should only receive matrix size)
+            int[][] aiMatrix = await _aiClient.GenerateFilterMatrixAsync(request.KernelSize, ct);
+
+            // Clamp AI values into 0..255 and convert to byte[,] for filtering
+            var clamped = aiMatrix.Select(r => r.Select(v => Math.Clamp(v, 0, 255)).ToArray()).ToArray();
+            var input2D = JaggedTo2D(clamped);
+
+            int rows = input2D.GetLength(0);
+            int cols = input2D.GetLength(1);
+
+            byte[,] processed2D = request.FilterName.ToLowerInvariant() switch
+            {
+                "blur" => MatrixFilter.ApplyBlurFilter(input2D, 0, rows, 0, cols),
+                "sharpen" => MatrixFilter.ApplySharpenFilter(input2D, 0, rows, 0, cols),
+                "edgedetection" or "edge" => MatrixFilter.ApplyEdgeDetectionFilter(input2D, 0, rows, 0, cols),
+                "grayscale" => MatrixFilter.ApplyGrayscaleFilter(input2D, 0, rows, 0, cols),
+                _ => throw new ArgumentException($"Unknown filter type: {request.FilterName}")
+            };
+
+            var processedJagged = ToJagged(processed2D);
+
+            return Ok(new FilterResponse
+            {
+                ProcessedMatrix = processedJagged,
+                FilterApplied = request.FilterName,
+                ProcessedAt = DateTime.UtcNow
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = "Internal runtime error" });
+        }
+    }
+
+    private static byte[,] ApplyConvolution(byte[,] input, int[][] kernel, int startRow, int endRow, int startCol, int endCol)
+    {
+        int imageRows = input.GetLength(0);
+        int imageCols = input.GetLength(1);
+        byte[,] output = (byte[,])input.Clone();
+
+        int kSize = kernel.Length;
+        int radius = kSize / 2;
+
+        int kernelSum = 0;
+        for (int i = 0; i < kSize; i++)
+        {
+            for (int j = 0; j < kSize; j++)
+                kernelSum += kernel[i][j];
+        }
+        if (kernelSum == 0) kernelSum = 1;
+
+        for (int r = startRow; r < endRow; r++)
+        {
+            for (int c = startCol; c < endCol; c++)
+            {
+                if (r < radius || r >= imageRows - radius || c < radius || c >= imageCols - radius)
+                    continue;
+
+                int pixelCalculation = 0;
+
+                for (int kr = 0; kr < kSize; kr++)
+                {
+                    for (int kc = 0; kc < kSize; kc++)
+                    {
+                        int targetRow = r + (kr - radius);
+                        int targetCol = c + (kc - radius);
+
+                        pixelCalculation += input[targetRow, targetCol] * kernel[kr][kc];
+                    }
+                }
+
+                int normalizedResult = pixelCalculation / kernelSum;
+                output[r, c] = (byte)Math.Clamp(normalizedResult, 0, 255);
+            }
+        }
+
+        return output;
     }
 
     [HttpPost("apply")]
@@ -49,9 +143,6 @@ public class FiltersController : ControllerBase
                 _ => throw new ArgumentException($"Unknown filter type: {request.FilterType}")
             };
 
-            _logger.LogInformation("Applied {FilterType} filter to matrix ({Rows}x{Cols})",
-                request.FilterType, rows, cols);
-
             var processedJagged = ToJagged(processed2D);
 
             return Ok(new FilterResponse
@@ -63,12 +154,10 @@ public class FiltersController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid filter request");
             return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing filter request");
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
@@ -123,19 +212,14 @@ public class FiltersController : ControllerBase
             await resultImage.SaveAsPngAsync(outputStream);
             outputStream.Position = 0;
 
-            _logger.LogInformation("Applied {FilterType} filter to image {FileName} ({Rows}x{Cols})",
-                filterType, image.FileName, rows, cols);
-
             return File(outputStream.ToArray(), "image/png", $"filtered_{Path.GetFileNameWithoutExtension(image.FileName)}.png");
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid filter request");
             return BadRequest(new { error = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing image filter request");
             return StatusCode(500, new { error = "Internal server error processing image" });
         }
     }

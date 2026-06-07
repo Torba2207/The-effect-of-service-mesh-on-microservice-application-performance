@@ -2,7 +2,10 @@
 
 set -euo pipefail
 
-KEY_DIR="${KEY_DIR:-$HOME/Documents/PG/Projects/.sshkeys}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+KEY_DIR="${KEY_DIR:-$REPO_ROOT/.sshkeys}"
 KEY_NAME="${KEY_NAME:-pgPB}"
 KEY_PATH="$KEY_DIR/$KEY_NAME"
 SSH_USER="${SSH_USER:-root}"
@@ -31,6 +34,19 @@ fi
 
 chmod 600 "$KEY_PATH"
 chmod 644 "${KEY_PATH}.pub"
+
+# Ensure repository .env contains SSH_PRIVATE_KEY pointing to generated key
+ENV_FILE="$REPO_ROOT/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  if grep -q '^SSH_PRIVATE_KEY=' "$ENV_FILE"; then
+    sed -i "s|^SSH_PRIVATE_KEY=.*|SSH_PRIVATE_KEY=$KEY_PATH|" "$ENV_FILE"
+  else
+    echo "SSH_PRIVATE_KEY=$KEY_PATH" >> "$ENV_FILE"
+  fi
+else
+  echo "SSH_PRIVATE_KEY=$KEY_PATH" > "$ENV_FILE"
+fi
+chmod 600 "$ENV_FILE"
 
 echo "Distributing public key to infrastructure nodes..."
 for ip in "${HOSTS[@]}"; do

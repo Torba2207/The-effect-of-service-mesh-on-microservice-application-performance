@@ -1,20 +1,26 @@
 using DigitalFiltersService.Swagger;
+using DigitalFiltersService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.OperationFilter<FileUploadOperationFilter>();
 });
 
+var aiBase = builder.Configuration.GetValue<string>("AiService:BaseUrl")
+             ?? Environment.GetEnvironmentVariable("AI_SERVICE_BASEURL")
+             ?? "http://localhost:5005/";
+
+builder.Services.AddHttpClient<AiServiceClient>(client =>
+{
+    client.BaseAddress = client.BaseAddress = new Uri(aiBase.TrimEnd('/') + "/");
+});
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

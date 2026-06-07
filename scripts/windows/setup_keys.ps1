@@ -1,10 +1,14 @@
 param(
-    [string]$KeyDir = "$HOME/Documents/PG/Projects/.sshkeys",
+    [string]$KeyDir = "",
     [string]$KeyName = "pgPB",
     [string]$SshUser = "root"
 )
 
 $ErrorActionPreference = "Stop"
+
+# Compute repository root relative to script location
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
+if ([string]::IsNullOrWhiteSpace($KeyDir)) { $KeyDir = Join-Path $repoRoot ".sshkeys" }
 
 $keyPath = Join-Path $KeyDir $KeyName
 $hosts = @(
@@ -27,6 +31,23 @@ if (Test-Path $keyPath) {
 else {
     Write-Host "Generating SSH key: $keyPath"
     ssh-keygen -t rsa -b 4096 -f $keyPath -N ""
+}
+
+# Ensure .env at repo root contains SSH_PRIVATE_KEY pointing to generated key
+$envFile = Join-Path $repoRoot ".env"
+$kv = "SSH_PRIVATE_KEY=$keyPath"
+if (Test-Path $envFile) {
+    $content = Get-Content $envFile -Raw
+    if ($content -match '^SSH_PRIVATE_KEY=') {
+        $newContent = $content -replace '^SSH_PRIVATE_KEY=.*', $kv
+        Set-Content -Path $envFile -Value $newContent -Force
+    }
+    else {
+        Add-Content -Path $envFile -Value $kv
+    }
+}
+else {
+    Set-Content -Path $envFile -Value $kv -Force
 }
 
 foreach ($ip in $hosts) {
