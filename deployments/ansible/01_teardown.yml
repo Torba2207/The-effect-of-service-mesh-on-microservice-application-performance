@@ -32,3 +32,7 @@
     - name: Uninstall Linkerd (Imperative CLI)
       ansible.builtin.shell: linkerd uninstall | kubectl delete -f -
       ignore_errors: true
+
+    - name: Uninstall NGINX Ingress Controller
+      ansible.builtin.shell: kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+      ignore_errors: true
