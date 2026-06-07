@@ -5,7 +5,7 @@ metadata:
   labels:
     app: digital-filters-service
 spec:
-  replicas: 5
+  replicas: 3
   selector:
     matchLabels:
       app: digital-filters-service
