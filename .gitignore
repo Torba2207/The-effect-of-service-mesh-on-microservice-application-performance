@@ -4,6 +4,7 @@ obj/
 out/
 artifacts/
 ServiceMeshTestApplication/AiService/data
+.sshkeys
 
 # User-specific files
 *.rsuser

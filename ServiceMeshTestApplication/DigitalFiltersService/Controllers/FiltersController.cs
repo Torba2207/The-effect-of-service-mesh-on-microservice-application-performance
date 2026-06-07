@@ -8,12 +8,12 @@ using SixLabors.ImageSharp.PixelFormats;
 namespace DigitalFiltersService.Controllers;
 
 [ApiController]
-[Route("api/digital-filters")]
-public class DigitalFiltersController : ControllerBase
+[Route("api/[controller]")]
+public class FiltersController : ControllerBase
 {
     private readonly AiServiceClient _aiClient;
 
-    public DigitalFiltersController(AiServiceClient aiClient)
+    public FiltersController(AiServiceClient aiClient)
     {
         _aiClient = aiClient;
     }
@@ -23,36 +23,36 @@ public class DigitalFiltersController : ControllerBase
     {
         try
         {
-            if (request.Matrix == null || request.Matrix.Length == 0)
-            {
-                return BadRequest(new { error = "Input matrix cannot be null or empty" });
-            }
-
-            int rows = request.Matrix.Length;
-            int cols = request.Matrix[0].Length;
-            for (int r = 1; r < rows; r++)
-            {
-                if (request.Matrix[r].Length != cols)
-                    return BadRequest(new { error = "All rows in the matrix must have the same length" });
-            }
-
             if (request.KernelSize <= 0 || request.KernelSize % 2 == 0)
             {
                 return BadRequest(new { error = "Kernel size must be a positive odd number (e.g., 3, 5, 7)." });
             }
 
-            int[][] aiKernel = await _aiClient.GenerateFilterMatrixAsync(request.KernelSize, request.FilterName, ct);
+            // Generate a matrix from AI (AI should only receive matrix size)
+            int[][] aiMatrix = await _aiClient.GenerateFilterMatrixAsync(request.KernelSize, ct);
 
-            var input2D = JaggedTo2D(request.Matrix);
+            // Clamp AI values into 0..255 and convert to byte[,] for filtering
+            var clamped = aiMatrix.Select(r => r.Select(v => Math.Clamp(v, 0, 255)).ToArray()).ToArray();
+            var input2D = JaggedTo2D(clamped);
 
-            byte[,] processed2D = ApplyConvolution(input2D, aiKernel, 0, rows, 0, cols);
+            int rows = input2D.GetLength(0);
+            int cols = input2D.GetLength(1);
+
+            byte[,] processed2D = request.FilterName.ToLowerInvariant() switch
+            {
+                "blur" => MatrixFilter.ApplyBlurFilter(input2D, 0, rows, 0, cols),
+                "sharpen" => MatrixFilter.ApplySharpenFilter(input2D, 0, rows, 0, cols),
+                "edgedetection" or "edge" => MatrixFilter.ApplyEdgeDetectionFilter(input2D, 0, rows, 0, cols),
+                "grayscale" => MatrixFilter.ApplyGrayscaleFilter(input2D, 0, rows, 0, cols),
+                _ => throw new ArgumentException($"Unknown filter type: {request.FilterName}")
+            };
 
             var processedJagged = ToJagged(processed2D);
 
             return Ok(new FilterResponse
             {
                 ProcessedMatrix = processedJagged,
-                FilterApplied = $"Dynamic AI Kernel: {request.FilterName}",
+                FilterApplied = request.FilterName,
                 ProcessedAt = DateTime.UtcNow
             });
         }
@@ -62,7 +62,7 @@ public class DigitalFiltersController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = $"Internal runtime error: {ex.Message}" });
+            return StatusCode(500, new { error = "Internal runtime error" });
         }
     }
 

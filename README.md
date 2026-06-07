@@ -424,18 +424,20 @@ curl -X POST http://localhost:5000/api/filters/apply-image \
 
 ✅ Expected Response: PNG image file stream (processed image)
 
-#### Apply AI-generated Filter to Raw Matrix
+#### Apply AI-generated Filter (server generates matrix)
+
+Request now contains only the desired filter name and kernel size. The service will ask the AI to generate an NxN integer matrix (AI does not receive the filter type), then apply the requested filter locally.
+
 ```bash
 curl -X POST http://localhost:5000/api/filters/apply-ai-matrix \
   -H "Content-Type: application/json" \
   -d '{
-    "matrix": [[10,20,30],[40,50,60],[70,80,90]],
     "filterName": "blur",
-    "kernelSize": 0
+    "kernelSize": 3
   }'
 ```
 
-✅ Expected Response (Blur filter reduces intensity variation):
+✅ Expected Response:
 
 ```json
 {
@@ -444,6 +446,10 @@ curl -X POST http://localhost:5000/api/filters/apply-ai-matrix \
   "processedAt": "2026-06-07T02:26:05.282Z"
 }
 ```
+
+Notes:
+- The AI is asked only for a numeric matrix of the given size. The server clamps matrix values to 0..255 before applying the filter.
+- If AI cannot produce a matrix, the endpoint will return an HTTP 500 with an explanatory error message; check service logs for AI payload details.
 
 ### 🔢 AI Service
 

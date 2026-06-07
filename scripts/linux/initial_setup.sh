@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export REPO_ROOT
 INVENTORY="${INVENTORY:-$REPO_ROOT/deployments/ansible/inventory.ini}"
 RUN_SETUP_KEYS="${RUN_SETUP_KEYS:-true}"
 

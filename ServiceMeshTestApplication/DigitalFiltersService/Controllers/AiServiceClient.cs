@@ -14,14 +14,12 @@ public class AiServiceClient
         _logger.LogInformation("AiServiceClient for DigitalFilters created with base {Base}", _http.BaseAddress);
     }
 
-    public async Task<int[][]> GenerateFilterMatrixAsync(int matrixSize, string filterName, CancellationToken ct = default)
+    public async Task<int[][]> GenerateFilterMatrixAsync(int matrixSize, CancellationToken ct = default)
     {
-        var prompt = $"Give me a 2D integer filter matrix of size {matrixSize}x{matrixSize} for a {filterName} filter.";
+        var prompt = $@"Produce VALID JSON only. The response MUST be exactly a JSON object with a single property ""Data"" containing a 2D integer array of size {matrixSize}x{matrixSize}. DO NOT return images, filenames, markdown, code fences, explanations, or any other text. If you cannot produce the matrix, return {{""Data"":[], ""Error"":""explain why""}}.";
         var payload = new
         {
-            user_input = prompt,
-            MatrixSize = matrixSize,
-            FilterName = filterName
+            user_input = prompt
         };
 
         _logger.LogInformation("Calling AI service: {Url} prompt={Prompt}", new Uri(_http.BaseAddress, "api/Ai/generate"), prompt);
@@ -45,14 +43,14 @@ public class AiServiceClient
                     var name = prop.Name.Trim();
                     if (propNames.Contains(name, StringComparer.OrdinalIgnoreCase))
                     {
-                        return ParseJsonElementToIntMatrix(prop.Value);
+                        return ParseJsonElementToIntMatrix(prop.Value, matrixSize);
                     }
                 }
 
                 if (doc.RootElement.TryGetProperty("Data", out var dataProp))
-                    return ParseJsonElementToIntMatrix(dataProp);
+                    return ParseJsonElementToIntMatrix(dataProp, matrixSize);
                 if (doc.RootElement.TryGetProperty("Matrix", out var matrixProp))
-                    return ParseJsonElementToIntMatrix(matrixProp);
+                    return ParseJsonElementToIntMatrix(matrixProp, matrixSize);
 
                 foreach (var prop in doc.RootElement.EnumerateObject())
                 {
@@ -62,7 +60,7 @@ public class AiServiceClient
                         {
                             var nestedName = nested.Name.Trim();
                             if (propNames.Contains(nestedName, StringComparer.OrdinalIgnoreCase))
-                                return ParseJsonElementToIntMatrix(nested.Value);
+                                return ParseJsonElementToIntMatrix(nested.Value, matrixSize);
                         }
                     }
                 }
@@ -70,7 +68,7 @@ public class AiServiceClient
                 throw new InvalidOperationException("AI response did not contain a recognized filter matrix payload.");
             }
 
-            return ParseJsonElementToIntMatrix(doc.RootElement);
+            return ParseJsonElementToIntMatrix(doc.RootElement, matrixSize);
         }
         catch (HttpRequestException ex)
         {
@@ -89,16 +87,51 @@ public class AiServiceClient
         }
     }
 
-    private static int[][] ParseJsonElementToIntMatrix(JsonElement element)
+    private static int[][] ParseJsonElementToIntMatrix(JsonElement element, int expectedSize)
     {
         if (element.ValueKind == JsonValueKind.Array)
         {
-            var matrix = new List<int[]>();
-            foreach (var rowElement in element.EnumerateArray())
+            // If array of arrays -> normal 2D
+            var first = element.EnumerateArray().FirstOrDefault();
+            if (first.ValueKind == JsonValueKind.Array)
             {
-                matrix.Add(ParseJsonElementToIntArray(rowElement));
+                var matrix = new List<int[]>();
+                foreach (var rowElement in element.EnumerateArray())
+                {
+                    matrix.Add(ParseJsonElementToIntArray(rowElement));
+                }
+                return matrix.ToArray();
             }
-            return [.. matrix];
+
+            // If flat array of numbers -> reshape to NxN when length matches
+            var flat = new List<int>();
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Number && item.TryGetInt32(out var v))
+                    flat.Add(v);
+                else if (item.ValueKind == JsonValueKind.String && int.TryParse(item.GetString(), out var sv))
+                    flat.Add(sv);
+                else
+                    throw new InvalidOperationException("AI returned non-integer element in flat array.");
+            }
+
+            if (flat.Count == expectedSize * expectedSize)
+            {
+                var matrix = new int[expectedSize][];
+                for (int i = 0; i < expectedSize; i++)
+                {
+                    matrix[i] = flat.Skip(i * expectedSize).Take(expectedSize).ToArray();
+                }
+                return matrix;
+            }
+
+            // If it's not the expected total size, but equal to expectedSize -> treat as single row
+            if (flat.Count == expectedSize)
+            {
+                return new[] { flat.ToArray() };
+            }
+
+            throw new InvalidOperationException("AI returned a flat array with unexpected length.");
         }
 
         if (element.ValueKind == JsonValueKind.String)
@@ -110,22 +143,22 @@ public class AiServiceClient
                 try
                 {
                     using var innerDoc = JsonDocument.Parse(s);
-                    return ParseJsonElementToIntMatrix(innerDoc.RootElement);
+                    return ParseJsonElementToIntMatrix(innerDoc.RootElement, expectedSize);
                 }
                 catch
                 {
-                    var rows = s.Split([']', '['], StringSplitOptions.RemoveEmptyEntries)
+                    var rows = s.Split(new[] { ']', '[' }, StringSplitOptions.RemoveEmptyEntries)
                                 .Where(r => r.Trim() != "," && !string.IsNullOrWhiteSpace(r));
 
-                    return [.. rows.Select(r => r.Split([','], StringSplitOptions.RemoveEmptyEntries)
-                                                 .Select(v => int.Parse(v.Trim())).ToArray())];
+                    var parsed = rows.Select(r => r.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                                .Select(v => int.Parse(v.Trim())).ToArray()).ToArray();
+                    return parsed;
                 }
             }
         }
 
         throw new InvalidOperationException("Unsupported AI matrix response format.");
     }
-
     private static int[] ParseJsonElementToIntArray(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.Array)
