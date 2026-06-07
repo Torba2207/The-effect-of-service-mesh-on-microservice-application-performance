@@ -1,0 +1,59 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: main-ingress
+  namespace: thesis-test
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /api/Ai
+        pathType: Prefix
+        backend:
+          service:
+            name: ai-service
+            port:
+              number: 80
+      - path: /api/permutation
+        pathType: Prefix
+        backend:
+          service:
+            name: permutation-service
+            port:
+              number: 80
+      - path: /api/fibonacci
+        pathType: Prefix
+        backend:
+          service:
+            name: fibonacci-service
+            port:
+              number: 80
+      - path: /api/integration
+        pathType: Prefix
+        backend:
+          service:
+            name: integration-service
+            port:
+              number: 80
+      - path: /api/differential
+        pathType: Prefix
+        backend:
+          service:
+            name: differential-equations-service
+            port:
+              number: 80
+      - path: /api/filters
+        pathType: Prefix
+        backend:
+          service:
+            name: digital-filters-service
+            port:
+              number: 80
+      - path: /api/video
+        pathType: Prefix
+        backend:
+          service:
+            name: video-service
+            port:
+              number: 80
