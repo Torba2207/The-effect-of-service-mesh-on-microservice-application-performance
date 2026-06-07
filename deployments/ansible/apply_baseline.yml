@@ -33,7 +33,7 @@
         - "{{ k8s_dir }}/integration-service/integration-service-service.yaml"
         
         # Permutation Service (Baseline)
-        - "{{ k8s_dir }}/permutation-service/permutation-service-latest.yaml"
+        - "{{ k8s_dir }}/permutation-service/permutation-service-deployment.yaml"
         - "{{ k8s_dir }}/permutation-service/permutation-service-service.yaml"
         
         # Digital Filters Service
