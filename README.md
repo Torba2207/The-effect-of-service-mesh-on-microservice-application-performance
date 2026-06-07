@@ -424,6 +424,27 @@ curl -X POST http://localhost:5000/api/filters/apply-image \
 
 ✅ Expected Response: PNG image file stream (processed image)
 
+#### Apply AI-generated Filter to Raw Matrix
+```bash
+curl -X POST http://localhost:5000/api/filters/apply-ai-matrix \
+  -H "Content-Type: application/json" \
+  -d '{
+    "matrix": [[10,20,30],[40,50,60],[70,80,90]],
+    "filterName": "blur",
+    "kernelSize": 0
+  }'
+```
+
+✅ Expected Response (Blur filter reduces intensity variation):
+
+```json
+{
+  "processedMatrix": [[20,30,25],[35,50,45],[60,70,65]],
+  "filterApplied": "blur",
+  "processedAt": "2026-06-07T02:26:05.282Z"
+}
+```
+
 ### 🔢 AI Service
 
 AI-powered data generation service for random numbers and synthetic image generation.
