@@ -430,7 +430,7 @@ AI-powered data generation service for random numbers and synthetic image genera
 
 Generate random numbers:
 ```bash
-curl -X POST http://localhost:5000/api/ai/generate \
+curl -X POST http://localhost:5000/api/Ai/generate \
   -H "Content-Type: application/json" \
   -d '{"user_input": "Give me 10 random numbers between 1 and 100 with seed 42"}'
 ```
@@ -448,7 +448,7 @@ curl -X POST http://localhost:5000/api/ai/generate \
 
 Generate synthetic image:
 ```bash
-curl -X POST http://localhost:5000/api/ai/generate \
+curl -X POST http://localhost:5000/api/Ai/generate \
   -H "Content-Type: application/json" \
   -d '{"user_input": "Generate an image with seed 42 width 512 height 512"}'
 ```
@@ -466,7 +466,7 @@ curl -X POST http://localhost:5000/api/ai/generate \
 
 Retrieve generated image:
 ```bash
-curl http://localhost:5000/api/ai/image/generated_42_512_512.png
+curl http://localhost:5000/api/Ai/image/generated_42_512_512.png
 ```
 
 ✅ Expected Response: Base64-encoded PNG image or image data
