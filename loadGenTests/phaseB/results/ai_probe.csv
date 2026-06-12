@@ -1,0 +1,4 @@
+config,mesh,mtls,scenario,reqs,fail_rate,lat_avg_ms,lat_p50_ms,lat_p90_ms,lat_p95_ms,lat_p99_ms,lat_max_ms
+linkerd_mtls,linkerd,on,ai_generate,30,0,1434.2744825000002,1432.0800905,1453.4735148,1462.6171815,1474.16568916,1477.076012
+linkerd_mtls,linkerd,on,permutation_from_ai,30,0,1460.5373586,1454.923215,1488.0019447,1507.07546375,1577.19064668,1604.678647
+linkerd_mtls,linkerd,on,filters_ai_matrix,30,0,1681.578377166667,1677.008173,1707.9546415,1726.2847204,1742.00248008,1748.360831
