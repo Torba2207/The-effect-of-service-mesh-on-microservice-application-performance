@@ -24,6 +24,18 @@
     - name: Verify Linkerd installation
       ansible.builtin.command: linkerd check
 
+    # Mesh the NGINX ingress controller so north-south (ingress->service) traffic also
+    # carries mTLS, making it comparable to Istio's meshed ingress gateway. Only the
+    # controller Deployment is injected (NOT the ingress-nginx namespace) so the one-shot
+    # admission Jobs are left unmeshed and can complete.
+    - name: Inject Linkerd proxy into the NGINX Ingress Controller
+      ansible.builtin.shell: >
+        kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type merge
+        -p '{"spec":{"template":{"metadata":{"annotations":{"linkerd.io/inject":"enabled"}}}}}'
+
+    - name: Wait for the meshed NGINX Ingress Controller to roll out
+      ansible.builtin.shell: kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=180s
+
     - name: Ensure thesis namespace exists with Linkerd injection annotation
       kubernetes.core.k8s:
         state: present
