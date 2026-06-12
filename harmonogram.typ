@@ -28,5 +28,9 @@
   
   [30.09.2026], [Pomiary wydajności z użyciem różnych rozwiązań service mesh], [Raport PDF z wynikami dla różnych rozwiązań service mesh oraz pliki konfiguracyjne],
   
-  [30.09.2026], [Podsumowanie pomiarów wydajności, wnioskowanie], [Ostateczny raport PDF z zestawieniem wyników (tabele, wykresy porównawcze) i wnioskami]
+  [30.09.2026], [Podsumowanie pomiarów wydajności, wnioskowanie], [Ostateczny raport PDF z zestawieniem wyników (tabele, wykresy porównawcze) i wnioskami],
+
+  [30.10.2026], [Badanie zorientowane na opóźnienia], [Zbadanie zachowania mikroserwisów w warunkach gdzie wielu małych usług wymieniających częste, niemal puste żądania, z symulowanym opóźnieniem między węzłami, aby scharakteryzować, jak zachowuje się każdy data plane, gdy narzut związany z proxy/szyfrowaniem dominuje nad payload, a nie nad obliczeniami.]
+
+  
 )
