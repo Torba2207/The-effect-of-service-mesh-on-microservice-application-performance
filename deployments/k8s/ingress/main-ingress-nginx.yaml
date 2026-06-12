@@ -3,6 +3,11 @@ kind: Ingress
 metadata:
   name: main-ingress
   namespace: thesis-test
+  annotations:
+    # Route to the Service ClusterIP (not individual pod endpoints) so the meshed
+    # ingress controller's linkerd-proxy can do service discovery and mTLS to backends.
+    # Required for north-south (ingress->service) mTLS in the Linkerd phase.
+    nginx.ingress.kubernetes.io/service-upstream: "true"
 spec:
   ingressClassName: nginx
   rules:
