@@ -50,6 +50,17 @@ Two `row_type`s per run:
 
 Join on `run_id`. Deltas vs `baseline` and the mTLS deltas are computed downstream.
 
+### CPU/RAM behaviour over time (not just scalars)
+`master.csv` stores summarized scalars (mean/p95/max) per run. The full CPU/RAM **curves**
+are pulled from Prometheus into `results/timeseries_<config>.csv` automatically at the end of
+each `run_phaseB.sh` run (long format: `run_id,config,mesh,level,rep,t_rel_s,kind,service,container,value`).
+To (re)generate or back-fill any past config from the recorded windows:
+```bash
+python3 extract_timeseries.py --master results/master.csv --config <label> \
+  --out results/timeseries_<label>.csv --step 10 [--plot-run <run_id>]
+```
+Resolution is ~15 s (cadvisor); for finer latency-over-time use `timeseries/capture_run.sh`.
+
 ## Payloads (Phase B) and the AI exception
 Phase B uses **light** work units so each request is ~5-15 ms and a service can sustain
 100 req/s within its 500m×3 CPU budget (validated: at HIGH, fail=0, p95 single-digit ms):
