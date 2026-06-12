@@ -132,5 +132,5 @@ healthchecksdb
 
 .env
 
-.mp4
-.png
+loadGenTests/phaseB/assets/*.mp4
+loadGenTests/phaseB/assets/*.png
