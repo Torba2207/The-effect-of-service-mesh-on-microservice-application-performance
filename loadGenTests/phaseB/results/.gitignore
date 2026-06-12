@@ -1,0 +1,4 @@
+# generated run artifacts
+master.csv
+k6_*.json
+k6_*.log
