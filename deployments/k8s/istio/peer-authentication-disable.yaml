@@ -1,0 +1,11 @@
+# I-P configuration: disable mTLS while keeping the Envoy sidecar in the data path.
+# This isolates the cost of mTLS (proxy stays, encryption removed). Apply AFTER
+# `make istio` instead of peer-authentication-strict.yaml.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: thesis-test
+spec:
+  mtls:
+    mode: DISABLE

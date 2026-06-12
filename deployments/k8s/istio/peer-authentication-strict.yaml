@@ -1,0 +1,11 @@
+# I-S configuration: force mTLS on all in-mesh traffic in thesis-test.
+# Apply AFTER `make istio` (the Istio phase deploys sidecars with PERMISSIVE mTLS by
+# default; this makes it STRICT). For the I-P config use peer-authentication-disable.yaml.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: thesis-test
+spec:
+  mtls:
+    mode: STRICT
