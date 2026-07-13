@@ -28,14 +28,25 @@
 set -euo pipefail
 
 # --- fixed environment ---
-SSH_KEY="/home/torba/Documents/PG/Projects/.sshkeys/pgPB"
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+
+# SSH key: read from $SSH_PRIVATE_KEY if set, else from the SSH_PRIVATE_KEY entry in
+# the repo-root .env (override the file with ENV_FILE=/path/to/.env).
+ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
+SSH_KEY="${SSH_PRIVATE_KEY:-}"
+if [ -z "$SSH_KEY" ]; then
+  [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
+  SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
+fi
+[ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
+
 SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
 LG_IP="10.29.20.130"
 LG_DIR="/root/thesis-tests/phaseB"
 CTX="projekt-badawchy-cluster"
 PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
-HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # --- defaults ---
 NODE_IP="10.29.20.113"; URL=""; LEVELS="low med high"; REPS=10
