@@ -30,7 +30,8 @@ if (Test-Path $keyPath) {
 }
 else {
     Write-Host "Generating SSH key: $keyPath"
-    ssh-keygen -t rsa -b 4096 -f $keyPath -N ""
+    # FIXED: Wrapped "" in single quotes so PowerShell passes it correctly
+    ssh-keygen -t rsa -b 4096 -f $keyPath -N '""'
 }
 
 # Ensure .env at repo root contains SSH_PRIVATE_KEY pointing to generated key
@@ -38,8 +39,8 @@ $envFile = Join-Path $repoRoot ".env"
 $kv = "SSH_PRIVATE_KEY=$keyPath"
 if (Test-Path $envFile) {
     $content = Get-Content $envFile -Raw
-    if ($content -match '^SSH_PRIVATE_KEY=') {
-        $newContent = $content -replace '^SSH_PRIVATE_KEY=.*', $kv
+    if ($content -match '(?m)^SSH_PRIVATE_KEY=') {
+        $newContent = $content -replace '(?m)^SSH_PRIVATE_KEY=.*', $kv
         Set-Content -Path $envFile -Value $newContent -Force
     }
     else {
