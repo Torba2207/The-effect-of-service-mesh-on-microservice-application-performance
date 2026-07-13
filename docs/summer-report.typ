@@ -9,7 +9,7 @@
 
 // ---------------- Title page ----------------
 #align(center)[
-  #image("images/Logo_pg_eti.png", width: 55%)
+  #image("../images/Logo_pg_eti.png", width: 55%)
   #v(1.5em)
   #text(size: 22pt, weight: "bold")[The Effect of Service Mesh on Microservice Application Performance]
   #v(0.6em)
@@ -72,7 +72,7 @@ compute-heavy workload. Rather than a generic web shop, each service deliberatel
 different resource axis, so that the mesh overhead can be observed against distinct workload types.
 
 #figure(
-  image("images/SM_Project_App_Arch.drawio.png", width: 92%),
+  image("../images/SM_Project_App_Arch.drawio.png", width: 92%),
   caption: [Architecture of the microservice test application.],
 )
 
@@ -142,12 +142,12 @@ assessment, *12 articles* were retained for data extraction.
 #grid(
   columns: (1fr, 1fr),
   gutter: 10pt,
-  figure(image("SLR/database_counts_pre_dedup.png", width: 100%),
+  figure(image("../SLR/database_counts_pre_dedup.png", width: 100%),
     caption: [Articles per database (pre-deduplication).]),
-  figure(image("SLR/publications_by_year.png", width: 100%),
+  figure(image("../SLR/publications_by_year.png", width: 100%),
     caption: [Unique publications by year.]),
 )
-#figure(image("SLR/top_sources.png", width: 78%), caption: [Top publication sources.])
+#figure(image("../SLR/top_sources.png", width: 78%), caption: [Top publication sources.])
 
 *Key findings from the literature.* (i) Sidecar architectures and mutual TLS introduce measurable
 latency and CPU/RAM overhead, driven by cryptography and the Linux network stack. (ii) Direct
@@ -274,10 +274,10 @@ All 90 aggregate runs completed with a 0% request-failure rate on the in-cluster
 
 == Overall resource usage over time
 
-#figure(image("loadGenTests/phaseB/results/plots/high/overall_ram.png", width: 95%),
+#figure(image("../loadGenTests/phaseB/results/plots/high/overall_ram.png", width: 95%),
   caption: [Overall RAM (mean of all services, app + sidecar) over the steady window at high load.])
 
-#figure(image("loadGenTests/phaseB/results/plots/high/overall_cpu.png", width: 95%),
+#figure(image("../loadGenTests/phaseB/results/plots/high/overall_cpu.png", width: 95%),
   caption: [Overall CPU (mean of all services, app + sidecar) over time at high load.])
 
 The single clearest result is *memory*: the per-pod data-plane footprint of *Istio's Envoy sidecar
@@ -329,7 +329,7 @@ for expensive ones — the sidecar's fixed cost simply dominates a cheap request
 
 == Per-service behaviour
 
-#figure(image("loadGenTests/phaseB/results/plots/high/service_integration.png", width: 100%),
+#figure(image("../loadGenTests/phaseB/results/plots/high/service_integration.png", width: 100%),
   caption: [Integration service: CPU and RAM over time, and latency p95 across loads.
   The mesh sidecars raise CPU from $approx 135$ m (baseline) to $approx 200$ m, and Istio's RAM
   ($approx 268$ MiB) stands well above Linkerd's ($approx 187$ MiB) and baseline's ($approx 178$ MiB).])
@@ -339,7 +339,7 @@ Equivalent figures for every service (and for low/medium load) are generated int
 
 == AI / chained (S2-ext) latency
 
-#figure(image("loadGenTests/phaseB/results/plots/ai_probe_latency.png", width: 95%),
+#figure(image("../loadGenTests/phaseB/results/plots/ai_probe_latency.png", width: 95%),
   caption: [AI / S2-ext chain latency (closed-loop probe, 30 samples each). Bars = p50, whiskers → p95.])
 
 For the AI-bound chains the picture is the opposite of the compute services: latency

@@ -1,5 +1,5 @@
 #align(left)[
-  #image("images/Logo_pg_eti.png", width: 60%)
+  #image("../images/Logo_pg_eti.png", width: 60%)
 ]
 
 #align(horizon)[
