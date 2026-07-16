@@ -79,7 +79,7 @@ Set-Location .\The-effect-of-service-mesh-on-microservice-application-performanc
 ## 5) Configure SSH keys for all nodes
 
 Expected key path used by Ansible inventory:
-- `~/Documents/PG/Projects/.sshkeys/pgPB`
+- `<path_to_your_key>`
 
 Run:
 
@@ -117,11 +117,66 @@ File:
 Validate:
 - all IPs are current
 - `ansible_user=root`
-- `ansible_ssh_private_key_file=~/Documents/PG/Projects/.sshkeys/pgPB`
+- `ansible_ssh_private_key_file=<path_to_your_key>`
 
 ---
 
-## 7) Configure GHCR access (for your own images)
+## 7) Configure local kubectl access (kubeconfig)
+
+Ansible drives the cluster over SSH (section 5), but to run `kubectl` from your own machine — and
+for `make baseline|istio|linkerd` in `deployments/` to work — your workstation needs the cluster's
+kubeconfig selected as the current context. One-time setup; requires the VPN (section 1) connected.
+
+Fetch the admin kubeconfig from the first control-plane node and point it at that node's API server:
+
+```bash
+# 1. copy the admin config from node1
+scp -i <path_to_your_key> \
+  root@10.29.20.101:/etc/kubernetes/admin.conf /tmp/pg-admin.conf
+
+# 2. ensure it targets node1's reachable API server (127.0.0.1 only works ON the node)
+sed -i 's#server: https://127.0.0.1:6443#server: https://10.29.20.101:6443#' /tmp/pg-admin.conf
+#    verify the server line now reads https://10.29.20.101:6443 :
+grep 'server:' /tmp/pg-admin.conf
+
+# 3. give the context a clear, stable name
+#    (source context name is usually kubernetes-admin@cluster.local; if not, list it with:
+#     KUBECONFIG=/tmp/pg-admin.conf kubectl config get-contexts)
+KUBECONFIG=/tmp/pg-admin.conf kubectl config rename-context \
+  kubernetes-admin@cluster.local projekt-badawchy-cluster
+```
+
+Then merge it into your default `~/.kube/config` (recommended), or keep it standalone:
+
+```bash
+# Option A — merge into ~/.kube/config (recommended)
+KUBECONFIG=~/.kube/config:/tmp/pg-admin.conf kubectl config view --flatten > /tmp/merged.conf
+mkdir -p ~/.kube && mv /tmp/merged.conf ~/.kube/config && chmod 600 ~/.kube/config
+
+# Option B — standalone file (add the export to ~/.bashrc to persist)
+mkdir -p ~/.kube && cp /tmp/pg-admin.conf ~/.kube/pg.conf
+export KUBECONFIG=~/.kube/pg.conf
+```
+
+Select it as the current context and verify:
+
+```bash
+kubectl config use-context projekt-badawchy-cluster
+kubectl get nodes            # all 6 nodes should report Ready
+```
+
+Notes:
+- `10.29.20.101:6443` is only reachable through the **VPN** (section 1).
+- The `make` targets in `deployments/` pin this context automatically
+  (`kubectl config use-context projekt-badawchy-cluster` runs first), so a stray default context
+  (e.g. `docker-desktop`, `microk8s`) cannot misdirect cluster operations. You can also switch to it
+  manually at any time with the `use-context` command above.
+- The kubeconfig grants full admin access to the cluster — keep `~/.kube/config` private
+  (`chmod 600`) and do not commit it.
+
+---
+
+## 8) Configure GHCR access (for your own images)
 
 Create GitHub PAT with:
 - `read:packages`
@@ -142,7 +197,7 @@ PowerShell:
 
 ---
 
-## 8) First-time bootstrap
+## 9) First-time bootstrap
 
 ```bash
 chmod +x scripts/linux/*.sh
@@ -162,7 +217,7 @@ This runs:
 
 ---
 
-## 9) Optional: build and push your own service images
+## 10) Optional: build and push your own service images
 
 Default tag in scripts is now generic: `team-test`.
 Use a lowercase value for `GHCR_OWNER` when pushing packages.
@@ -179,7 +234,7 @@ PowerShell:
 
 ---
 
-## 10) Point K8s deployments to your images
+## 11) Point K8s deployments to your images
 
 ```bash
 GHCR_OWNER=<your_github_username> TAG=team-test NAMESPACE=thesis-test ./scripts/linux/point_to_new.sh
@@ -197,7 +252,7 @@ This also:
 
 ---
 
-## 11) Re-run after changes
+## 12) Re-run after changes
 
 With build/push:
 
