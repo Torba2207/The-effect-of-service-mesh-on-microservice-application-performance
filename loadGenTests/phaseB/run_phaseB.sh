@@ -131,7 +131,7 @@ run_one() {
   sleep "$COOLDOWN"
   ensure_pf
 
-  python3 "$HERE/collect_metrics.py" \
+  python3 "$HERE/../common/collect_metrics.py" \
     --prom "$PROM_LOCAL" --config "$CONFIG" --mesh "$MESH" --mtls "$MTLS" \
     --level "$level" --rep "$rep" --run-id "$run_id" \
     --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
@@ -139,7 +139,7 @@ run_one() {
   # Extract this run's CPU/RAM time-series NOW, while it is still in Prometheus.
   # Prometheus retention here is only 1h (tmpfs), so end-of-campaign extraction would
   # already be too late for the first runs — it must be done per-run.
-  python3 "$HERE/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
+  python3 "$HERE/../common/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
     --run-id "$run_id" --append --out "$RESULTS/timeseries_${CONFIG}.csv" --step 10 >/dev/null 2>&1 || true
 }
 
