@@ -52,7 +52,6 @@ function record(s, res) {
   okr[s].add(ok);
   lat[s].add(res.timings.duration);
   
-  // Безопасная и стандартная проверка для k6
   check(res, {
     'status is 200': (r) => r.status === 200,
   });

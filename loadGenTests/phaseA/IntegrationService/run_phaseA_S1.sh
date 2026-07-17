@@ -12,7 +12,7 @@ set -euo pipefail
 
 # --- Fixed Environment ---
 HERE="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$HERE/../.." && pwd)"
+REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 
 # Read SSH private key from .env or environment variable
 ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
@@ -129,13 +129,13 @@ run_one() {
   sleep "$COOLDOWN"
   ensure_pf
 
-  python3 "$HERE/collect_metrics.py" \
+  python3 "$HERE/../../common/collect_metrics.py" \
     --prom "$PROM_LOCAL" --config "$CONFIG" --mesh "$MESH" --mtls "$MTLS" \
     --level "$level" --rep "$rep" --run-id "$run_id" \
     --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
 
   # Экстракция метрик процессора/памяти в реальном времени, пока они есть в Prometheus
-  python3 "$HERE/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
+  python3 "$HERE/../../common/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
     --run-id "$run_id" --append --out "$RESULTS/timeseries_${CONFIG}.csv" --step 10 >/dev/null 2>&1 || true
 }
 
