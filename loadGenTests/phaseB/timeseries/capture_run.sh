@@ -42,7 +42,7 @@ echo "== capture $RUN :: mesh=$MESH mtls=$MTLS url=$URL steady=$STEADY step=${ST
 # sync
 ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR/assets"
 scp $KEY_OPTS "$PB/aggregate.js" root@"$LG_IP":"$LG_DIR/" >/dev/null
-scp $KEY_OPTS "$PB/assets/filter_input_128.png" "$PB/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
+scp $KEY_OPTS "$PB/../common/assets/filter_input_128.png" "$PB/../common/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
 
 # prometheus port-forward
 kubectl --context "$CTX" -n monitoring port-forward "svc/$PROM_SVC" 9090:9090 >/dev/null 2>&1 &

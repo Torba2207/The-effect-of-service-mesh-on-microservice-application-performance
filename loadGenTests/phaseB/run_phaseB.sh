@@ -87,7 +87,7 @@ curl -s -m 8 -o /dev/null -w '  ingress -> http=%{http_code}\n' -X POST "$URL/ap
 echo "[sync] copying aggregate.js + assets to lg:$LG_DIR ..."
 ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR/assets"
 scp $KEY_OPTS "$HERE/aggregate.js" root@"$LG_IP":"$LG_DIR/" >/dev/null
-scp $KEY_OPTS "$HERE/assets/filter_input_128.png" "$HERE/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
+scp $KEY_OPTS "$HERE/../common/assets/filter_input_128.png" "$HERE/../common/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
 
 # --- Prometheus port-forward ---
 start_pf() {
