@@ -1,0 +1,9 @@
+run_id,config,mesh,mtls,level,rep,steady_start_utc,steady_end_utc,row_type,service,scenario,rps_target,reqs,fail_rate,lat_avg_ms,lat_p50_ms,lat_p90_ms,lat_p95_ms,lat_p99_ms,lat_max_ms,app_cpu_milli_mean,app_cpu_milli_p95,sidecar_cpu_milli_mean,sidecar_cpu_milli_p95,app_mem_mib_mean,app_mem_mib_max,sidecar_mem_mib_mean,sidecar_mem_mib_max
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,permutation,,,,,,,,,,,0.43849147886176176,0.46845732612750157,,,142.69921875,142.69921875,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,fibonacci,,,,,,,,,,,0.16739396569115428,0.19189085254671845,,,147.0625,147.0625,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,integration,,,,,,,,,,,0.15766267892484495,0.18603306547559992,,,169.01953125,169.01953125,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,differential,,,,,,,,,,,0.18021338702008732,0.19226820475299933,,,160.0859375,160.0859375,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,digital-filters,,,,,,,,,,,6.03282168535411,15.478968034169787,,,162.25520833333334,162.5390625,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,video,,,,,,,,,,,0.1866874768044921,0.19336852199078478,,,147.43359375,147.43359375,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,resource,_ingress,,,,,,,,,,,3.241949999481678,,,,116.54166666666667,,,
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,na,low,1,1784384277,1784384283,latency,digital-filters,filters_apply_image,25,126,0,11.958641063492067,9.7018105,14.466417,26.4801995,58.733095999999996,77.511255,,,,,,,,

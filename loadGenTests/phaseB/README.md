@@ -20,7 +20,7 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls`, `istio_mt
 | `ai_probe/` | workstation + lg | Closed-loop (1 VU) probe for the AI / S2-ext chains → `results/ai_probe.csv`. |
 | `timeseries/` | workstation + lg | Single-run capture with true per-second latency (`capture_run.sh`). |
 | `make_plots.py`, `make_ai_plot.py` | workstation | Comparison figures → `results/plots/`. |
-| `assets/` | — | Fixed work-unit inputs (`filter_input_128.png`, `sample_360p_1s.mp4`) + `make_assets.sh`. |
+| `../common/assets/` | — | Fixed work-unit inputs (`filter_input_128.png`, `sample_360p_1s.mp4`) + `make_assets.sh`, shared across phases. |
 
 ## Prerequisites
 - Workstation: `kubectl` (context `projekt-badawchy-cluster`), `python3` (+ matplotlib for plots),
