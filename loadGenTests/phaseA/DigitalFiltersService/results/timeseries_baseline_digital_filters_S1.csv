@@ -1,0 +1,15 @@
+run_id,config,mesh,level,rep,t_rel_s,kind,service,container,value
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,permutation,app,0.0004
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,permutation,app,142.7
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,fibonacci,app,0.0002
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,fibonacci,app,147.06
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,integration,app,0.0002
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,integration,app,169.02
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,differential,app,0.0002
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,differential,app,160.09
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,digital-filters,app,0.0005
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,digital-filters,app,162.11
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,video,app,0.0002
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,video,app,147.43
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,cpu_cores,_ingress,app,0.0012
+baseline_digital_filters_S1_low_r1,baseline_digital_filters_S1,baseline,low,1,0.0,mem_mib,_ingress,app,116.34
