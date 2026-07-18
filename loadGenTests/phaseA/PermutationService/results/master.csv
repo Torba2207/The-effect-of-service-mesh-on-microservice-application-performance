@@ -1,0 +1,9 @@
+run_id,config,mesh,mtls,level,rep,steady_start_utc,steady_end_utc,row_type,service,scenario,rps_target,reqs,fail_rate,lat_avg_ms,lat_p50_ms,lat_p90_ms,lat_p95_ms,lat_p99_ms,lat_max_ms,app_cpu_milli_mean,app_cpu_milli_p95,sidecar_cpu_milli_mean,sidecar_cpu_milli_p95,app_mem_mib_mean,app_mem_mib_max,sidecar_mem_mib_mean,sidecar_mem_mib_max
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,permutation,,,,,,,,,,,41.08247533761379,86.05993674839446,,,141.609375,142.421875,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,fibonacci,,,,,,,,,,,0.15361849002046923,0.1775082687406274,,,147.0625,147.0625,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,integration,,,,,,,,,,,0.12047470988123903,0.13942384670492655,,,169.01953125,169.01953125,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,differential,,,,,,,,,,,0.14220866398282653,0.15876386286409153,,,160.0859375,160.0859375,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,digital-filters,,,,,,,,,,,0.3864907010880104,0.44302733018203044,,,161.734375,161.734375,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,video,,,,,,,,,,,0.14988706348781183,0.17733584339712166,,,147.43359375,147.43359375,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,resource,_ingress,,,,,,,,,,,6.154007608551994,,,,116.1171875,,,
+baseline_permutation_S1_low_r1,baseline_permutation_S1,baseline,na,low,1,1784365232,1784365253,latency,permutation,permutation_generate,25,500,0,4.600512052000002,4.5456265,5.3193069,5.5289420499999995,7.435690759999999,7.974521,,,,,,,,
