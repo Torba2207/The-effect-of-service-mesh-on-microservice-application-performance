@@ -1,18 +1,18 @@
 {
   "level": "low",
-  "duration": "20s",
+  "duration": "120s",
   "include_ai": false,
   "scenarios": {
     "permutation_generate": {
       "rps_target": 25,
-      "reqs": 500,
+      "reqs": 3000,
       "fail_rate": 0,
-      "lat_avg_ms": 4.600512052000002,
-      "lat_p50_ms": 4.5456265,
-      "lat_p90_ms": 5.3193069,
-      "lat_p95_ms": 5.5289420499999995,
-      "lat_p99_ms": 7.435690759999999,
-      "lat_max_ms": 7.974521
+      "lat_avg_ms": 5.575768282666669,
+      "lat_p50_ms": 5.1672080000000005,
+      "lat_p90_ms": 7.4924471,
+      "lat_p95_ms": 7.6639521,
+      "lat_p99_ms": 7.96200076,
+      "lat_max_ms": 10.822063
     }
   }
 }
