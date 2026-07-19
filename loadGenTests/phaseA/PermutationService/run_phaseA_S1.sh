@@ -56,7 +56,11 @@ fi
 SSH_KEY_TMP="/tmp/phaseA_perm_ssh_key.$$"
 cp "$SSH_KEY" "$SSH_KEY_TMP" 2>/dev/null || { echo "ERROR: could not copy SSH key to temp path"; exit 1; }
 chmod 600 "$SSH_KEY_TMP"
-trap 'rm -f "${SSH_KEY_TMP:-}"' EXIT
+cleanup() {
+  rm -f "${SSH_KEY_TMP:-}"
+  kill "$PF_PID" 2>/dev/null || true
+}
+trap cleanup EXIT
 SSH_KEY="$SSH_KEY_TMP"
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
@@ -95,7 +99,7 @@ while getopts "n:l:r:W:S:C:" opt; do
   esac
 done
 
-URL="http://$NODE_IP:30080"
+URL="${URL:-http://$NODE_IP:30080}"
 RESULTS="$HERE/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
 KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
