@@ -1,18 +1,18 @@
 {
   "level": "low",
-  "duration": "5s",
+  "duration": "120s",
   "include_ai": false,
   "scenarios": {
     "filters_apply_image": {
       "rps_target": 25,
-      "reqs": 126,
+      "reqs": 3000,
       "fail_rate": 0,
-      "lat_avg_ms": 11.958641063492067,
-      "lat_p50_ms": 9.7018105,
-      "lat_p90_ms": 14.466417,
-      "lat_p95_ms": 26.4801995,
-      "lat_p99_ms": 58.733095999999996,
-      "lat_max_ms": 77.511255
+      "lat_avg_ms": 10.091835902666658,
+      "lat_p50_ms": 9.6633565,
+      "lat_p90_ms": 13.8148576,
+      "lat_p95_ms": 14.0365585,
+      "lat_p99_ms": 14.32411962,
+      "lat_max_ms": 15.672583
     }
   }
 }
