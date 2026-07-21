@@ -1,0 +1,18 @@
+{
+  "level": "low",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "integration_calculate": {
+      "rps_target": 25,
+      "reqs": 3001,
+      "fail_rate": 0,
+      "lat_avg_ms": 2.0904712459180264,
+      "lat_p50_ms": 2.09486,
+      "lat_p90_ms": 2.358436,
+      "lat_p95_ms": 2.458254,
+      "lat_p99_ms": 2.713194,
+      "lat_max_ms": 4.08837
+    }
+  }
+}
