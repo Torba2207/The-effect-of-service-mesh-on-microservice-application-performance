@@ -58,7 +58,7 @@ cp "$SSH_KEY" "$SSH_KEY_TMP" 2>/dev/null || { echo "ERROR: could not copy SSH ke
 chmod 600 "$SSH_KEY_TMP"
 cleanup() {
   rm -f "${SSH_KEY_TMP:-}"
-  kill "$PF_PID" 2>/dev/null || true
+  kill "${PF_PID:-}" 2>/dev/null || true
 }
 trap cleanup EXIT
 SSH_KEY="$SSH_KEY_TMP"
@@ -87,8 +87,9 @@ STEADY="120s"
 COOLDOWN=30
 
 # Parse arguments (load management parameters only)
-while getopts "n:l:r:W:S:C:" opt; do
+while getopts "u:n:l:r:W:S:C:" opt; do
   case "$opt" in
+    u) URL="$OPTARG" ;;
     n) NODE_IP="$OPTARG" ;;
     l) LEVELS="$OPTARG" ;;
     r) REPS="$OPTARG" ;;
