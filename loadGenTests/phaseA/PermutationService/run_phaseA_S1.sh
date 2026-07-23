@@ -77,7 +77,7 @@ MTLS="na"
 SERVICE="permutation-service"
 JS_FILE="permutation-test.js"
 NODE_IP="10.29.20.113"
-URL="${URL:-http://$NODE_IP:30080}"
+URL=""
 
 # --- Default load parameters (can be overridden via flags) ---
 LEVELS="low med high"
@@ -99,7 +99,7 @@ while getopts "n:l:r:W:S:C:" opt; do
   esac
 done
 
-URL="${URL:-http://$NODE_IP:30080}"
+[ -z "$URL" ] && URL="http://${NODE_IP}:30080"
 RESULTS="$HERE/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
 KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
@@ -122,12 +122,10 @@ kubectl --context "$CTX" get ns thesis-test >/dev/null || { echo "kube context u
 echo "[preflight] target URL..."
 curl -s -m 8 -o /dev/null -w '   ingress -> http=%{http_code}\n' -X POST "$URL/api/permutation/generate" -H 'Content-Type: application/json' -d '{"set":[1,2,3,4,5,6,7]}' || true
 
-# --- sync assets + script to lg ---
 echo "[sync] copying $JS_FILE to lg:$LG_DIR ..."
 ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR"
 scp $KEY_OPTS "$HERE/$JS_FILE" root@"$LG_IP":"$LG_DIR/" >/dev/null
 
-# --- Prometheus port-forward ---
 start_pf() {
   kubectl --context "$CTX" -n monitoring port-forward "svc/$PROM_SVC" 9090:9090 >/dev/null 2>&1 &
   PF_PID=$!
@@ -140,10 +138,8 @@ ensure_pf() {  # restart if it died
   fi
 }
 start_pf
-trap 'kill "$PF_PID" 2>/dev/null || true' EXIT
 ensure_pf
 
-# Настройка окружения K6 специально под API фазы А
 K6_ENV="BASE_URL=$URL"
 
 run_one() {
@@ -151,12 +147,10 @@ run_one() {
   local run_id="${CONFIG}_${level}_r${rep}"
   echo "---- $run_id ----"
 
-  # warm-up (discarded)
   ssh $KEY_OPTS root@"$LG_IP" \
     "cd $LG_DIR && $K6_ENV LEVEL=$level DURATION=$WARMUP K6_SUMMARY_OUT=/tmp/warm.json k6 run --quiet $JS_FILE" \
     >/dev/null 2>&1 || true
 
-  # steady (measured)
   local start end
   start=$(date -u +%s)
   ssh $KEY_OPTS root@"$LG_IP" \
@@ -164,7 +158,6 @@ run_one() {
     > "$RESULTS/k6_${run_id}.log" 2>&1 || true
   end=$(date -u +%s)
 
-  # retrieve per-scenario summary
   ssh $KEY_OPTS root@"$LG_IP" "cat /tmp/${run_id}.json" > "$RESULTS/k6_${run_id}.json" 2>/dev/null || echo '{"scenarios":{}}' > "$RESULTS/k6_${run_id}.json"
 
   sleep "$COOLDOWN"
@@ -175,12 +168,10 @@ run_one() {
     --level "$level" --rep "$rep" --run-id "$run_id" \
     --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
 
-  # Экстракция метрик процессора/памяти в реальном времени, пока они есть в Prometheus
   python3 "$HERE/../../common/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
     --run-id "$run_id" --append --out "$RESULTS/timeseries_${CONFIG}.csv" --step 10 >/dev/null 2>&1 || true
 }
 
-# --- Главный цикл выполнения тестов ---
 for level in $LEVELS; do
   for rep in $(seq 1 "$REPS"); do
     run_one "$level" "$rep"

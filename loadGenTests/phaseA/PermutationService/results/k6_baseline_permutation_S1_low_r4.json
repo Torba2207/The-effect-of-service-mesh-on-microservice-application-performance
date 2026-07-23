@@ -5,14 +5,14 @@
   "scenarios": {
     "permutation_generate": {
       "rps_target": 25,
-      "reqs": 3001,
+      "reqs": 3000,
       "fail_rate": 0,
-      "lat_avg_ms": 5.475754764745092,
-      "lat_p50_ms": 5.066843,
-      "lat_p90_ms": 7.47225,
-      "lat_p95_ms": 7.653499,
-      "lat_p99_ms": 7.906726,
-      "lat_max_ms": 9.46564
+      "lat_avg_ms": 5.842622803333332,
+      "lat_p50_ms": 5.239979,
+      "lat_p90_ms": 7.7932618,
+      "lat_p95_ms": 7.8951099,
+      "lat_p99_ms": 8.20044278,
+      "lat_max_ms": 8.692584
     }
   }
 }
