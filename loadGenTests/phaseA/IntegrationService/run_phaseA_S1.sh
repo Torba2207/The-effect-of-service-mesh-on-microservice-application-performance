@@ -36,10 +36,10 @@ MESH="baseline"
 MTLS="na"
 SERVICE="integration-service"
 JS_FILE="integration-test.js"
-URL="http://10.29.20.113:30080"
 
 # --- Default load parameters (can be overridden via flags) ---
 NODE_IP="10.29.20.113"
+URL=""
 LEVELS="low med high"
 REPS=10
 WARMUP="30s"
@@ -47,8 +47,9 @@ STEADY="120s"
 COOLDOWN=30
 
 # Parse arguments (load management parameters only)
-while getopts "n:l:r:W:S:C:" opt; do
+while getopts "u:n:l:r:W:S:C:" opt; do
   case "$opt" in
+    u) URL="$OPTARG" ;;
     n) NODE_IP="$OPTARG" ;;
     l) LEVELS="$OPTARG" ;;
     r) REPS="$OPTARG" ;;
@@ -58,6 +59,9 @@ while getopts "n:l:r:W:S:C:" opt; do
     *) echo "Invalid parameter"; exit 2 ;;
   esac
 done
+
+# apply the default only if -u wasn't supplied
+[ -z "$URL" ] && URL="http://${NODE_IP}:30080"
 
 RESULTS="$HERE/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
@@ -79,7 +83,11 @@ ssh $KEY_OPTS root@"$LG_IP" 'command -v k6 >/dev/null' || { echo "k6 missing on 
 echo "[preflight] kube context..."
 kubectl --context "$CTX" get ns thesis-test >/dev/null || { echo "kube context unreachable"; exit 1; }
 echo "[preflight] target URL..."
-curl -s -m 8 -o /dev/null -w '   ingress -> http=%{http_code}\n' "$URL" || true
+# Check the specific app route with a dummy POST to ensure the backend actually responds, 
+# preventing false positives from a generic Ingress 404 response.
+curl -s -m 8 -X POST -H "Content-Type: application/json" \
+  -d '{"function":"x","lowerBound":0,"upperBound":1,"steps":10}' \
+  -o /dev/null -w '   api -> http=%{http_code}\n' "$URL/api/integration/calculate" || true
 
 # --- sync assets + script to lg ---
 echo "[sync] copying $JS_FILE to lg:$LG_DIR ..."
@@ -102,7 +110,6 @@ start_pf
 trap 'kill "$PF_PID" 2>/dev/null || true' EXIT
 ensure_pf
 
-# Настройка окружения K6 специально под API фазы А
 K6_ENV="BASE_URL=$URL"
 
 run_one() {
@@ -134,12 +141,10 @@ run_one() {
     --level "$level" --rep "$rep" --run-id "$run_id" \
     --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
 
-  # Экстракция метрик процессора/памяти в реальном времени, пока они есть в Prometheus
   python3 "$HERE/../../common/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
     --run-id "$run_id" --append --out "$RESULTS/timeseries_${CONFIG}.csv" --step 10 >/dev/null 2>&1 || true
 }
 
-# --- Главный цикл выполнения тестов ---
 for level in $LEVELS; do
   for rep in $(seq 1 "$REPS"); do
     run_one "$level" "$rep"
