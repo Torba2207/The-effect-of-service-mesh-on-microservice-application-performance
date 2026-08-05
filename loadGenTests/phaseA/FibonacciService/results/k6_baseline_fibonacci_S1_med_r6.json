@@ -1,0 +1,18 @@
+{
+  "level": "med",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "fibonacci_calculate": {
+      "rps_target": 50,
+      "reqs": 6000,
+      "fail_rate": 0,
+      "lat_avg_ms": 11.983549789499996,
+      "lat_p50_ms": 11.39298,
+      "lat_p90_ms": 15.2864287,
+      "lat_p95_ms": 15.62928295,
+      "lat_p99_ms": 16.278847910000003,
+      "lat_max_ms": 28.009269
+    }
+  }
+}
