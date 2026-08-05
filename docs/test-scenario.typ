@@ -282,7 +282,7 @@ calls. `steps` is the swept fan-out N (§5); the value below shows the Medium le
 )
 *S1 work unit* (`apply-image`) — fixed multipart form:
 ```text
-image      = assets/filter_input_512.png   (fixed 512x512 PNG)
+image      = assets/filter_input_128.png   (fixed 128x128 PNG)
 filterType = blur
 ```
 *S2 work unit* (`apply-ai-matrix`) — AI generates the matrix, filter applied locally:
@@ -298,7 +298,7 @@ filterType = blur
 )
 *Work unit* (`compress`) — fixed multipart form:
 ```text
-file = assets/sample_720p_10s.mp4   (fixed 10 s 720p H.264 clip, ~5 MB)
+file = assets/sample_360p_1s.mp4   (fixed 1 s 360p H.264 clip, ~106 KB)
 ```
 
 == AI Service — `api/Ai` (port 5005, dedicated VM, class HVY)
@@ -313,8 +313,8 @@ file = assets/sample_720p_10s.mp4   (fixed 10 s 720p H.264 clip, ~5 MB)
 ```
 
 #note[
-  The fixed binary assets (`filter_input_512.png` and `sample_720p_10s.mp4`) must live on the
-  load generator and be checked into the repository (e.g. `loadGenTests/assets/`) so the
+  The fixed binary assets (`filter_input_128.png` and `sample_360p_1s.mp4`) must live on the
+  load generator and be checked into the repository (`loadGenTests/common/assets/`) so the
   exact same bytes are used for every run, every configuration, and by every team member.
   Seeded/deterministic inputs (AI seed 42, fixed payloads) keep per-request work constant.
 ]
@@ -451,6 +451,18 @@ confidence intervals. To control temporal/thermal drift:
   under I-S vs. I-P, and S2-amp shows how that delta compounds with hop count. *Phase B
   (aggregate)* drives all services together at the target profile to validate findings under
   realistic contention. Phase B is optional; start with Phase A.
+]
+
+#note[
+  *Phase B must be re-measured (VideoService params changed).* The VideoService pod
+  resources were raised — CPU *request 100m #sym.arrow 1000m* and *limit 1000m #sym.arrow 4000m*
+  (memory unchanged), applied identically across the baseline, Istio and Linkerd deployment
+  manifests — to relieve the single-core transcoding bottleneck (warm `compress` dropped
+  #sym.tilde 0.5 s #sym.arrow #sym.tilde 0.28 s; sustainable rate #sym.tilde 2 #sym.arrow #sym.tilde 24 RPS).
+  Any Phase B aggregate results collected before this change are *not comparable* and must be
+  discarded and re-run for all configurations. Phase A (isolation) uses the new spec from the
+  start. Because the whole point of Phase B is contention between co-located services, a mid-campaign
+  resource change invalidates the entire run, not just the video rows.
 ]
 
 = Data Collection
