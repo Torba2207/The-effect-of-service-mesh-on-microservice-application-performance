@@ -229,10 +229,18 @@ are gated by AI inference latency and inherit the AI service's *CHN* ceiling (1/
   [POST], [STD], [`/api/fibonacci/calculate`], [n-th Fibonacci number with `BigInteger` arithmetic.], [✓ S1],
   [GET],  [—], [`/health`], [Liveness probe.], [],
 )
-*Work unit* (`calculate`):
+*Work unit* (`calculate`) — the optimal, representative size is *`n = 20000`*:
 ```json
-{ "n": 50000 }
+{ "n": 20000 }
 ```
+The iterative `BigInteger` computation is #box[$O(n^2)$] (the operands grow to #box[$approx 0.69 n$] bits),
+so `n` sets the per-request CPU cost. `n = 20000` was calibrated against the pods'
+CPU ceiling (500m × 3 replicas = 1.5 cores): it sustains the full High rate (100 RPS) at
+#box[$approx 10$] ms/request with #box[$approx 50%$] headroom and a 0% error rate, yielding a clean,
+monotonic CPU-vs-load curve (measured baseline: #box[$approx 231 -> 424 -> 750$] m across Low/Med/High).
+Larger sizes overshoot: #box[$n gt.eq 30000$] hits the CPU limit and throttles at 100 RPS
+(latency jumps to #box[$approx 1.1$] s and the offered rate can no longer be met), which would
+mask the mesh overhead the study targets.
 
 == Integration Service — `api/integration` (port 5004, class STD)
 #ep-table(
