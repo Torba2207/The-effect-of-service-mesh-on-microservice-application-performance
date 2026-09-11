@@ -16,13 +16,45 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../../.." && pwd)"
 
 # Read SSH private key from .env or environment variable
+normalize_ssh_key_path() {
+  local p="$1"
+  if command -v wslpath >/dev/null 2>&1; then
+    local converted
+    converted="$(wslpath -u "$p" 2>/dev/null || true)"
+    if [ -n "$converted" ]; then
+      printf '%s\n' "$converted"
+      return 0
+    fi
+  fi
+  if [[ "$p" =~ ^[A-Za-z]:[\\/] ]]; then
+    python3 - "$p" <<'PY'
+import re, sys
+p = sys.argv[1]
+m = re.match(r'^([A-Za-z]):[\\/](.*)$', p)
+if not m:
+    print(p); sys.exit(0)
+print(f"/mnt/{m.group(1).lower()}/{m.group(2).replace(chr(92), '/')}")
+PY
+  else
+    printf '%s\n' "$p"
+  fi
+}
+
 ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
 SSH_KEY="${SSH_PRIVATE_KEY:-}"
 if [ -z "$SSH_KEY" ]; then
   [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
   SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
 fi
+[ -n "$SSH_KEY" ] && SSH_KEY="$(normalize_ssh_key_path "$SSH_KEY")"
 [ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
+
+# Copy the key to a native-FS temp path with strict perms. On WSL the key may live on a
+# /mnt/c mount where chmod 600 is a no-op, and SSH then rejects it as "too open".
+SSH_KEY_TMP="/tmp/phaseA_filters_ssh_key.$$"
+cp "$SSH_KEY" "$SSH_KEY_TMP" 2>/dev/null || { echo "ERROR: could not copy SSH key to temp path"; exit 1; }
+chmod 600 "$SSH_KEY_TMP"
+SSH_KEY="$SSH_KEY_TMP"
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
 LG_IP="10.29.20.130"
