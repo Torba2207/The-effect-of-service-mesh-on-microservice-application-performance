@@ -1,19 +1,35 @@
 #!/usr/bin/env bash
-# Unified Phase A Orchestrator — Isolated S1 testing (Baseline)
-# Usage: ./run_phaseA_Core.sh -s <service_name> [opts]
+# Unified Phase A orchestrator — isolated S1 testing, one service per invocation.
+#
+# Runs against whatever configuration is currently deployed. -c/-m/-t only LABEL the rows
+# that are written; a preflight check refuses to start when -m disagrees with the data plane
+# actually deployed in thesis-test, so a mesh run can never be filed as baseline.
+#
+# Usage: ./run_phaseA_Core.sh -s <service> [options]
+#
+#   -s SERVICE   digital | fibonacci | integration | permutation | video        (required)
+#   -m MESH      baseline | istio | linkerd                                     (default: baseline)
+#   -t MTLS      on | off for a mesh, na for baseline                           (required with -m)
+#   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_S1" is written to the
+#                config column, run_id and the time-series filename.
+#                (default: baseline, or <mesh>_mtls / <mesh>_nomtls — same labels as Phase B)
+#   -N N         fibonacci work-unit size n                                     (default: 20000)
+#   -u URL       full ingress base URL; required for istio, whose gateway NodePort is dynamic
+#   -n NODE_IP   worker node behind the default URL http://<node>:30080         (default: 10.29.20.113)
+#   -l "LEVELS"  space-separated load levels                                    (default: "low med high")
+#   -r REPS      repetitions per level                                          (default: 10)
+#   -W WARMUP    warm-up duration, discarded                                    (default: 30s)
+#   -S STEADY    steady (measured) duration                                     (default: 120s)
+#   -C SECONDS   cooldown between runs                                          (default: 30)
+#
 # Examples:
-#   ./run_phaseA_Core.sh -s digital -r 5 -l "low med"
-#
-#   ./run_phaseA_Core.sh -s fibonacci -r 5 -l "low med"
-#   ./run_phaseA_Core.sh -s fibonacci -u http://<istio-gateway>:80     # full-URL override (e.g. Istio)
-#
-#   ./run_phaseA_Core.sh -s integration -r 5 -l "low med"
-#
-#   ./run_phaseA_Core.sh -s permutation -r 5 -l "low med"
-#
-#   ./run_phaseA_Core.sh -s video -r 5 -l "low med"
-#   ./run_phaseA_Core.sh -s video -u http://<istio-gateway>:80     # full-URL override (e.g. Istio)
-
+#   ./run_phaseA_Core.sh -s fibonacci                            # -> baseline_fibonacci_S1, n=20000
+#   ./run_phaseA_Core.sh -s fibonacci -N 30000 -r 1 -l high      # calibration run at another n
+#   ./run_phaseA_Core.sh -s video -m linkerd -t on               # -> linkerd_mtls_video_S1
+#   GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc istio-ingressgateway \
+#     -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
+#   ./run_phaseA_Core.sh -s integration -m istio -t off -u http://10.29.20.113:$GWPORT
+#                                                                # -> istio_nomtls_integration_S1
 
 set -euo pipefail
 
@@ -38,7 +54,10 @@ STEADY="120s"
 COOLDOWN=30
 
 MESH="baseline"
-MTLS="na"
+MTLS=""
+CONFIG_LABEL=""
+FIB_N=20000
+
 LG_IP="10.29.20.130"
 LG_DIR="/root/thesis-tests/phaseA"
 CTX="projekt-badawchy-cluster"
@@ -46,9 +65,13 @@ PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
 
 # --- Parse Arguments ---
-while getopts "s:u:n:l:r:W:S:C:" opt; do
+while getopts "s:m:t:c:N:u:n:l:r:W:S:C:" opt; do
   case "$opt" in
     s) SERVICE_NAME="$OPTARG" ;;
+    m) MESH="$OPTARG" ;;
+    t) MTLS="$OPTARG" ;;
+    c) CONFIG_LABEL="$OPTARG" ;;
+    N) FIB_N="$OPTARG" ;;
     u) URL="$OPTARG" ;;
     n) NODE_IP="$OPTARG" ;;
     l) LEVELS="$OPTARG" ;;
@@ -65,13 +88,52 @@ if [ -z "$SERVICE_NAME" ]; then
   exit 1
 fi
 
-# Set default URL before sourcing, as PREFLIGHT_CMD depends on it[cite: 3].
+# --- Validate the labelling flags before anything runs ---
+case "$MESH" in
+  baseline|istio|linkerd) ;;
+  *) echo "ERROR: -m must be baseline, istio or linkerd (collect_metrics.py accepts no other value)"; exit 1 ;;
+esac
+
+if [ "$MESH" = "baseline" ]; then
+  MTLS="${MTLS:-na}"
+  [ "$MTLS" = "na" ] || { echo "ERROR: -m baseline takes -t na (there is no mesh to encrypt)"; exit 1; }
+else
+  [ -n "$MTLS" ] || { echo "ERROR: -m $MESH requires -t on|off"; exit 1; }
+  case "$MTLS" in
+    on|off) ;;
+    *) echo "ERROR: -t must be on or off for -m $MESH"; exit 1 ;;
+  esac
+fi
+
+if [ -z "$CONFIG_LABEL" ]; then
+  if [ "$MESH" = "baseline" ]; then
+    CONFIG_LABEL="baseline"
+  elif [ "$MTLS" = "on" ]; then
+    CONFIG_LABEL="${MESH}_mtls"
+  else
+    CONFIG_LABEL="${MESH}_nomtls"
+  fi
+fi
+[[ "$CONFIG_LABEL" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "ERROR: -c may contain letters, digits, '_' and '-' only (it becomes part of run_id and a filename)"; exit 1; }
+
+[[ "$FIB_N" =~ ^[1-9][0-9]*$ ]] || { echo "ERROR: -N must be a positive integer"; exit 1; }
+
+if [ "$MESH" = "istio" ] && [ -z "$URL" ]; then
+  echo "ERROR: -m istio requires -u; the Envoy gateway NodePort changes on every install. Resolve it with:"
+  echo "  kubectl --context $CTX -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'"
+  exit 1
+fi
+
+# Set default URL before sourcing, as PREFLIGHT_CMD depends on it.
 [ -z "$URL" ] && URL="http://${NODE_IP}:30080"
 
 # --- 1. Load Datafile ---
 if ! source "$HERE/phaseA_Data.sh" "$SERVICE_NAME"; then
   exit 1
 fi
+
+# The run label: written to the config column, to run_id and to the time-series filename.
+CONFIG="${CONFIG_LABEL}_${SERVICE_SLUG}_S1"
 
 # --- 2. Fail-Fast Local Validation ---
 echo "[check] Validating local dependencies..."
@@ -94,6 +156,17 @@ if [ "$HAS_ASSETS" == "true" ]; then
     exit 1
   fi
 fi
+
+echo "============================================================"
+echo " [Phase A] Starting unified test :: $CONFIG"
+echo " Mesh: $MESH | mTLS: $MTLS"
+echo " Target URL: $URL"
+echo " Service Dir: $SERVICE_DIR | Script: $JS_FILE"
+[ "$SERVICE_NAME" = "fibonacci" ] && echo " Fibonacci work unit: n = $FIB_N"
+echo "------------------------------------------------------------"
+echo " Load Levels: [$LEVELS] | Repetitions:$REPS"
+echo " Warmup: $WARMUP | Measurement: $STEADY | Cooldown:${COOLDOWN}s"
+echo "============================================================"
 
 # --- 3. SSH Setup & Preflight ---
 SSH_KEY="${SSH_PRIVATE_KEY:-}"
@@ -134,19 +207,27 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "============================================================"
-echo " [Phase A] Starting unified test :: $CONFIG"
-echo " Target URL: $URL"
-echo " Service Dir: $SERVICE_DIR | Script: $JS_FILE"
-echo "------------------------------------------------------------"
-echo " Load Levels: [$LEVELS] | Repetitions:$REPS"
-echo " Warmup: $WARMUP | Measurement: $STEADY | Cooldown:${COOLDOWN}s"
-echo "============================================================"
-
 echo "[preflight] lg ssh..."
 ssh $KEY_OPTS root@"$LG_IP" 'command -v k6 >/dev/null' || { echo "k6 missing on lg"; exit 1; }
 echo "[preflight] kube context..."
 kubectl --context "$CTX" get ns thesis-test >/dev/null || { echo "kube context unreachable"; exit 1; }
+
+# The deployed data plane must match -m, otherwise the run would be filed under the wrong
+# configuration and collect_metrics.py would look for a sidecar that is not there.
+echo "[preflight] deployed data plane vs -m $MESH ..."
+PODC=" $(kubectl --context "$CTX" -n thesis-test get pods \
+  -o jsonpath='{.items[*].spec.containers[*].name} {.items[*].spec.initContainers[*].name}' 2>/dev/null) "
+case "$MESH" in
+  baseline)
+    if [[ "$PODC" == *" istio-proxy "* || "$PODC" == *" linkerd-proxy "* ]]; then
+      echo "ERROR: -m baseline, but thesis-test pods carry a mesh sidecar. Pass the real -m/-t."; exit 1
+    fi ;;
+  istio)
+    [[ "$PODC" == *" istio-proxy "* ]] || { echo "ERROR: -m istio, but no istio-proxy sidecar in thesis-test."; exit 1; } ;;
+  linkerd)
+    [[ "$PODC" == *" linkerd-proxy "* ]] || { echo "ERROR: -m linkerd, but no linkerd-proxy sidecar in thesis-test."; exit 1; } ;;
+esac
+
 echo "[preflight] target URL..."
 eval "$PREFLIGHT_CMD" || true
 
@@ -176,6 +257,7 @@ start_pf
 ensure_pf
 
 # --- 6. Execution Loop ---
+# K6_EXTRA_ENV is already expanded locally, so values such as FIB_N travel as literals.
 K6_ENV="BASE_URL=$URL $K6_EXTRA_ENV"
 
 run_one() {

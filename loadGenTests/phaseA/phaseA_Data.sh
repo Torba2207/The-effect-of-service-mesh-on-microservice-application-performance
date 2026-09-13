@@ -1,12 +1,27 @@
 #!/usr/bin/env bash
-# Usage: source service_data.sh <service_name>
+# Per-service settings for run_phaseA_Core.sh. Sourced by the Core, never run on its own:
+#   source phaseA_Data.sh <service_key>
+# Service keys: digital | fibonacci | integration | permutation | video
+#
+# Sets, for the selected service:
+#   SERVICE_DIR    directory holding the k6 script and results/
+#   SERVICE_SLUG   service part of the run label; the Core builds
+#                  CONFIG="<config label>_<SERVICE_SLUG>_S1"  (e.g. baseline_fibonacci_S1)
+#   JS_FILE        k6 script, copied to the load generator
+#   HAS_ASSETS     "true" if the scenario posts a fixed binary asset
+#   ASSET_FILE     that asset, in loadGenTests/common/assets/ (only when HAS_ASSETS=true)
+#   K6_EXTRA_ENV   extra k6 environment, expanded HERE (locally), not on the load generator
+#   PREFLIGHT_CMD  one smoke request; eval'd later by the Core, so \$URL and \$COMMON stay
+#                  escaped and resolve at that point
+#
+# Expects the caller to have set: URL, COMMON, and FIB_N (fibonacci work-unit size, -N).
 
 SERVICE_ARG="$1"
 
 case "$SERVICE_ARG" in
   "digital")
     SERVICE_DIR="DigitalFiltersService"
-    CONFIG="baseline_digital_filters_S1"
+    SERVICE_SLUG="digital_filters"
     JS_FILE="filters-test.js"
     HAS_ASSETS="true"
     ASSET_FILE="filter_input_128.png"
@@ -15,15 +30,15 @@ case "$SERVICE_ARG" in
     ;;
   "fibonacci")
     SERVICE_DIR="FibonacciService"
-    CONFIG="baseline_fibonacci_S1"
+    SERVICE_SLUG="fibonacci"
     JS_FILE="fibonacci-test.js"
     HAS_ASSETS="false"
-    K6_EXTRA_ENV="FIB_N=\${FIB_N:-3000}"
+    K6_EXTRA_ENV="FIB_N=$FIB_N"
     PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"n\":10}' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/fibonacci/calculate\""
     ;;
   "integration")
     SERVICE_DIR="IntegrationService"
-    CONFIG="baseline_integration_S1"
+    SERVICE_SLUG="integration"
     JS_FILE="integration-test.js"
     HAS_ASSETS="false"
     K6_EXTRA_ENV=""
@@ -31,7 +46,7 @@ case "$SERVICE_ARG" in
     ;;
   "permutation")
     SERVICE_DIR="PermutationService"
-    CONFIG="baseline_permutation_S1"
+    SERVICE_SLUG="permutation"
     JS_FILE="permutation-test.js"
     HAS_ASSETS="false"
     K6_EXTRA_ENV=""
@@ -39,15 +54,15 @@ case "$SERVICE_ARG" in
     ;;
   "video")
     SERVICE_DIR="VideoService"
-    CONFIG="baseline_video_S1"
+    SERVICE_SLUG="video"
     JS_FILE="video-test.js"
     HAS_ASSETS="true"
     ASSET_FILE="sample_360p_1s.mp4"
     K6_EXTRA_ENV="VID_PATH=assets/sample_360p_1s.mp4 RATE_LOW=6 RATE_MED=12 RATE_HIGH=18"
-    PREFLIGHT_CMD="curl -s -m 20 -X POST -F 'file=@../../common/assets/sample_360p_1s.mp4;type=video/mp4' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/video/compress\""
+    PREFLIGHT_CMD="curl -s -m 20 -X POST -F \"file=@\$COMMON/assets/sample_360p_1s.mp4;type=video/mp4\" -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/video/compress\""
     ;;
   *)
-    echo "ERROR: Invalid service '$SERVICE_ARG'. Allowed: filters, permutation, video, fibonacci, integration"
+    echo "ERROR: Invalid service '$SERVICE_ARG'. Allowed: digital, fibonacci, integration, permutation, video"
     return 1 2>/dev/null || exit 1
     ;;
 esac
