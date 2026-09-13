@@ -76,6 +76,20 @@ PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
 
 # --- Parse Arguments ---
+# TODO: validate -l, -r, -W, -S, -C, -n and -u before any SSH, like -m/-t/-c/-N/-R below.
+#   Today they pass through unchecked, and because every k6 call ends in `|| true` (and the
+#   warm-up's output goes to /dev/null) a bad value fails silently instead of stopping the run:
+#   -l "low hihg"  k6 rejects the config ("iteration rate isn't specified"); each run still writes
+#                  idle-cluster resource rows labelled level=hihg and no latency rows.
+#   -S 120         k6 reads a bare number as milliseconds -> rejected ("at least 1s"), every run empty.
+#   -S 5000        read as 5 s and ACCEPTED -> a 5 s window instead of 120 s, with no error at all.
+#   -W 30          warm-up rejected (30 ms) but its output is discarded -> runs measured with no warm-up.
+#   -r abc / -r 0  `seq` yields nothing -> zero runs, yet the script still prints DONE.
+#   -C abc         `sleep` fails under set -e -> aborts after the first measured run, before its metrics.
+#   -n bad IP      wrong default URL; preflight prints http=000 but continues -> 100% failed runs.
+#   Planned checks: levels only low|med|high without duplicates; REPS integer >= 1; WARMUP/STEADY a
+#   k6 duration WITH a unit and >= 1s; COOLDOWN integer >= 0; NODE_IP IPv4; URL starts http(s)://.
+#   Open decision: make a non-200 preflight smoke request fatal (it currently only prints the code).
 while getopts "s:m:t:c:N:R:u:n:l:r:W:S:C:" opt; do
   case "$opt" in
     s) SERVICE_NAME="$OPTARG" ;;
