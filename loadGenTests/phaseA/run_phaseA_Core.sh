@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Unified Phase A orchestrator — isolated S1 testing, one service per invocation.
+# Unified Phase A orchestrator — isolated per-endpoint testing, one scenario per invocation.
 #
 # Runs against whatever configuration is currently deployed. -c/-m/-t only LABEL the rows
 # that are written; a preflight check refuses to start when -m disagrees with the data plane
@@ -7,13 +7,17 @@
 #
 # Usage: ./run_phaseA_Core.sh -s <service> [options]
 #
-#   -s SERVICE   digital | fibonacci | integration | permutation | video        (required)
+#   -s SERVICE   S1:     digital | fibonacci | integration | permutation | video | ai
+#                S2-ext: permutation_ai | digital_ai   (chains to the external AI host)  (required)
 #   -m MESH      baseline | istio | linkerd                                     (default: baseline)
 #   -t MTLS      on | off for a mesh, na for baseline                           (required with -m)
-#   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_S1" is written to the
+#   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_<S1|S2ext>" is written to the
 #                config column, run_id and the time-series filename.
 #                (default: baseline, or <mesh>_mtls / <mesh>_nomtls — same labels as Phase B)
 #   -N N         fibonacci work-unit size n                                     (default: 20000)
+#   -R "L M H"   req/s for the low, med and high levels; only for services whose rates are
+#                configurable: video (default "6 12 18"), ai / permutation_ai / digital_ai
+#                (default "3 6 12")
 #   -u URL       full ingress base URL; required for istio, whose gateway NodePort is dynamic
 #   -n NODE_IP   worker node behind the default URL http://<node>:30080         (default: 10.29.20.113)
 #   -l "LEVELS"  space-separated load levels                                    (default: "low med high")
@@ -30,6 +34,12 @@
 #     -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
 #   ./run_phaseA_Core.sh -s integration -m istio -t off -u http://10.29.20.113:$GWPORT
 #                                                                # -> istio_nomtls_integration_S1
+#   ./run_phaseA_Core.sh -s ai                                   # -> baseline_ai_S1 at 3/6/12 req/s
+#   ./run_phaseA_Core.sh -s permutation_ai -m linkerd -t on      # -> linkerd_mtls_permutation_S2ext
+#   ./run_phaseA_Core.sh -s digital_ai -R "2 4 8"                # -> baseline_digital_filters_S2ext
+#
+# Results go to <ServiceDir>/results/: master.csv for S1, master_S2ext.csv for the chains, so the
+# two scenarios of one service never share a CSV.
 
 set -euo pipefail
 
@@ -57,6 +67,7 @@ MESH="baseline"
 MTLS=""
 CONFIG_LABEL=""
 FIB_N=20000
+RATES_OVERRIDE=""
 
 LG_IP="10.29.20.130"
 LG_DIR="/root/thesis-tests/phaseA"
@@ -65,13 +76,14 @@ PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
 
 # --- Parse Arguments ---
-while getopts "s:m:t:c:N:u:n:l:r:W:S:C:" opt; do
+while getopts "s:m:t:c:N:R:u:n:l:r:W:S:C:" opt; do
   case "$opt" in
     s) SERVICE_NAME="$OPTARG" ;;
     m) MESH="$OPTARG" ;;
     t) MTLS="$OPTARG" ;;
     c) CONFIG_LABEL="$OPTARG" ;;
     N) FIB_N="$OPTARG" ;;
+    R) RATES_OVERRIDE="$OPTARG" ;;
     u) URL="$OPTARG" ;;
     n) NODE_IP="$OPTARG" ;;
     l) LEVELS="$OPTARG" ;;
@@ -133,7 +145,24 @@ if ! source "$HERE/phaseA_Data.sh" "$SERVICE_NAME"; then
 fi
 
 # The run label: written to the config column, to run_id and to the time-series filename.
-CONFIG="${CONFIG_LABEL}_${SERVICE_SLUG}_S1"
+CONFIG="${CONFIG_LABEL}_${SERVICE_SLUG}_${SCENARIO_TAG}"
+
+# Per-level arrival rates, for the services whose k6 script reads RATE_LOW/MED/HIGH.
+RATES=""
+if [ -n "$RATES_OVERRIDE" ]; then
+  [ -n "$DEFAULT_RATES" ] || { echo "ERROR: -R is not supported for -s $SERVICE_NAME (its rates are fixed in $JS_FILE)"; exit 1; }
+  RATES="$RATES_OVERRIDE"
+else
+  RATES="$DEFAULT_RATES"
+fi
+if [ -n "$RATES" ]; then
+  read -r RATE_LOW RATE_MED RATE_HIGH RATE_EXTRA <<< "$RATES"
+  for r in "${RATE_LOW:-}" "${RATE_MED:-}" "${RATE_HIGH:-}"; do
+    [[ "$r" =~ ^[1-9][0-9]*$ ]] || { echo "ERROR: -R needs three positive integers \"LOW MED HIGH\" (got \"$RATES\")"; exit 1; }
+  done
+  [ -z "${RATE_EXTRA:-}" ] || { echo "ERROR: -R needs exactly three values \"LOW MED HIGH\" (got \"$RATES\")"; exit 1; }
+  K6_EXTRA_ENV="$K6_EXTRA_ENV RATE_LOW=$RATE_LOW RATE_MED=$RATE_MED RATE_HIGH=$RATE_HIGH"
+fi
 
 # --- 2. Fail-Fast Local Validation ---
 echo "[check] Validating local dependencies..."
@@ -143,7 +172,11 @@ if [ ! -d "$HERE/$SERVICE_DIR" ]; then
 fi
 
 RESULTS="$HERE/$SERVICE_DIR/results"; mkdir -p "$RESULTS"
-CSV="$RESULTS/master.csv"
+if [ "$SCENARIO_TAG" = "S1" ]; then
+  CSV="$RESULTS/master.csv"
+else
+  CSV="$RESULTS/master_${SCENARIO_TAG}.csv"
+fi
 
 if [ ! -f "$HERE/$SERVICE_DIR/$JS_FILE" ]; then
   echo "ERROR: K6 script missing at $HERE/$SERVICE_DIR/$JS_FILE"
@@ -163,6 +196,8 @@ echo " Mesh: $MESH | mTLS: $MTLS"
 echo " Target URL: $URL"
 echo " Service Dir: $SERVICE_DIR | Script: $JS_FILE"
 [ "$SERVICE_NAME" = "fibonacci" ] && echo " Fibonacci work unit: n = $FIB_N"
+[ -n "$RATES" ] && echo " Rates (low/med/high): $RATE_LOW / $RATE_MED / $RATE_HIGH req/s"
+echo " Results: $CSV"
 echo "------------------------------------------------------------"
 echo " Load Levels: [$LEVELS] | Repetitions:$REPS"
 echo " Warmup: $WARMUP | Measurement: $STEADY | Cooldown:${COOLDOWN}s"
@@ -227,6 +262,14 @@ case "$MESH" in
   linkerd)
     [[ "$PODC" == *" linkerd-proxy "* ]] || { echo "ERROR: -m linkerd, but no linkerd-proxy sidecar in thesis-test."; exit 1; } ;;
 esac
+
+# Show which host the cluster forwards /api/Ai to, so a run never silently hits a stale AI host.
+if [ "$USES_AI" = "true" ]; then
+  AI_EP="$(kubectl --context "$CTX" -n thesis-test get endpoints ai-service \
+    -o jsonpath='{range .subsets[*]}{range .addresses[*]}{.ip}{" "}{end}{end}' 2>/dev/null || true)"
+  [ -n "$AI_EP" ] || { echo "ERROR: service thesis-test/ai-service has no endpoints; apply deployments/k8s/ai-service/ai-service-external.yaml"; exit 1; }
+  echo "[preflight] cluster AI endpoint: $AI_EP"
+fi
 
 echo "[preflight] target URL..."
 eval "$PREFLIGHT_CMD" || true
