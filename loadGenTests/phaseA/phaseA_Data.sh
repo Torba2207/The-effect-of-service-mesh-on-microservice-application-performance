@@ -3,13 +3,14 @@
 #   source phaseA_Data.sh <service_key>
 #
 # Service keys:
-#   S1 (single hop)      digital | fibonacci | integration | permutation | video | ai
-#   S2-ext (chain → AI)  permutation_ai | digital_ai
+#   S1 (single hop)                    digital | fibonacci | integration | permutation | video | ai
+#   S2-int (in-cluster, meshed→meshed) differential
+#   S2-ext (chain → external AI)       permutation_ai | digital_ai
 #
 # Sets, for the selected service:
 #   SERVICE_DIR    directory holding the k6 script and results/
 #   SERVICE_SLUG   service part of the run label
-#   SCENARIO_TAG   scenario part of the run label: S1 or S2ext. The Core builds
+#   SCENARIO_TAG   scenario part of the run label: S1, S2int or S2ext. The Core builds
 #                  CONFIG="<config label>_<SERVICE_SLUG>_<SCENARIO_TAG>"  (e.g. baseline_fibonacci_S1)
 #   JS_FILE        k6 script, copied to the load generator
 #   HAS_ASSETS     "true" if the scenario posts a fixed binary asset
@@ -83,6 +84,15 @@ case "$SERVICE_ARG" in
     K6_EXTRA_ENV="EXPECTED='$AI_EXPECTED'"
     PREFLIGHT_CMD="curl -s -m 10 -o /dev/null -w '   Ai/health -> http=%{http_code}\n' \"\$URL/api/Ai/health\""
     ;;
+  "differential")
+    SERVICE_DIR="DifferentialEquationsService"
+    SERVICE_SLUG="differential"
+    SCENARIO_TAG="S2int"
+    JS_FILE="differential-test.js"
+    # STD rates, same as Phase B. Each request also puts one request on integration-service.
+    DEFAULT_RATES="25 50 100"
+    PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"function\":\"x^2\",\"initialConditionY\":1,\"steps\":5}' -o /dev/null -w '   differential/solve -> http=%{http_code}\n' \"\$URL/api/differential/solve\""
+    ;;
   "permutation_ai")
     SERVICE_DIR="PermutationService"
     SERVICE_SLUG="permutation"
@@ -102,7 +112,7 @@ case "$SERVICE_ARG" in
     PREFLIGHT_CMD="curl -s -m 30 -X POST -H 'Content-Type: application/json' -d '{\"filterName\":\"blur\",\"kernelSize\":3}' -o /dev/null -w '   filters/apply-ai-matrix -> http=%{http_code}\n' \"\$URL/api/filters/apply-ai-matrix\""
     ;;
   *)
-    echo "ERROR: Invalid service '$SERVICE_ARG'. Allowed: digital, fibonacci, integration, permutation, video, ai, permutation_ai, digital_ai"
+    echo "ERROR: Invalid service '$SERVICE_ARG'. Allowed: digital, fibonacci, integration, permutation, video, ai, differential, permutation_ai, digital_ai"
     return 1 2>/dev/null || exit 1
     ;;
 esac
