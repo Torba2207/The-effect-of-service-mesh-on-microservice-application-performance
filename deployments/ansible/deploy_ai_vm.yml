@@ -1,18 +1,50 @@
 ---
+# Deploys the AI service: two backends behind an nginx load balancer on :5005.
+#
+# GPU is used when `ai_gpu` allows it: auto (default: when Docker has the nvidia runtime,
+# i.e. setup_ai_vm.yml configured it), true (require it), false (CPU-only).
+# Other knobs, all overridable with -e:
+#   ai_image          backend image
+#   ai_model          Ollama model the backends serve (must match TARGET_MODEL in the image)
+#   ai_keep_alive     OLLAMA_KEEP_ALIVE; -1 keeps the model loaded forever, so no request
+#                     ever pays the ~5 s cold-load inside a measurement window
+#   ai_ready_timeout  seconds to wait for first boot (engine download + model pull)
 - name: Deploy AI Service via Docker Compose
   hosts: ai_vms
   become: yes
+  vars:
+    ai_gpu: auto
+    ai_image: ghcr.io/torba2207/procedural-ai-server:latest
+    ai_model: llama3.2
+    ai_keep_alive: -1
+    ai_ready_timeout: 900
+    ai_backends: [1, 2]
   tasks:
+    - name: Detect the nvidia runtime in Docker
+      shell: docker info 2>/dev/null | grep -qi 'Runtimes:.*nvidia'
+      register: docker_nvidia
+      changed_when: false
+      failed_when: false
+
+    - name: Decide GPU mode
+      set_fact:
+        ai_gpu_enabled: "{{ (ai_gpu | string | lower) in ['true', 'yes', '1'] or ((ai_gpu | string | lower) == 'auto' and docker_nvidia.rc == 0) }}"
+
+    - name: Fail when a GPU is required but Docker cannot use it
+      fail:
+        msg: "ai_gpu=true, but Docker has no nvidia runtime. Run setup_ai_vm.yml on this host first."
+      when: ai_gpu_enabled | bool and docker_nvidia.rc != 0
+
+    - name: Report GPU mode
+      debug:
+        msg: "Deploying {{ ai_backends | length }} backends on {{ 'GPU' if ai_gpu_enabled else 'CPU only' }} | keep_alive={{ ai_keep_alive }}"
+
     - name: Create project directories for isolated volumes
       file:
-        path: "{{ item }}"
+        path: "/opt/service-mesh-thesis/{{ item.0 }}_{{ item.1 }}"
         state: directory
-        mode: '0777' 
-      loop:
-        - /opt/service-mesh-thesis/app_data_1
-        - /opt/service-mesh-thesis/ollama_data_1
-        - /opt/service-mesh-thesis/app_data_2
-        - /opt/service-mesh-thesis/ollama_data_2
+        mode: '0777'
+      loop: "{{ ['app_data', 'ollama_data'] | product(ai_backends) | list }}"
 
     - name: Create Nginx configuration file
       copy:
@@ -21,8 +53,9 @@
           events {}
           http {
               upstream ai_backend {
-                  server ai-service-1:5005;
-                  server ai-service-2:5005;
+          {% for n in ai_backends %}
+                  server ai-service-{{ n }}:5005;
+          {% endfor %}
               }
               server {
                   listen 80;
@@ -37,34 +70,98 @@
         dest: /opt/service-mesh-thesis/docker-compose.yml
         content: |
           services:
-            ai-service-1:
-              image: ghcr.io/torba2207/procedural-ai-server:latest
-              container_name: ai-service-1
+          {% for n in ai_backends %}
+            ai-service-{{ n }}:
+              image: {{ ai_image }}
+              container_name: ai-service-{{ n }}
               restart: always
+              environment:
+                OLLAMA_KEEP_ALIVE: "{{ ai_keep_alive }}"
+                TARGET_MODEL: "{{ ai_model }}"
               volumes:
-                - ./app_data_1:/app/data
-                - ./ollama_data_1:/root/.ollama
-                
-            ai-service-2:
-              image: ghcr.io/torba2207/procedural-ai-server:latest
-              container_name: ai-service-2
-              restart: always
-              volumes:
-                - ./app_data_2:/app/data
-                - ./ollama_data_2:/root/.ollama
+                - ./app_data_{{ n }}:/app/data
+                - ./ollama_data_{{ n }}:/root/.ollama
+          {% if ai_gpu_enabled | bool %}
+              deploy:
+                resources:
+                  reservations:
+                    devices:
+                      - driver: nvidia
+                        count: all
+                        capabilities: [gpu]
+          {% endif %}
 
+          {% endfor %}
             load-balancer:
               image: nginx:alpine
               container_name: ai-load-balancer
+              restart: always
               ports:
                 - "5005:80"
               volumes:
                 - ./nginx.conf:/etc/nginx/nginx.conf:ro
               depends_on:
-                - ai-service-1
-                - ai-service-2
+          {% for n in ai_backends %}
+                - ai-service-{{ n }}
+          {% endfor %}
 
     - name: Pull latest images and start the containers
       command: docker compose up -d --pull always --remove-orphans
       args:
         chdir: /opt/service-mesh-thesis
+
+    # First boot downloads the Ollama engine and pulls the model into each backend's volume,
+    # which takes minutes; later boots reuse the volumes and are ready in seconds.
+    - name: Wait until every backend reports healthy
+      command: docker exec ai-service-{{ item }} curl -sf -o /dev/null http://127.0.0.1:5005/api/Ai/health
+      register: backend_health
+      until: backend_health.rc == 0
+      retries: "{{ (ai_ready_timeout | int / 10) | int }}"
+      delay: 10
+      changed_when: false
+      loop: "{{ ai_backends }}"
+
+    - name: Load the model into memory and pin it there
+      command: >-
+        docker exec ai-service-{{ item }} curl -sf http://127.0.0.1:11434/api/generate
+        -d '{"model": {{ ai_model | to_json }}, "keep_alive": {{ ai_keep_alive | int if (ai_keep_alive | string) is match('^-?[0-9]+$') else ai_keep_alive | to_json }}}'
+      changed_when: false
+      loop: "{{ ai_backends }}"
+
+    - name: Show where each backend runs the model
+      command: docker exec ai-service-{{ item }} /app/data/ollama_engine/bin/ollama ps
+      register: ollama_ps
+      changed_when: false
+      loop: "{{ ai_backends }}"
+
+    - name: Report model placement
+      debug:
+        msg: "ai-service-{{ item.item }}: {{ item.stdout_lines | default([]) }}"
+      loop: "{{ ollama_ps.results }}"
+      loop_control:
+        label: "ai-service-{{ item.item }}"
+
+    - name: Fail when GPU mode is on but a model landed on the CPU
+      fail:
+        msg: >-
+          ai-service-{{ item.item }} reports the model on CPU although GPU mode is enabled.
+          Check `docker exec ai-service-{{ item.item }} nvidia-smi` inside the container.
+      when: ai_gpu_enabled | bool and '100% GPU' not in item.stdout
+      loop: "{{ ollama_ps.results }}"
+      loop_control:
+        label: "ai-service-{{ item.item }}"
+
+    - name: Smoke-test the load balancer end to end
+      uri:
+        url: "http://127.0.0.1:5005/api/Ai/generate"
+        method: POST
+        body_format: json
+        body:
+          user_input: "Give me 10 random numbers between 1 and 100 with seed 42"
+        timeout: 60
+      register: smoke
+      changed_when: false
+
+    - name: Report smoke-test latency
+      debug:
+        msg: "generate -> HTTP {{ smoke.status }} in {{ smoke.elapsed }} s (service-reported {{ smoke.json.ExecutionTimeMS | default('n/a') }} ms)"

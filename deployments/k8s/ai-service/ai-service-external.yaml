@@ -18,7 +18,7 @@ metadata:
   namespace: thesis-test
 subsets:
   - addresses:
-      - ip: 10.29.20.120  
+      - ip: 10.29.20.121  
     ports:
       - name: http
         port: 5005

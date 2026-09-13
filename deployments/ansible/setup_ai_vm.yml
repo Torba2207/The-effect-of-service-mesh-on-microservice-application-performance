@@ -1,7 +1,22 @@
 ---
+# Prepares an AI host: Docker, plus GPU passthrough into containers when the host has an
+# NVIDIA GPU. The NVIDIA *driver* is not installed here (it needs a reboot and depends on
+# Secure Boot/DKMS state) — install it once by hand (`ubuntu-drivers install`, reboot) and
+# this playbook verifies it.
+#
+# GPU mode is chosen by `ai_gpu`: auto (default: enable if an NVIDIA GPU is on the PCI bus),
+# true (require it), false (CPU-only, skip the toolkit). Override with `-e ai_gpu=false`.
 - name: Setup AI Service VM with Docker
   hosts: ai_vms # Make sure to add this group to your inventory.ini
   become: yes
+  vars:
+    ai_gpu: auto
+  handlers:
+    - name: Restart docker
+      systemd:
+        name: docker
+        state: restarted
+
   tasks:
     - name: Remove old conflicting Docker repository list
       file:
@@ -30,23 +45,14 @@
           - curl
           - git
           - apt-transport-https
+          - pciutils
         state: present
 
-    - name: Create directory for Docker's GPG key
+    - name: Create directory for apt keys
       file:
         path: /etc/apt/keyrings
         state: directory
         mode: '0755'
-
-    - name: Remove old conflicting Docker repository list
-      file:
-        path: /etc/apt/sources.list.d/docker.list
-        state: absent
-
-    - name: Remove old conflicting Docker GPG key
-      file:
-        path: /etc/apt/keyrings/docker.gpg
-        state: absent
 
     - name: Download Docker's official GPG key
       get_url:
@@ -87,3 +93,80 @@
         path: /opt/service-mesh-thesis
         state: directory
         mode: '0755'
+
+    # ---------------- GPU passthrough ----------------
+    - name: Detect an NVIDIA GPU on the PCI bus
+      shell: lspci | grep -qi nvidia
+      register: gpu_pci
+      changed_when: false
+      failed_when: false
+
+    - name: Decide GPU mode
+      set_fact:
+        ai_gpu_enabled: "{{ (ai_gpu | string | lower) in ['true', 'yes', '1'] or ((ai_gpu | string | lower) == 'auto' and gpu_pci.rc == 0) }}"
+
+    - name: Report GPU mode
+      debug:
+        msg: "ai_gpu={{ ai_gpu }} | NVIDIA on PCI: {{ gpu_pci.rc == 0 }} | GPU passthrough: {{ 'ENABLED' if ai_gpu_enabled else 'disabled (CPU-only)' }}"
+
+    - name: GPU setup
+      when: ai_gpu_enabled | bool
+      block:
+        - name: Check the NVIDIA driver is installed
+          command: nvidia-smi -L
+          register: nvidia_smi
+          changed_when: false
+          failed_when: false
+
+        - name: Fail with instructions when the driver is missing
+          fail:
+            msg: >-
+              An NVIDIA GPU is present but `nvidia-smi` does not work, so the driver is missing or
+              not loaded. Install it once by hand: `ubuntu-drivers install && reboot`, then re-run.
+              To deploy CPU-only instead, pass `-e ai_gpu=false`.
+          when: nvidia_smi.rc != 0
+
+        - name: Download NVIDIA container toolkit GPG key
+          get_url:
+            url: https://nvidia.github.io/libnvidia-container/gpgkey
+            dest: /etc/apt/keyrings/nvidia-container-toolkit.asc
+            mode: '0644'
+
+        - name: Add NVIDIA container toolkit repository
+          deb822_repository:
+            name: nvidia-container-toolkit
+            types: deb
+            uris: https://nvidia.github.io/libnvidia-container/stable/deb/amd64
+            suites: /
+            signed_by: /etc/apt/keyrings/nvidia-container-toolkit.asc
+            state: present
+
+        - name: Install NVIDIA container toolkit
+          apt:
+            name: nvidia-container-toolkit
+            state: present
+            update_cache: yes
+
+        - name: Check whether Docker already knows the nvidia runtime
+          command: grep -q '"nvidia"' /etc/docker/daemon.json
+          register: nvidia_runtime
+          changed_when: false
+          failed_when: false
+
+        - name: Register the nvidia runtime with Docker
+          command: nvidia-ctk runtime configure --runtime=docker
+          when: nvidia_runtime.rc != 0
+          notify: Restart docker
+
+        - name: Apply the Docker restart now, before the GPU check
+          meta: flush_handlers
+
+        - name: Verify a container can see the GPU
+          command: docker run --rm --gpus all ubuntu:24.04 nvidia-smi -L
+          register: gpu_in_container
+          changed_when: false
+          failed_when: "gpu_in_container.rc != 0 or 'GPU 0' not in gpu_in_container.stdout"
+
+        - name: Report the GPU visible inside containers
+          debug:
+            msg: "{{ gpu_in_container.stdout_lines }}"
