@@ -1,0 +1,20 @@
+{
+  "rate_target": 12,
+  "duration": "120s",
+  "reqs": 1441,
+  "rate_achieved": 12.008333333333333,
+  "dropped_iterations": 0,
+  "drop_rate": 0,
+  "fail_rate": 0,
+  "wrong_answer_rate": 0,
+  "vus_max_used": 24,
+  "lat_avg_ms": 710.968735628037,
+  "lat_p50_ms": 709.944993,
+  "lat_p90_ms": 725.154496,
+  "lat_p95_ms": 731.696116,
+  "lat_p99_ms": 743.4022125999999,
+  "lat_max_ms": 770.053834,
+  "svc_exec_p50_ms": 707.24,
+  "svc_exec_p95_ms": 728.95,
+  "aborted": false
+}
