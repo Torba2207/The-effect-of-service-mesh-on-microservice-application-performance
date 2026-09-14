@@ -76,6 +76,13 @@ GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc isti
 | `ai` | `POST /api/Ai/generate` | S1 | `AiService/ai-test.js` | seeded prompt: 10 numbers, seed 42 | 3 / 6 / 12 | yes |
 | `permutation_ai` | `POST /api/permutation/generate-from-ai` | S2-ext | `PermutationService/permutation-ai-test.js` | AI returns a 7-element set (seed 42), then permuted | 3 / 6 / 12 | yes |
 | `digital_ai` | `POST /api/filters/apply-ai-matrix` | S2-ext | `DigitalFiltersService/filters-ai-test.js` | AI returns a 3×3 matrix, `blur` applied | 3 / 6 / 12 | yes |
+| `differential` | `POST /api/differential/solve` | S2-int | `DifferentialEquationsService/differential-test.js` | `x^2`, `initialConditionY` 1, `steps` 5 → exactly one call to integration | 25 / 50 / 100 | yes |
+
+**S2-int** is the in-cluster chain differential → integration. Both services are meshed and the call
+goes to `http://integration-service/` directly, not back through the ingress, so under a mesh **both
+hops carry mTLS**: this is the study's sidecar-to-sidecar encryption benchmark, and the cleanest mTLS
+cost is its Istio `on` vs `off` delta. A function without `y` makes exactly one downstream call, so at
+R req/s the integration service receives R req/s as well; its CPU/RAM rows belong to the scenario.
 
 **S1** is a single hop: ingress → one service. **S2-ext** is a chain from a meshed service to the
 external AI host (10.29.20.121). Only the ingress→service hop is inside the mesh; the service→AI
@@ -88,7 +95,8 @@ sustains roughly **12–13 req/s** in total (measured with `../ai_capacity/run_a
 the 3/6/12 defaults are close to its ceiling at `high`. **Never run two AI-using scenarios at the same
 time** — their rates add up on the same host.
 
-Not yet available: `differential/solve` as S2-int and S2-amp, and the idle-overhead capture.
+Not yet available: `differential/solve` as S2-amp (a `y` function, fan-out N = 5/10/20), and the
+idle-overhead capture.
 
 ---
 
@@ -133,7 +141,7 @@ value is expanded on the workstation and sent to k6 as a literal.
 
 #### `-R "LOW MED HIGH"` — per-level request rates
 Exactly three positive integers, in req/s, quoted as one argument. Only for scenarios whose rates
-are configurable (`video`, `ai`, `permutation_ai`, `digital_ai`); rejected for the others, whose
+are configurable (`video`, `differential`, `ai`, `permutation_ai`, `digital_ai`); rejected for the others, whose
 rates are fixed in their k6 script. Without `-R` the defaults from the table above apply.
 
 ```bash
@@ -186,6 +194,7 @@ run_id = <CONFIG>_<level>_r<rep>
 baseline_fibonacci_S1                 # -s fibonacci
 linkerd_mtls_video_S1                 # -s video -m linkerd -t on
 istio_nomtls_permutation_S2ext        # -s permutation_ai -m istio -t off -u ...
+istio_mtls_differential_S2int         # -s differential -m istio -t on -u ...
 baseline_fibonacci_S1_high_r3         # one run
 ```
 
@@ -250,6 +259,7 @@ Everything lands in `<ServiceDir>/results/`.
 | File | Content |
 |------|---------|
 | `master.csv` | S1 rows (every configuration of that service's S1 scenario). |
+| `master_S2int.csv` | S2-int rows (`DifferentialEquationsService`). |
 | `master_S2ext.csv` | S2-ext rows, so a service's two scenarios never share a CSV. |
 | `timeseries_<CONFIG>.csv` | CPU/RAM curves of every run of one configuration. |
 | `k6_<run_id>.json` | Per-scenario k6 summary of one run. |
@@ -291,13 +301,13 @@ sequentially, so AI scenarios never overlap:
 
 ```bash
 cd loadGenTests/phaseA
-for s in permutation fibonacci integration digital video ai permutation_ai digital_ai; do
+for s in permutation fibonacci integration digital video differential ai permutation_ai digital_ai; do
   ./run_phaseA_Core.sh -s "$s" -m linkerd -t on
 done
 ```
 
 For Istio, resolve `GWPORT` once after `make istio` and add `-u http://10.29.20.113:$GWPORT` to the
-loop. With the defaults this is about 14 h for eight scenarios, so run it from a stable machine —
+loop. With the defaults this is about 16 h for nine scenarios, so run it from a stable machine —
 a VPN drop breaks the SSH sessions and the port-forward mid-run.
 
 ---

@@ -8,16 +8,17 @@
 # Usage: ./run_phaseA_Core.sh -s <service> [options]
 #
 #   -s SERVICE   S1:     digital | fibonacci | integration | permutation | video | ai
+#                S2-int: differential   (differential → integration, meshed→meshed)
 #                S2-ext: permutation_ai | digital_ai   (chains to the external AI host)  (required)
 #   -m MESH      baseline | istio | linkerd                                     (default: baseline)
 #   -t MTLS      on | off for a mesh, na for baseline                           (required with -m)
-#   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_<S1|S2ext>" is written to the
-#                config column, run_id and the time-series filename.
+#   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_<S1|S2int|S2ext>" is written to
+#                the config column, run_id and the time-series filename.
 #                (default: baseline, or <mesh>_mtls / <mesh>_nomtls — same labels as Phase B)
 #   -N N         fibonacci work-unit size n                                     (default: 20000)
 #   -R "L M H"   req/s for the low, med and high levels; only for services whose rates are
-#                configurable: video (default "6 12 18"), ai / permutation_ai / digital_ai
-#                (default "3 6 12")
+#                configurable: video (default "6 12 18"), differential (default "25 50 100"),
+#                ai / permutation_ai / digital_ai (default "3 6 12")
 #   -u URL       full ingress base URL; required for istio, whose gateway NodePort is dynamic
 #   -n NODE_IP   worker node behind the default URL http://<node>:30080         (default: 10.29.20.113)
 #   -l "LEVELS"  space-separated load levels                                    (default: "low med high")
@@ -37,9 +38,11 @@
 #   ./run_phaseA_Core.sh -s ai                                   # -> baseline_ai_S1 at 3/6/12 req/s
 #   ./run_phaseA_Core.sh -s permutation_ai -m linkerd -t on      # -> linkerd_mtls_permutation_S2ext
 #   ./run_phaseA_Core.sh -s digital_ai -R "2 4 8"                # -> baseline_digital_filters_S2ext
+#   ./run_phaseA_Core.sh -s differential -m istio -t on -u http://10.29.20.113:$GWPORT
+#                                                                # -> istio_mtls_differential_S2int
 #
-# Results go to <ServiceDir>/results/: master.csv for S1, master_S2ext.csv for the chains, so the
-# two scenarios of one service never share a CSV.
+# Results go to <ServiceDir>/results/: master.csv for S1, master_<tag>.csv for any other scenario
+# (master_S2int.csv, master_S2ext.csv), so two scenarios of one service never share a CSV.
 
 set -euo pipefail
 
