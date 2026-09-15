@@ -1,0 +1,18 @@
+{
+  "level": "med",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "filters_apply_image": {
+      "rps_target": 50,
+      "reqs": 6000,
+      "fail_rate": 0,
+      "lat_avg_ms": 8.779956891500001,
+      "lat_p50_ms": 8.533452,
+      "lat_p90_ms": 10.113103,
+      "lat_p95_ms": 10.45109305,
+      "lat_p99_ms": 11.48185068,
+      "lat_max_ms": 15.961794
+    }
+  }
+}
