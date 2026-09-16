@@ -1,0 +1,18 @@
+{
+  "level": "high",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "video_compress": {
+      "rps_target": 18,
+      "reqs": 2161,
+      "fail_rate": 0,
+      "lat_avg_ms": 280.440136885238,
+      "lat_p50_ms": 272.376822,
+      "lat_p90_ms": 306.963258,
+      "lat_p95_ms": 325.645561,
+      "lat_p99_ms": 377.96509840000056,
+      "lat_max_ms": 727.273254
+    }
+  }
+}

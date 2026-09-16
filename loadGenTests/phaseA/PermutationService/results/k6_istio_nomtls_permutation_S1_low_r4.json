@@ -1,0 +1,18 @@
+{
+  "level": "low",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "permutation_generate": {
+      "rps_target": 25,
+      "reqs": 3001,
+      "fail_rate": 0,
+      "lat_avg_ms": 5.641086594468517,
+      "lat_p50_ms": 5.493797,
+      "lat_p90_ms": 6.448742,
+      "lat_p95_ms": 7.499909,
+      "lat_p99_ms": 8.573898,
+      "lat_max_ms": 10.174055
+    }
+  }
+}
