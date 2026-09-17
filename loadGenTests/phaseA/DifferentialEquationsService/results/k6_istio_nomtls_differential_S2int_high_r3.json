@@ -1,0 +1,18 @@
+{
+  "level": "high",
+  "duration": "120s",
+  "include_ai": false,
+  "scenarios": {
+    "differential_solve": {
+      "rps_target": 100,
+      "reqs": 12001,
+      "fail_rate": 0,
+      "lat_avg_ms": 2.6761590663278043,
+      "lat_p50_ms": 2.614676,
+      "lat_p90_ms": 3.056121,
+      "lat_p95_ms": 3.27734,
+      "lat_p99_ms": 4.034151,
+      "lat_max_ms": 6.268056
+    }
+  }
+}
