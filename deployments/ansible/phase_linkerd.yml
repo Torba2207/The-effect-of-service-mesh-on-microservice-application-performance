@@ -5,6 +5,22 @@
   vars:
     test_ns: thesis-test
     app_dir: ../k8s
+    # L-P configuration (`make linkerd-nomtls` passes -e linkerd_bypass=true). Linkerd cannot turn
+    # mTLS off, so L-P keeps every proxy injected but excludes the application ports from proxy
+    # interception (docs/test-scenario.typ, L-P). This measures PROXY BYPASS, not encryption cost.
+    linkerd_bypass: false
+    # App container ports (inbound) and the Service port every in-cluster call goes through:
+    # app->app (e.g. differential -> http://integration-service/) and app->AI (http://ai-service/).
+    app_bypass_annotations:
+      config.linkerd.io/skip-inbound-ports: "5001,5002,5003,5004,5006,5007"
+      config.linkerd.io/skip-outbound-ports: "80"
+    # The ingress controller stays injected too (so its proxy footprint is still measured), but
+    # client traffic in (80/443) and its backend calls out (Service port 80) bypass the proxy.
+    nginx_bypass_annotations:
+      config.linkerd.io/skip-inbound-ports: "80,443"
+      config.linkerd.io/skip-outbound-ports: "80"
+    app_ns_annotations: "{{ {'linkerd.io/inject': 'enabled'} | combine(app_bypass_annotations if linkerd_bypass | bool else {}) }}"
+    nginx_pod_annotations: "{{ {'linkerd.io/inject': 'enabled'} | combine(nginx_bypass_annotations if linkerd_bypass | bool else {}) }}"
   tasks:
     - name: Install NGINX Ingress Controller for Baremetal
       ansible.builtin.shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
@@ -31,7 +47,7 @@
     - name: Inject Linkerd proxy into the NGINX Ingress Controller
       ansible.builtin.shell: >
         kubectl patch deployment ingress-nginx-controller -n ingress-nginx --type merge
-        -p '{"spec":{"template":{"metadata":{"annotations":{"linkerd.io/inject":"enabled"}}}}}'
+        -p '{{ {"spec": {"template": {"metadata": {"annotations": nginx_pod_annotations}}}} | to_json }}'
 
     - name: Wait for the meshed NGINX Ingress Controller to roll out
       ansible.builtin.shell: kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=180s
@@ -44,8 +60,7 @@
           kind: Namespace
           metadata:
             name: "{{ test_ns }}"
-            annotations:
-              linkerd.io/inject: enabled
+            annotations: "{{ app_ns_annotations }}"
 
     - name: Apply Linkerd App Deployments and configs
       kubernetes.core.k8s:
