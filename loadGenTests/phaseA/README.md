@@ -37,8 +37,8 @@ With the defaults (3 levels × 10 reps) that is 30 runs, about **1.75 h**.
   with `chmod 600`, so a key on a `/mnt/c` mount works. The temp copy is removed on exit.
 - **Locally:** `bash`, `python3`, `curl`, `ssh`, `scp`.
 - **Load generator `lg` (10.29.20.130):** `k6` installed. Scripts and assets are synced automatically.
-- **The target configuration is already deployed** (`make baseline|istio|linkerd`, plus the mTLS
-  state you intend to measure). The Core does not deploy or switch anything.
+- **The target configuration is already deployed** with the matching `make` target from
+  `deployments/` — see [Setups](#setups-deploy-verify-run). The Core does not deploy or switch anything.
 
 ---
 
@@ -61,6 +61,125 @@ GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc isti
   -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
 ./run_phaseA_Core.sh -s integration -m istio -t on -u http://10.29.20.113:$GWPORT
 ```
+
+---
+
+## Setups: deploy, verify, run
+
+Each configuration of the study is deployed from `deployments/` with one `make` target, verified,
+and then measured with the Core. Every `make` target first tears down whatever is running and
+cleans the worker nodes, so switching setups is always one command. Deploying takes ~5–10 min.
+
+| ID | Setup | Deploy (`cd deployments`) | Core flags | Default label | Ingress |
+|----|-------|---------------------------|------------|---------------|---------|
+| B   | no mesh               | `make baseline`     | *(none)*                        | `baseline`       | `:30080`, static |
+| L-S | Linkerd, mTLS         | `make linkerd`      | `-m linkerd -t on`              | `linkerd_mtls`   | `:30080`, static |
+| L-P | Linkerd, proxy bypass | `make linkerd-nomtls` | `-m linkerd -t off`           | `linkerd_nomtls` | `:30080`, static |
+| I-S | Istio, STRICT         | `make istio` + STRICT policy | `-m istio -t on -u …`   | `istio_mtls`     | **dynamic**, pass `-u` |
+| I-P | Istio, DISABLE        | `make istio-nomtls` | `-m istio -t off -u …`          | `istio_nomtls`   | **dynamic**, pass `-u` |
+
+All commands below assume the repo root as the starting directory, and `SVC` is any scenario key
+from [Scenarios](#scenarios--s).
+
+### B — baseline (no mesh)
+
+```bash
+(cd deployments && make baseline)
+cd loadGenTests/phaseA && ./run_phaseA_Core.sh -s "$SVC"
+```
+
+Nothing to verify by hand: the Core's preflight refuses `-m baseline` if any pod carries a sidecar.
+
+### L-S — Linkerd with mTLS
+
+```bash
+(cd deployments && make linkerd)
+
+# Verify: the app proxies report TLS on inbound traffic after a few requests.
+P=$(kubectl --context projekt-badawchy-cluster -n thesis-test get pods -l app=permutation-service \
+      -o jsonpath='{.items[0].metadata.name}')
+linkerd diagnostics proxy-metrics -n thesis-test po/$P | grep -c 'direction="inbound".*tls="true"'   # > 0
+
+cd loadGenTests/phaseA && ./run_phaseA_Core.sh -s "$SVC" -m linkerd -t on
+```
+
+Linkerd's mTLS is always on; the ingress-nginx controller is meshed too, so north–south traffic is
+encrypted as well.
+
+### L-P — Linkerd, proxy bypass
+
+```bash
+(cd deployments && make linkerd-nomtls)
+
+# Verify: requests succeed, but the app proxies record NO traffic at all. Port 4191 is the
+# proxy's own admin port (kubelet probes, metrics scrapes), not application traffic.
+P=$(kubectl --context projekt-badawchy-cluster -n thesis-test get pods -l app=permutation-service \
+      -o jsonpath='{.items[0].metadata.name}')
+linkerd diagnostics proxy-metrics -n thesis-test po/$P \
+  | grep -E '^(request_total|tcp_open_total)\{' | grep -v 'srv_port="4191"'   # empty
+
+cd loadGenTests/phaseA && ./run_phaseA_Core.sh -s "$SVC" -m linkerd -t off
+```
+
+> **This is not "Linkerd without encryption".** Linkerd cannot turn mTLS off. `linkerd-nomtls`
+> keeps every proxy injected but excludes the application ports from interception
+> (`config.linkerd.io/skip-inbound-ports` / `skip-outbound-ports`, also on the ingress controller),
+> so requests bypass the proxy entirely. The L-S vs L-P difference is *proxy vs no proxy*, not
+> *encryption vs none* — report it that way (`docs/test-scenario.typ`, L-P). The default label
+> `linkerd_nomtls` matches Phase B; pass `-c linkerd_bypass` if you want the label to say so.
+
+### I-S — Istio with mTLS STRICT
+
+```bash
+(cd deployments && make istio)
+kubectl --context projekt-badawchy-cluster apply -f deployments/k8s/istio/peer-authentication-strict.yaml
+```
+
+Then resolve the gateway port, verify and run — see [Running against Istio](#running-against-istio)
+below, with `-t on`. There is no single `make` target for I-S yet; `make istio` alone leaves Istio
+in its default PERMISSIVE mode, which is **not** a measured configuration.
+
+### I-P — Istio with mTLS DISABLE
+
+```bash
+(cd deployments && make istio-nomtls)    # prints the mode and the gateway NodePort at the end
+```
+
+Then resolve the gateway port, verify and run as below, with `-t off`. The Envoy proxies stay in
+the path; only encryption is removed, so I-S vs I-P is the one clean measure of the mTLS cost.
+
+### Running against Istio
+
+```bash
+GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc istio-ingressgateway \
+  -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
+
+# Verify on the wire: send a few requests, then count them by security policy on one app pod.
+# I-S must show connection_security_policy="mutual_tls" only; I-P must show "none" only.
+P=$(kubectl --context projekt-badawchy-cluster -n thesis-test get pods -l app=permutation-service \
+      -o jsonpath='{.items[0].metadata.name}')
+kubectl --context projekt-badawchy-cluster -n thesis-test exec "$P" -c istio-proxy -- \
+  pilot-agent request GET stats/prometheus \
+  | grep '^istio_requests_total' | grep 'reporter="destination"' \
+  | grep -o 'connection_security_policy="[a-z_]*"' | sort | uniq -c
+
+cd loadGenTests/phaseA
+./run_phaseA_Core.sh -s "$SVC" -m istio -t on  -u http://10.29.20.113:$GWPORT   # I-S
+./run_phaseA_Core.sh -s "$SVC" -m istio -t off -u http://10.29.20.113:$GWPORT   # I-P
+```
+
+- **The gateway NodePort changes on every Istio install.** Re-resolve `GWPORT` after each `make`.
+- **Switching between I-S and I-P needs no redeploy**: `kubectl apply` the other file from
+  `deployments/k8s/istio/`. Istio pushes the policy to the proxies within seconds and the port stays
+  the same — verify on the wire before running.
+- For S2-int (`-s differential`) check the internal hop too: run the same count on an
+  `integration-service` pod after sending requests to `/api/differential/solve`.
+
+### Scenarios that need the AI host
+
+`ai`, `permutation_ai` and `digital_ai` reach the external AI machine (10.29.20.121). It is outside
+the mesh in every setup (plaintext egress), and the Core refuses to start if the `ai-service`
+Service has no endpoints. Everything else runs entirely in the cluster.
 
 ---
 
@@ -306,8 +425,8 @@ for s in permutation fibonacci integration digital video differential ai permuta
 done
 ```
 
-For Istio, resolve `GWPORT` once after `make istio` and add `-u http://10.29.20.113:$GWPORT` to the
-loop. With the defaults this is about 16 h for nine scenarios, so run it from a stable machine —
+For Istio, resolve `GWPORT` once after the `make` and add `-u http://10.29.20.113:$GWPORT` to the
+loop; for L-P use `-t off`. Flags per setup are in [Setups](#setups-deploy-verify-run). With the defaults this is about 16 h for nine scenarios, so run it from a stable machine —
 a VPN drop breaks the SSH sessions and the port-forward mid-run.
 
 ---
