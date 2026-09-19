@@ -29,10 +29,38 @@
         wait_timeout: 60
       ignore_errors: true
 
-    - name: Uninstall Linkerd (Imperative CLI)
-      ansible.builtin.shell: linkerd uninstall | kubectl delete -f -
+    # Must run BEFORE the Linkerd uninstall: the Linkerd phase injects linkerd-proxy into the
+    # ingress-nginx controller, and `linkerd uninstall` refuses to run while any injected pod
+    # outside the control plane still exists.
+    - name: Uninstall NGINX Ingress Controller
+      ansible.builtin.shell: kubectl delete --ignore-not-found --wait=true -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
       ignore_errors: true
 
-    - name: Uninstall NGINX Ingress Controller
-      ansible.builtin.shell: kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/baremetal/deploy.yaml
+    # --force covers injected pods that outlive the 60 s namespace wait above; they are being
+    # deleted anyway. pipefail matters: without it a refusal leaves stdout empty, and
+    # `kubectl delete -f -` on empty input exits 0, so the task reported "changed" while the
+    # whole control plane stayed up. The assert below is the real gate.
+    - name: Uninstall Linkerd (Imperative CLI)
+      ansible.builtin.shell: |
+        set -o pipefail
+        linkerd uninstall --force | kubectl delete --ignore-not-found -f -
+      args:
+        executable: /bin/bash
       ignore_errors: true
+
+    # A surviving proxy-injector webhook would inject linkerd-proxy into the next phase's pods
+    # and silently contaminate its measurements, so fail the teardown instead.
+    - name: Assert Linkerd is fully removed
+      ansible.builtin.shell: |
+        kubectl wait --for=delete namespace/linkerd --timeout=120s >/dev/null 2>&1 || true
+        left="$(
+          kubectl get namespace linkerd -o name 2>/dev/null
+          kubectl get crd -o name | grep 'linkerd\.io'
+          kubectl get mutatingwebhookconfiguration,validatingwebhookconfiguration -o name | grep linkerd
+        )"
+        if [ -n "$left" ]; then
+          echo "Linkerd leftovers after teardown:"; echo "$left"; exit 1
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
