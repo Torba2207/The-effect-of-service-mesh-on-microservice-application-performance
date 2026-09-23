@@ -70,14 +70,16 @@ CTX="projekt-badawchy-cluster"
 PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
 
-# --- HARDCODED PARAMETERS FOR S1 (PermutationService) BASELINE ---
-CONFIG="baseline_permutation_S1"
+# startup banner will be printed after params are parsed
+# --- PARAMETERS FOR S1 (PermutationService) ---
+CONFIG=""
 MESH="baseline"
 MTLS="na"
 SERVICE="permutation-service"
 JS_FILE="permutation-test.js"
 NODE_IP="10.29.20.113"
 URL=""
+CONFIG_LABEL=""
 
 # --- Default load parameters (can be overridden via flags) ---
 LEVELS="low med high"
@@ -86,9 +88,12 @@ WARMUP="30s"
 STEADY="120s"
 COOLDOWN=30
 
-# Parse arguments (load management parameters only)
-while getopts "u:n:l:r:W:S:C:" opt; do
+# Parse arguments
+while getopts "m:t:c:u:n:l:r:W:S:C:" opt; do
   case "$opt" in
+    m) MESH="$OPTARG" ;;
+    t) MTLS="$OPTARG" ;;
+    c) CONFIG_LABEL="$OPTARG" ;;
     u) URL="$OPTARG" ;;
     n) NODE_IP="$OPTARG" ;;
     l) LEVELS="$OPTARG" ;;
@@ -100,6 +105,33 @@ while getopts "u:n:l:r:W:S:C:" opt; do
   esac
 done
 
+case "$MESH" in
+  baseline|istio|linkerd) ;;
+  *) echo "ERROR: -m must be baseline, istio or linkerd"; exit 1 ;;
+esac
+
+if [ "$MESH" = "baseline" ]; then
+  MTLS="${MTLS:-na}"
+  [ "$MTLS" = "na" ] || { echo "ERROR: -m baseline takes -t na"; exit 1; }
+else
+  MTLS="${MTLS:-on}"
+  case "$MTLS" in
+    on|off) ;;
+    *) echo "ERROR: -t must be on or off for -m $MESH"; exit 1 ;;
+  esac
+fi
+
+if [ -z "$CONFIG_LABEL" ]; then
+  if [ "$MESH" = "baseline" ]; then
+    CONFIG_LABEL="baseline"
+  elif [ "$MTLS" = "on" ]; then
+    CONFIG_LABEL="${MESH}_mtls"
+  else
+    CONFIG_LABEL="${MESH}_nomtls"
+  fi
+fi
+CONFIG="${CONFIG_LABEL}_permutation_S1"
+
 [ -z "$URL" ] && URL="http://${NODE_IP}:30080"
 RESULTS="$HERE/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
@@ -107,7 +139,8 @@ KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
 
 echo "============================================================"
 echo " [Phase A] Starting isolated test :: SERVICE S1 (PermutationService)"
-echo " Profile: BASELINE (No Mesh / No mTLS)"
+echo " Profile: $MESH | mTLS: $MTLS"
+echo " Config label: $CONFIG"
 echo " Target URL: $URL"
 echo " Test Script: $JS_FILE"
 echo "------------------------------------------------------------"
