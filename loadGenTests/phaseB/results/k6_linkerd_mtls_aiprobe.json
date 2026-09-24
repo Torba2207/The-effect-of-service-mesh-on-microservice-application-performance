@@ -1,0 +1,35 @@
+{
+  "iterations": 90,
+  "scenarios": {
+    "ai_generate": {
+      "reqs": 30,
+      "fail_rate": 0,
+      "lat_avg_ms": 1434.2744825000002,
+      "lat_p50_ms": 1432.0800905,
+      "lat_p90_ms": 1453.4735148,
+      "lat_p95_ms": 1462.6171815,
+      "lat_p99_ms": 1474.16568916,
+      "lat_max_ms": 1477.076012
+    },
+    "permutation_from_ai": {
+      "reqs": 30,
+      "fail_rate": 0,
+      "lat_avg_ms": 1460.5373586,
+      "lat_p50_ms": 1454.923215,
+      "lat_p90_ms": 1488.0019447,
+      "lat_p95_ms": 1507.07546375,
+      "lat_p99_ms": 1577.19064668,
+      "lat_max_ms": 1604.678647
+    },
+    "filters_ai_matrix": {
+      "reqs": 30,
+      "fail_rate": 0,
+      "lat_avg_ms": 1681.578377166667,
+      "lat_p50_ms": 1677.008173,
+      "lat_p90_ms": 1707.9546415,
+      "lat_p95_ms": 1726.2847204,
+      "lat_p99_ms": 1742.00248008,
+      "lat_max_ms": 1748.360831
+    }
+  }
+}
