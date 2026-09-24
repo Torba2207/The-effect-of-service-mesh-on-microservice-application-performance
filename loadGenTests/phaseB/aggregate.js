@@ -8,7 +8,9 @@
 //   BASE_URL        required, e.g. http://10.29.20.113:30080
 //   LEVEL           low | med | high           (default low)
 //   DURATION        steady/warmup length        (default 120s)
-//   INCLUDE_AI      true | false                (default true)  - AI-touching scenarios
+//   INCLUDE_AI      true | false                (default true)  - the three AI-touching scenarios;
+//                   false is for debugging only and is NOT a valid Phase B run
+//   FIB_N           Fibonacci work unit n       (default 20000, same as Phase A)
 //   IMG_PATH        path to fixed PNG           (default assets/filter_input_128.png)
 //   VID_PATH        path to fixed MP4           (default assets/sample_360p_1s.mp4)
 //   K6_SUMMARY_OUT  per-scenario JSON out path  (default phaseB_summary.json)
@@ -20,10 +22,10 @@ import { Trend, Rate } from 'k6/metrics';
 const BASE = __ENV.BASE_URL;
 const LEVEL = (__ENV.LEVEL || 'low').toLowerCase();
 const DURATION = __ENV.DURATION || '120s';
-// AI is OFF by default: the AI service does CPU LLM inference at ~1-3 MINUTES per
-// request, so it cannot sustain a rate-based load (requests pile up and time out).
-// Enable only for a dedicated low-rate probe.
-const INCLUDE_AI = (__ENV.INCLUDE_AI || 'false') === 'true';
+// AI is part of every Phase B run. The GPU AI host (RTX 4070) sustains ~12-13 req/s in total,
+// shared by the three AI scenarios, so each runs at 1/2/3 req/s (3/6/9 combined).
+const INCLUDE_AI = (__ENV.INCLUDE_AI || 'true') === 'true';
+const FIB_N = parseInt(__ENV.FIB_N || '20000', 10);
 const SUMMARY_OUT = __ENV.K6_SUMMARY_OUT || 'phaseB_summary.json';
 const IMG_PATH = __ENV.IMG_PATH || 'assets/filter_input_128.png';
 const VID_PATH = __ENV.VID_PATH || 'assets/sample_360p_1s.mp4';
@@ -34,7 +36,7 @@ if (!BASE) { throw new Error('BASE_URL env is required'); }
 const IMG = open(IMG_PATH, 'b');
 const VID = open(VID_PATH, 'b');
 
-// Per-level target rates (requests/second) per scenario.
+// Per-level target rates (requests/second) per scenario. STD and video match Phase A exactly.
 //                            low  med  high
 const RATES = {
   permutation_generate:  { low: 25, med: 50, high: 100 }, // S1  STD
@@ -42,17 +44,13 @@ const RATES = {
   integration_calculate: { low: 25, med: 50, high: 100 }, // S1  STD
   filters_apply_image:   { low: 25, med: 50, high: 100 }, // S1  STD (multipart)
   differential_solve:    { low: 25, med: 50, high: 100 }, // S2-int STD (chains -> Integration)
-  video_compress:        { low: 1,  med: 1,  high: 2  },  // S1  HVY (multipart, ~0.5s/req)
-  ai_generate:           { low: 1,  med: 1,  high: 1  },  // S1  HVY  (external AI VM)
-  permutation_from_ai:   { low: 1,  med: 1,  high: 1  },  // S2-ext   (-> external AI)
-  filters_ai_matrix:     { low: 1,  med: 1,  high: 1  },  // S2-ext   (-> external AI)
+  video_compress:        { low: 6,  med: 12, high: 18 },  // S1  HVY (multipart, ~0.28 s/req)
+  ai_generate:           { low: 1,  med: 2,  high: 3  },  // S1  HVY  (external AI host)
+  permutation_from_ai:   { low: 1,  med: 2,  high: 3  },  // S2-ext   (-> external AI host)
+  filters_ai_matrix:     { low: 1,  med: 2,  high: 3  },  // S2-ext   (-> external AI host)
 };
-// AI capacity is ~0.3 req/s TOTAL (CPU LLM inference, ~6-7s/req, 2 backends). The
-// three AI scenarios therefore use a 10s timeUnit (0.1 req/s each = 0.3 r/s combined)
-// AND are OFF by default. They are an opt-in trickle, never a real load tier.
 
 const AI_SCENARIOS = ['ai_generate', 'permutation_from_ai', 'filters_ai_matrix'];
-function timeUnit(s) { return AI_SCENARIOS.indexOf(s) !== -1 ? '10s' : '1s'; }
 const SCENARIOS = Object.keys(RATES).filter(function (s) {
   return INCLUDE_AI || AI_SCENARIOS.indexOf(s) === -1;
 });
@@ -74,7 +72,7 @@ function mkScenario(s) {
   return {
     executor: 'constant-arrival-rate',
     rate: rate(s),
-    timeUnit: timeUnit(s),
+    timeUnit: '1s',
     duration: DURATION,
     preAllocatedVUs: preVUs(s),
     maxVUs: maxVUs(s),
@@ -108,7 +106,7 @@ export function permutation_generate() {
 }
 export function fibonacci_calculate() {
   record('fibonacci_calculate',
-    http.post(BASE + '/api/fibonacci/calculate', JSON.stringify({ n: 3000 }), JSON_HEADERS));
+    http.post(BASE + '/api/fibonacci/calculate', JSON.stringify({ n: FIB_N }), JSON_HEADERS));
 }
 export function integration_calculate() {
   record('integration_calculate',
@@ -149,7 +147,7 @@ export function filters_ai_matrix() {
 function val(o, k) { return (o && o[k] !== undefined && o[k] !== null) ? o[k] : null; }
 
 export function handleSummary(data) {
-  const out = { level: LEVEL, duration: DURATION, include_ai: INCLUDE_AI, scenarios: {} };
+  const out = { level: LEVEL, duration: DURATION, include_ai: INCLUDE_AI, fib_n: FIB_N, scenarios: {} };
   for (let i = 0; i < SCENARIOS.length; i++) {
     const s = SCENARIOS[i];
     const t = (data.metrics['lat_' + s] || {}).values || {};
