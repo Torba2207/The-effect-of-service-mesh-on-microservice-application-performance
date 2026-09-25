@@ -435,7 +435,7 @@ confidence intervals. To control temporal/thermal drift:
     [5 configs × 1 idle-overhead capture], [5],
     [*Phase A subtotal*], [*1505*],
     [*Phase B — Aggregate full-system (complementary)*], [],
-    [5 configs × 3 loads × 10 reps (all services driven simultaneously at the §5 profile)], [150],
+    [5 configs × 3 loads × 10 reps (all nine scenarios, AI included, driven simultaneously at the Phase B profile below)], [150],
     [*Total*], [*1655*],
   ),
   caption: [Run count. Ten benchmarked scenarios (6 S1 + S2-int + S2-amp + 2 S2-ext); `differential/solve` is benched twice. At #sym.tilde 3.5 min/run, Phase A is #sym.tilde 88 h and Phase B #sym.tilde 9 h of unattended test time. Reduce by using the 60 s steady window, trimming reps, or dropping Phase B if wall-clock is constrained.],
@@ -463,6 +463,19 @@ confidence intervals. To control temporal/thermal drift:
   discarded and re-run for all configurations. Phase A (isolation) uses the new spec from the
   start. Because the whole point of Phase B is contention between co-located services, a mid-campaign
   resource change invalidates the entire run, not just the video rows.
+]
+
+#note[
+  *Phase B load profile (September 2026).* Every Phase B run drives all nine scenarios at once.
+  The STD endpoints and S2-int run at 25/50/100 RPS and `video/compress` at 6/12/18 RPS —
+  *the same rates as in Phase A*, so each service carries exactly the load it had in isolation
+  and contention is the only new variable. Work units are identical to Phase A as well, including
+  Fibonacci at `n = 20000`. The three AI scenarios (`Ai/generate`, `permutation/generate-from-ai`,
+  `filters/apply-ai-matrix`) are *always included* at 1/2/3 RPS each: they share one GPU AI host
+  that sustains about 12–13 RPS in total, and 3/6/9 RPS combined stays below that ceiling at every
+  level (Phase A drives each of them alone at 3/6/12). The AI host is outside the mesh, so for
+  the two S2-ext chains only the ingress→service hop carries the mesh variable. The earlier
+  closed-loop AI probe, needed while the CPU AI VM capped out at #sym.tilde 0.3 RPS, is superseded.
 ]
 
 = Data Collection

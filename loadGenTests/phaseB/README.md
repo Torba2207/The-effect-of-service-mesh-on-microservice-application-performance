@@ -1,12 +1,17 @@
 # Phase B — Aggregate full-system benchmark
 
-Drives **all services concurrently** at a per-level rate and records CPU, RAM and latency for
-each mesh configuration. See `thesis-metrics/test-scenario.typ` (§8 Phase B) for the
-methodology. One `run_phaseB.sh` invocation covers one configuration = 3 load levels × 10
-repetitions = 30 runs (~1.6 h).
+Drives **all services concurrently** — the six in-cluster services *and* the three AI scenarios —
+at a per-level rate and records CPU, RAM and latency for each mesh configuration. See
+`docs/test-scenario.typ` (Phase B) for the methodology. One `run_phaseB.sh` invocation covers one
+configuration = 3 load levels × 10 repetitions = 30 runs (~1.6 h).
 
-Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls`, `istio_mtls`,
-`istio_nomtls`. Switch the cluster deployment between them, then invoke once per config.
+Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy bypass),
+`istio_mtls`, `istio_nomtls`. Switch the cluster deployment between them, then invoke once per config.
+
+> **Status (Sept 2026): no valid Phase B data exists yet.** Everything collected in June
+> (`baseline`, `linkerd_mtls`, `istio_mtls`) predates the VideoService resource change and the new
+> load profile below, and must be discarded. The June `results/master.csv` was deleted on 22.09.2026, so the next run starts
+> a fresh one.
 
 ---
 
@@ -17,22 +22,30 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls`, `istio_mt
 | `run_phaseB.sh` | workstation | Orchestrates one config: warmup→steady→cooldown × levels × reps; pulls Prometheus; writes CSVs. |
 | `collect_metrics.py` | workstation | Queries Prometheus for per-service CPU/RAM over the steady window; merges k6 latency → `results/master.csv`. |
 | `extract_timeseries.py` | workstation | Per run, pulls CPU/RAM **curves** (`query_range`) → `results/timeseries_<config>.csv`. |
-| `ai_probe/` | workstation + lg | Closed-loop (1 VU) probe for the AI / S2-ext chains → `results/ai_probe.csv`. |
+| `ai_probe/` | workstation + lg | **Legacy.** Closed-loop (1 VU) probe built for the old CPU AI VM; superseded now that AI runs inside the aggregate. |
 | `timeseries/` | workstation + lg | Single-run capture with true per-second latency (`capture_run.sh`). |
 | `make_plots.py`, `make_ai_plot.py` | workstation | Comparison figures → `results/plots/`. |
 | `../common/assets/` | — | Fixed work-unit inputs (`filter_input_128.png`, `sample_360p_1s.mp4`) + `make_assets.sh`, shared across phases. |
 
 ## Prerequisites
+- **VPN connected** — the cluster, `lg`, Prometheus and the AI host are all reached through it.
 - Workstation: `kubectl` (context `projekt-badawchy-cluster`), `python3` (+ matplotlib for plots),
-  `ssh`/`scp`, the SSH key `~/Documents/PG/Projects/.sshkeys/pgPB`.
+  `ssh`/`scp`. SSH key for `root@lg` from `$SSH_PRIVATE_KEY` or the `SSH_PRIVATE_KEY=` line of the
+  repo-root `.env` (override the file with `ENV_FILE=`).
 - Load generator `lg` (10.29.20.130): `k6` installed. The script + assets are synced automatically.
-- The target config must already be **deployed** (`make baseline|istio|linkerd` + mTLS state set),
-  and for Istio the gateway NodePort resolved for `-u`.
+- **AI host (10.29.20.121) up**, and the `ai-service` Service in `thesis-test` pointing at it —
+  the preflight refuses to start otherwise.
+- The target config must already be **deployed** with the matching `make` target from
+  `deployments/` (see the setup table in `../phaseA/README.md`), and for Istio the gateway NodePort
+  resolved for `-u`.
 
 ## Quick start
 ```bash
 # Linkerd + mTLS (URL defaults to http://10.29.20.113:30080)
 ./run_phaseB.sh -c linkerd_mtls -m linkerd -t on
+
+# Linkerd, proxy bypass (make linkerd-nomtls) — not an encryption-off variant, see ../phaseA/README.md
+./run_phaseB.sh -c linkerd_nomtls -m linkerd -t off
 
 # Baseline (no mesh)
 ./run_phaseB.sh -c baseline -m baseline -t na
@@ -40,7 +53,8 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls`, `istio_mt
 # Istio — resolve the dynamic Envoy gateway NodePort for -u
 GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc istio-ingressgateway \
   -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
-./run_phaseB.sh -c istio_mtls -m istio -t on -u http://10.29.20.113:$GWPORT
+./run_phaseB.sh -c istio_mtls   -m istio -t on  -u http://10.29.20.113:$GWPORT   # make istio + STRICT
+./run_phaseB.sh -c istio_nomtls -m istio -t off -u http://10.29.20.113:$GWPORT   # make istio-nomtls
 ```
 **Validate first:** `-r 1 -l high` per config and confirm `fail_rate < 0.01` before the full run.
 
@@ -57,7 +71,8 @@ Nine functions are defined, one per benchmarked endpoint. Each is wired to its o
 rate regardless of how fast responses come back. This is deliberate: if a mesh slows a service,
 latency rises and errors appear, rather than throughput silently dropping (a closed-loop model
 would mask the overhead). Per-scenario VU pools (`preAllocatedVUs`/`maxVUs`) are sized so k6 can
-always sustain the target rate; heavy `video_compress` and the AI scenarios get smaller pools.
+always sustain the target rate; heavy `video_compress` and the AI scenarios get smaller pools. All
+scenarios use a 1 s `timeUnit`.
 
 ### Per-level rates (`RATES`)
 Rate is chosen by the `LEVEL` env (`low`/`med`/`high`):
@@ -69,30 +84,34 @@ Rate is chosen by the `LEVEL` env (`low`/`med`/`high`):
 | `integration_calculate` | `POST /api/integration/calculate` | S1 STD | 25 / 50 / 100 |
 | `filters_apply_image` | `POST /api/filters/apply-image` (multipart) | S1 STD | 25 / 50 / 100 |
 | `differential_solve` | `POST /api/differential/solve` | S2-int | 25 / 50 / 100 |
-| `video_compress` | `POST /api/video/compress` (multipart) | S1 HVY | 1 / 1 / 2 |
-| `ai_generate` | `POST /api/Ai/generate` | S1 HVY | 0.1 rps* |
-| `permutation_from_ai` | `POST /api/permutation/generate-from-ai` | S2-ext | 0.1 rps* |
-| `filters_ai_matrix` | `POST /api/filters/apply-ai-matrix` | S2-ext | 0.1 rps* |
+| `video_compress` | `POST /api/video/compress` (multipart) | S1 HVY | 6 / 12 / 18 |
+| `ai_generate` | `POST /api/Ai/generate` | S1 HVY | 1 / 2 / 3 |
+| `permutation_from_ai` | `POST /api/permutation/generate-from-ai` | S2-ext | 1 / 2 / 3 |
+| `filters_ai_matrix` | `POST /api/filters/apply-ai-matrix` | S2-ext | 1 / 2 / 3 |
 
-\* The three **AI scenarios are OFF by default** (`INCLUDE_AI=false`). The AI service is CPU LLM
-inference (~6–7 s/req, ~0.3 req/s hard ceiling), so it cannot take a rate-based load. When opted
-in (`-I`), they run at a trickle via a **10 s `timeUnit`** (rate 1 / 10 s = 0.1 req/s each). For
-real AI numbers use the closed-loop `ai_probe/` instead.
+- **STD, S2-int and video rates are identical to Phase A**, so every service carries the same load
+  it had in isolation and the only new variable is contention.
+- **The three AI scenarios are part of every run.** They share one GPU AI host that sustains about
+  12–13 req/s in total, so each runs at 1/2/3 req/s — 3/6/9 req/s combined, below that ceiling even
+  at high. (Phase A drives each AI scenario alone at 3/6/12.) `-X` / `INCLUDE_AI=false` drops them
+  for debugging only; such a run is not a valid Phase B measurement.
+- At high the cluster carries roughly 8–9 cores of application CPU (video alone ~6.5) out of the
+  24 worker vCPUs, before sidecars. Validate each configuration with `-r 1 -l high` first.
 
 ### Fixed work units (reproducibility)
 Every scenario uses one immutable payload so per-request work is constant across runs and configs:
-permutation `[1..7]`, fibonacci `n=3000`, integration `steps=20000`, differential `x^2` (`steps:5`
-→ exactly one downstream Integration call), filters = the fixed **128×128** PNG (`blur`), video =
-the fixed **360p/1 s** clip. The two binary assets are `open()`-ed once at init and posted with
-`http.file(...)`. AI payloads are seed-pinned. Payloads are intentionally *light* so a service can
-sustain 100 rps within its 500m×3 CPU budget — i.e. we measure mesh overhead, not app queueing.
+permutation `[1..7]`, fibonacci `n=20000` (`-N`, the same as Phase A), integration `steps=20000`,
+differential `x^2` (`steps:5` → exactly one downstream Integration call), filters = the fixed
+**128×128** PNG (`blur`), video = the fixed **360p/1 s** clip. The two binary assets are `open()`-ed
+once at init and posted with `http.file(...)`. AI payloads are seed-pinned. Work units match Phase A
+one for one, so per-request cost is the same in both phases and results can be compared directly.
 
 ### Metrics and output
 For each response `record()` adds the duration to a per-scenario `Trend` (`lat_<scenario>`) and
 success to a `Rate` (`ok_<scenario>`), plus a `check` for status 200. `discardResponseBodies` keeps
 the generator light. At the end, `handleSummary()` writes a compact JSON to `K6_SUMMARY_OUT`:
 ```json
-{ "level": "...", "duration": "...", "scenarios": {
+{ "level": "...", "duration": "...", "include_ai": true, "fib_n": 20000, "scenarios": {
     "permutation_generate": { "rps_target", "reqs", "fail_rate",
       "lat_avg_ms","lat_p50_ms","lat_p90_ms","lat_p95_ms","lat_p99_ms","lat_max_ms" }, ... } }
 ```
@@ -100,7 +119,8 @@ This per-scenario summary is what `collect_metrics.py` reads for the latency row
 
 ### Environment variables
 `BASE_URL` (required), `LEVEL` (low/med/high), `DURATION` (steady/warmup length), `INCLUDE_AI`
-(true/false), `IMG_PATH`, `VID_PATH`, `K6_SUMMARY_OUT`. `run_phaseB.sh` sets all of these.
+(default `true`), `FIB_N` (default `20000`), `IMG_PATH`, `VID_PATH`, `K6_SUMMARY_OUT`.
+`run_phaseB.sh` sets all of these.
 
 ---
 
@@ -123,10 +143,13 @@ scalars and time-series. It does **not** switch the cluster — deploy the targe
 | `-W WARMUP` | warm-up duration (discarded) | `30s` |
 | `-S STEADY` | steady (measured) duration | `120s` |
 | `-C COOLDOWN` | cooldown seconds between runs | `30` |
-| `-I` | include the AI scenarios (opt-in trickle) | off |
+| `-N N` | Fibonacci work unit `n` (positive integer) | `20000` |
+| `-X` | exclude the three AI scenarios — debugging only, **not** a valid Phase B run | AI included |
 
 ### What it does, in order
 1. **Preflight** — checks k6 on `lg`, the kube context reachable, and the ingress URL answers 200.
+   Unless `-X` is given, it also refuses to start if `ai-service` has no endpoints, and prints the
+   AI health status through the ingress.
 2. **Sync** — `scp`s `aggregate.js` + the two fixed assets to `lg:/root/thesis-tests/phaseB/`.
 3. **Prometheus port-forward** — opens `svc/cluster-monitor-kube-prome-prometheus 9090:9090`
    in the background. `ensure_pf()` health-checks `/-/ready` and restarts it if it dies; a `trap`
@@ -184,19 +207,17 @@ python3 extract_timeseries.py --master results/master.csv --config <label> \
 Resolution is ~15 s (bounded by cadvisor's housekeeping — not improvable from Prometheus). For
 finer **latency**-over-time (true 1 s) use `timeseries/capture_run.sh` on a single run.
 
-### `results/ai_probe.csv` — AI / S2-ext chain latency
-From the closed-loop probe (`ai_probe/run_ai_probe.sh`), per config + scenario.
+### `results/ai_probe.csv` — legacy
+Output of the old closed-loop AI probe (June, CPU AI VM). Not produced by current runs.
 
 ---
 
-## AI / S2-ext: use the closed-loop probe, not the aggregate
-The AI service can't take open-loop rate-based load. Measure it separately:
-```bash
-./ai_probe/run_ai_probe.sh -c <label> -m <mesh> -t <mtls> -i 90 [-u ...]
-```
-1 VU, sequential — AI never sees more than one request at a time, so the VM cannot be overloaded.
-Chain latency is dominated by ~1.4 s AI inference, so it does not discriminate strongly between
-configs (see `make_ai_plot.py`).
+## AI / S2-ext inside the aggregate
+AI used to be measured separately with the closed-loop `ai_probe/`, because the old CPU AI VM
+capped out at ~0.3 req/s. The GPU host sustains ~12–13 req/s, so the three AI scenarios now run
+open-loop inside `aggregate.js` like every other scenario, and their latency rows land in
+`master.csv` with the rest (`ai_generate` under service `ai-external`). `ai_probe/` is kept only
+for reference.
 
 ## Plots
 ```bash
@@ -208,7 +229,7 @@ Colors: baseline=green, linkerd=blue, istio=red (nomtls variants: orange/purple 
 
 ## Per-config workflow summary
 ```
-make baseline|istio|linkerd (+ mTLS)  →  ./ai_probe/run_ai_probe.sh ...  →  ./run_phaseB.sh ...
+cd deployments && make <target>   →   verify the setup   →   ./run_phaseB.sh -r 1 -l high ...   →   ./run_phaseB.sh ...
 ```
-Done: baseline · linkerd_mtls · istio_mtls. Remaining: istio_nomtls, linkerd_nomtls
-(planned: Consul ±mTLS, Istio Ambient).
+Done: none (all June data void). Remaining: baseline, linkerd_mtls, linkerd_nomtls, istio_mtls,
+istio_nomtls (planned: Consul ±mTLS, Istio Ambient).
