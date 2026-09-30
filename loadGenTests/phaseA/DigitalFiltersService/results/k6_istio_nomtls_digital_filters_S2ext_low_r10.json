@@ -1,0 +1,18 @@
+{
+  "level": "low",
+  "duration": "120s",
+  "include_ai": true,
+  "scenarios": {
+    "filters_ai_matrix": {
+      "rps_target": 3,
+      "reqs": 361,
+      "fail_rate": 0,
+      "lat_avg_ms": 200.68175855678663,
+      "lat_p50_ms": 199.475765,
+      "lat_p90_ms": 207.12056,
+      "lat_p95_ms": 210.32987,
+      "lat_p99_ms": 217.65561339999996,
+      "lat_max_ms": 238.02287
+    }
+  }
+}
