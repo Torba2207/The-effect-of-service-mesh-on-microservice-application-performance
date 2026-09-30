@@ -1,0 +1,19 @@
+{
+  "level": "med",
+  "duration": "120s",
+  "include_ai": true,
+  "scenarios": {
+    "ai_generate": {
+      "rps_target": 6,
+      "reqs": 721,
+      "fail_rate": 0,
+      "wrong_answer_rate": 0,
+      "lat_avg_ms": 510.6863411234395,
+      "lat_p50_ms": 511.668726,
+      "lat_p90_ms": 520.290502,
+      "lat_p95_ms": 523.091602,
+      "lat_p99_ms": 528.729479,
+      "lat_max_ms": 553.027084
+    }
+  }
+}
