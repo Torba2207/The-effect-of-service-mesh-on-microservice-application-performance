@@ -112,6 +112,41 @@ workflow (`deployments/Makefile`) and measured independently.
   show plaintext.
 ]
 
+#warn[
+  *Consul configuration (C-S) — provisional, to be reviewed with the thesis supervisor
+  (promotor) before any C-S campaign is run.* `make consul` deploys it through
+  `deployments/ansible/phase_consul.yml`, which installs the `hashicorp/consul` Helm chart
+  with the values in `deployments/k8s/consul/`. The current choices and the points that
+  need a decision:
+
+  - *Helm install, no ACLs.* Without ACLs Consul allows all service-to-service traffic; an
+    explicit allow-all `ServiceIntentions` keeps that independent of the default. Enabling
+    ACLs would be closer to production but requires a ServiceAccount named after each
+    Service in every deployment.
+  - *mTLS is always on* (Consul Connect CA), like Linkerd; there is no Istio-style switch.
+    `global.tls` only encrypts Consul's own control-plane traffic. A C-P variant would
+    therefore again be *proxy bypass*, not encryption-off — and it is *not yet defined*
+    for this setup: the API Gateway always speaks mTLS to its backends, so excluding the
+    application ports from the proxy (the L-P approach) would break routing.
+  - *Ingress is the Consul API Gateway* (Gateway API, NodePort assigned at install time,
+    listener 8080). This is *asymmetric* with L-S, which enters through a meshed NGINX
+    controller; the alternative is the same meshed NGINX for Consul, with inbound 80/443
+    excluded from interception because Consul's sidecar rejects non-mTLS clients.
+  - *The `ai` S1 cell cannot run through the API Gateway.* The gateway routes only to
+    services in the Consul catalog and the AI host is an external VM, so there is no
+    `/api/Ai` route. The S2-ext chains are unaffected (they reach the AI host through the
+    services' own sidecars). Options: register the AI host via a terminating gateway,
+    route `ai` S1 through meshed NGINX, or drop that cell for C-S.
+  - *All mesh traffic is declared HTTP* (`ProxyDefaults` protocol `http`), so Envoy works
+    at L7 as it does under Istio; the gateway's `HTTPRoute`s require it.
+  - *One server replica* with a 2 Gi volume (Consul keeps state in Raft, unlike Istio and
+    Linkerd); a StorageClass must exist in the cluster.
+  - *Chart version is not pinned yet*; pin it once an install has been verified on the
+    cluster's Kubernetes version.
+  - The metrics collector and the Phase A/B scripts do not accept `-m consul` yet (sidecar
+    container `consul-dataplane`, control-plane namespace `consul`).
+]
+
 = Services Under Test and Fixed Workloads
 
 All seven backend services are exercised. Each service exposes several endpoints; they are
@@ -365,6 +400,7 @@ injected-`linkerd-proxy` NGINX controller for Linkerd) so that north–south
     [B (baseline)], [NGINX ingress (unmeshed): `http://<node-ip>:30080/api/<service>/...`. Per-service NodePorts also exist as a fallback.],
     [I-S / I-P (Istio)], [Istio ingress gateway (meshed Envoy): `http://<node-ip>:$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')/api/<service>/...`.],
     [L-S / L-P (Linkerd)], [NGINX ingress (meshed: controller injected with `linkerd-proxy` + `service-upstream: "true"`): `http://<node-ip>:30080/api/<service>/...`. Per-service NodePorts: permutation 30101, fibonacci 30102, differential 30103, integration 30104, video 30106, filters 30107.],
+    [C-S (Consul, provisional)], [Consul API Gateway (Envoy, Gateway API): `http://<node-ip>:$(kubectl -n thesis-test get svc api-gateway -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')/api/<service>/...`. Dynamic like Istio's; no `/api/Ai` route. Per-service NodePorts do *not* work: Consul's sidecar accepts only mTLS inbound. See the Consul note in Experimental Configurations.],
   ),
   caption: [Ingress resolution per configuration. `<node-ip>` is any worker node, e.g. `10.29.20.113`. The NGINX NodePort is pinned to `30080` (HTTP) / `30443` (HTTPS) by the Linkerd phase playbook; the Istio gateway NodePort is dynamic and must be re-resolved after every `make istio`.],
 )
