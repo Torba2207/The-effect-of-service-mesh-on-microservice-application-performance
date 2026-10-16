@@ -4,7 +4,7 @@ KUBECTX   = projekt-badawchy-cluster
 TEST_NS   = thesis-test
 ISTIO_PA  = k8s/istio
 
-.PHONY: clean teardown baseline istio istio-nomtls linkerd linkerd-nomtls set-context
+.PHONY: clean teardown baseline istio istio-nomtls linkerd linkerd-nomtls consul set-context
 
 # Deployment steps must run in order (teardown before clean before install) even under `make -j`
 # -- some shells alias make to `make -j<N>`, which otherwise runs teardown and clean at once.
@@ -58,3 +58,11 @@ linkerd-nomtls: set-context teardown clean
 	kubectl --context $(KUBECTX) -n $(TEST_NS) wait --for=condition=Available deployment --all --timeout=300s
 	@echo "✅ Bypass annotations on $(TEST_NS): $$(kubectl --context $(KUBECTX) get ns $(TEST_NS) -o jsonpath='{.metadata.annotations}')"
 	@echo "🚪 Ingress: http://<node>:30080 (static NodePort)"
+
+# C-S configuration: Consul service mesh via Helm, no ACLs, Consul API Gateway as ingress.
+# mTLS is always on in Consul. Needs helm on the workstation and a StorageClass in the cluster.
+# The playbook prints the gateway NodePort, which is dynamic like Istio's: pass it with -u.
+# PROVISIONAL - to be reviewed with the thesis supervisor (docs/test-scenario.typ).
+consul: set-context teardown clean
+	@echo "🕸️ Deploying Consul via Ansible (Helm)..."
+	ansible-playbook ansible/phase_consul.yml -i $(INVENTORY)
