@@ -64,3 +64,49 @@
       args:
         executable: /bin/bash
       changed_when: false
+
+    # Consul is a Helm release. Uninstall only when helm is present and the release exists,
+    # so a workstation without helm can still tear down the other meshes.
+    - name: Uninstall Consul (Helm)
+      ansible.builtin.shell: |
+        if command -v helm >/dev/null && helm -n consul status consul >/dev/null 2>&1; then
+          helm -n consul uninstall consul --wait --timeout 5m
+        fi
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
+    # helm uninstall leaves the server StatefulSet's PVCs behind; a later install would then
+    # start from the old Raft store and catalog. Deleting the namespace removes them.
+    - name: Ensure Consul namespace (and its server volumes) is absent
+      kubernetes.core.k8s:
+        name: consul
+        api_version: v1
+        kind: Namespace
+        state: absent
+        wait: true
+        wait_timeout: 120
+      ignore_errors: true
+
+    - name: Remove Consul CRDs left behind by the chart
+      ansible.builtin.shell: |
+        kubectl get crd -o name | grep 'consul\.hashicorp\.com' | xargs -r kubectl delete --wait=true
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
+    # A surviving connect-injector webhook would keep acting on pods in namespaces labelled
+    # consul-inject=enabled; fail the teardown rather than leave it behind.
+    - name: Assert Consul is fully removed
+      ansible.builtin.shell: |
+        left="$(
+          kubectl get namespace consul -o name 2>/dev/null
+          kubectl get crd -o name | grep 'consul\.hashicorp\.com'
+          kubectl get mutatingwebhookconfiguration,validatingwebhookconfiguration -o name | grep consul
+        )"
+        if [ -n "$left" ]; then
+          echo "Consul leftovers after teardown:"; echo "$left"; exit 1
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
