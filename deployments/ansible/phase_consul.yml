@@ -1,0 +1,147 @@
+---
+# C-S configuration: Consul service mesh via Helm (consul-k8s), no ACLs, Consul API Gateway
+# as ingress. Run through `make consul`, which tears down and cleans first.
+#
+# PROVISIONAL - the whole Consul setup is to be reviewed with the thesis supervisor before
+# any C-S campaign (docs/test-scenario.typ, "Consul configuration - under review").
+#
+# Unlike Istio and Linkerd, Consul keeps its own state: the servers run Raft and hold the
+# service catalog and the mesh CA on a PersistentVolume, and Kubernetes Services are
+# mirrored into that catalog by consul-k8s. Hence the StorageClass check and the waits
+# for the servers and the injector before any application pod is created.
+#
+# Requires helm on the workstation. Optional overrides:
+#   -e consul_chart_version=<x.y.z>   pin the chart (empty = latest; pin once verified)
+#   -e consul_storage_class=<name>    StorageClass for the server PVC (empty = default)
+- name: Deploy Consul Environment (Helm, no ACLs, API Gateway)
+  hosts: localhost
+  gather_facts: false
+  vars:
+    test_ns: thesis-test
+    consul_ns: consul
+    k8s_dir: "{{ playbook_dir }}/../k8s"
+    consul_dir: "{{ playbook_dir }}/../k8s/consul"
+    consul_chart_version: ""
+    consul_storage_class: ""
+  tasks:
+    - name: Require helm on the workstation
+      ansible.builtin.command: helm version --short
+      changed_when: false
+
+    # Without a StorageClass the server PVC never binds and the install hangs on a
+    # Pending server pod, so fail early with a clear message instead.
+    - name: Look up the cluster default StorageClass
+      ansible.builtin.shell: >
+        kubectl get storageclass
+        -o jsonpath='{range .items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")]}{.metadata.name}{end}'
+      register: default_sc
+      changed_when: false
+
+    - name: Require a StorageClass for the Consul server volume
+      ansible.builtin.assert:
+        that: consul_storage_class | length > 0 or default_sc.stdout | length > 0
+        fail_msg: >-
+          No default StorageClass in the cluster and none given. Install a provisioner
+          (e.g. local-path-provisioner) or pass -e consul_storage_class=<name>.
+
+    - name: Add the HashiCorp Helm repository
+      kubernetes.core.helm_repository:
+        name: hashicorp
+        repo_url: https://helm.releases.hashicorp.com
+
+    - name: Install Consul control plane (Helm)
+      kubernetes.core.helm:
+        name: consul
+        chart_ref: hashicorp/consul
+        chart_version: "{{ consul_chart_version | default(omit, true) }}"
+        release_namespace: "{{ consul_ns }}"
+        create_namespace: true
+        update_repo_cache: true
+        values_files:
+          - "{{ consul_dir }}/values.yaml"
+        values: "{{ {'server': {'storageClass': consul_storage_class}} if consul_storage_class else {} }}"
+        wait: true
+        wait_timeout: 10m
+
+    # The injector webhook must be serving before any app pod is created, otherwise the
+    # pods start without a sidecar and the run would silently measure baseline.
+    - name: Wait for the Consul server and the connect injector
+      ansible.builtin.shell: |
+        kubectl -n {{ consul_ns }} rollout status statefulset/consul-server --timeout=300s
+        kubectl -n {{ consul_ns }} rollout status deployment/consul-connect-injector --timeout=300s
+      changed_when: false
+
+    - name: Make all mesh traffic HTTP (ProxyDefaults)
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ consul_dir }}/proxy-defaults.yaml"
+
+    - name: Ensure thesis namespace exists, labelled for Consul injection
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ test_ns }}"
+            labels:
+              consul-inject: enabled
+
+    # Same application manifests as the Istio and Linkerd phases (the deployment files are
+    # identical across them), so the mesh is the only difference.
+    - name: Apply App Deployments and Services
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ test_ns }}"
+        src: "{{ item }}"
+      loop:
+        - "{{ k8s_dir }}/permutation-service/permutation-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/permutation-service/permutation-linkerd-service.yaml"
+        - "{{ k8s_dir }}/integration-service/integration-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/integration-service/integration-linkerd-service.yaml"
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/fibonacci-service/fibonacci-linkerd-service.yaml"
+        - "{{ k8s_dir }}/differential-equations-service/differential-equations-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/differential-equations-service/differential-equations-linkerd-service.yaml"
+        - "{{ k8s_dir }}/video-service/video-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/video-service/video-linkerd-service.yaml"
+        - "{{ k8s_dir }}/digital-filters-service/digital-filters-linkerd-deployment.yaml"
+        - "{{ k8s_dir }}/digital-filters-service/digital-filters-linkerd-service.yaml"
+        - "{{ k8s_dir }}/ai-service/ai-service-external.yaml"
+
+    - name: Allow all service-to-service traffic (ServiceIntentions)
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ consul_dir }}/intentions.yaml"
+
+    - name: Create the API Gateway and its routes
+      kubernetes.core.k8s:
+        state: present
+        src: "{{ consul_dir }}/api-gateway.yaml"
+
+    - name: Wait for the application deployments
+      ansible.builtin.command: >
+        kubectl -n {{ test_ns }} wait --for=condition=Available deployment --all --timeout=300s
+      changed_when: false
+
+    - name: Resolve the API Gateway NodePort
+      ansible.builtin.shell: >
+        kubectl -n {{ test_ns }} get svc api-gateway
+        -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}'
+      register: gw_port
+      until: gw_port.stdout | length > 0
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Record the installed chart and app version
+      ansible.builtin.command: helm -n {{ consul_ns }} list --filter '^consul$' -o json
+      register: consul_release
+      changed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Consul release: {{ (consul_release.stdout | from_json)[0].chart }} (app {{ (consul_release.stdout | from_json)[0].app_version }})"
+          - "API Gateway NodePort: {{ gw_port.stdout }} - pass to the load tests as -u http://<node-ip>:{{ gw_port.stdout }}"
+          - "No /api/Ai route through the gateway (AI host is outside the Consul catalog); see api-gateway.yaml."
