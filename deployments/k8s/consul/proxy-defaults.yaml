@@ -1,0 +1,12 @@
+# Treat all mesh traffic as HTTP, so the Envoy sidecars and the API Gateway work at L7.
+# This matches the other meshes (Istio's Envoy and Linkerd's proxy both handle these
+# services at HTTP level) and is what the gateway's HTTPRoutes need on their backends.
+# The config entry must be named "global".
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ProxyDefaults
+metadata:
+  name: global
+  namespace: consul
+spec:
+  config:
+    protocol: http
