@@ -22,12 +22,17 @@ global:
   metrics:
     enabled: true
     enableAgentMetrics: false
+  crds:
+    # The controller would otherwise watch TCPRoute, whose CRD is not in the cluster (see
+    # apiGateway.manageExternalCRDs below). No TCP routes are used here.
+    enableTcpRoute: false
 
 server:
   replicas: 1
   # The servers keep the Raft store and the service catalog on a PersistentVolume.
-  # storageClass is left to the cluster default; phase_consul.yml can override it with
-  # -e consul_storage_class=<name>.
+  # The cluster has no StorageClass of its own: phase_consul.yml installs
+  # local-path-provisioner and sets server.storageClass (override with
+  # -e consul_storage_class=<name>).
   storage: 2Gi
 
 ui:
@@ -49,8 +54,10 @@ connectInject:
   metrics:
     defaultEnabled: true
   apiGateway:
-    # Installs the Gateway API CRDs the gateway resources need.
-    manageExternalCRDs: true
+    # The cluster already has the Gateway API CRDs (v1.2.1, standard channel, installed
+    # outside Helm and shared with the Istio phase). Letting the chart manage them would
+    # make Helm fail on ownership or replace them with its bundled v0.6.2.
+    manageExternalCRDs: false
     managedGatewayClass:
       # Same exposure model as the Istio ingress gateway: a NodePort assigned at install
       # time, resolved after every `make consul` and passed to the load tests with -u.
