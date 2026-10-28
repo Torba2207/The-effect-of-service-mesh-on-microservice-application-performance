@@ -65,6 +65,19 @@
         executable: /bin/bash
       changed_when: false
 
+    # Consul config-entry resources (ProxyDefaults, ServiceIntentions, ...) carry the
+    # finalizers.consul.hashicorp.com finalizer, which only the connect-injector removes.
+    # helm uninstall deletes the injector first, so any such resource still present then
+    # blocks its CRD and namespace forever. Delete them while the injector is still running.
+    - name: Delete Consul custom resources while the controller can still finalize them
+      ansible.builtin.shell: |
+        for crd in $(kubectl get crd -o name | grep 'consul\.hashicorp\.com' | cut -d/ -f2); do
+          kubectl delete "$crd" --all -A --ignore-not-found --wait=true --timeout=60s
+        done
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
     # Consul is a Helm release. Uninstall only when helm is present and the release exists,
     # so a workstation without helm can still tear down the other meshes.
     - name: Uninstall Consul (Helm)
@@ -72,6 +85,21 @@
         if command -v helm >/dev/null && helm -n consul status consul >/dev/null 2>&1; then
           helm -n consul uninstall consul --wait --timeout 5m
         fi
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
+    # Fallback for a resource that survived the step above (e.g. the injector was already
+    # gone): with no controller left, strip the finalizer so deletion can complete.
+    - name: Strip Consul finalizers left without a controller
+      ansible.builtin.shell: |
+        for crd in $(kubectl get crd -o name | grep 'consul\.hashicorp\.com' | cut -d/ -f2); do
+          kubectl get "$crd" -A -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' |
+          while read -r ns name; do
+            [ -n "$name" ] || continue
+            kubectl -n "$ns" patch "$crd" "$name" --type=merge -p '{"metadata":{"finalizers":[]}}'
+          done
+        done
       args:
         executable: /bin/bash
       ignore_errors: true
@@ -90,7 +118,7 @@
 
     - name: Remove Consul CRDs left behind by the chart
       ansible.builtin.shell: |
-        kubectl get crd -o name | grep 'consul\.hashicorp\.com' | xargs -r kubectl delete --wait=true
+        kubectl get crd -o name | grep 'consul\.hashicorp\.com' | xargs -r kubectl delete --wait=true --timeout=120s
       args:
         executable: /bin/bash
       ignore_errors: true
@@ -99,6 +127,7 @@
     # consul-inject=enabled; fail the teardown rather than leave it behind.
     - name: Assert Consul is fully removed
       ansible.builtin.shell: |
+        kubectl wait --for=delete namespace/consul --timeout=120s >/dev/null 2>&1 || true
         left="$(
           kubectl get namespace consul -o name 2>/dev/null
           kubectl get crd -o name | grep 'consul\.hashicorp\.com'
