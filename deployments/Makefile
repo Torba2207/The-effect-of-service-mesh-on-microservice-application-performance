@@ -4,7 +4,7 @@ KUBECTX   = projekt-badawchy-cluster
 TEST_NS   = thesis-test
 ISTIO_PA  = k8s/istio
 
-.PHONY: clean teardown baseline istio istio-nomtls linkerd linkerd-nomtls consul set-context
+.PHONY: clean teardown baseline istio istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap
 
 # Deployment steps must run in order (teardown before clean before install) even under `make -j`
 # -- some shells alias make to `make -j<N>`, which otherwise runs teardown and clean at once.
@@ -60,9 +60,16 @@ linkerd-nomtls: set-context teardown clean
 	@echo "Ingress: http://<node>:30080 (static NodePort)"
 
 # C-S configuration: Consul service mesh via Helm, no ACLs, Consul API Gateway as ingress.
-# mTLS is always on in Consul. Needs helm on the workstation and a StorageClass in the cluster.
+# mTLS is always on in Consul. Needs helm; the playbook installs a storage provisioner.
 # The playbook prints the gateway NodePort, which is dynamic like Istio's: pass it with -u.
 # PROVISIONAL - to be reviewed with the thesis supervisor (docs/test-scenario.typ).
 consul: set-context teardown clean
 	@echo "Deploying Consul via Ansible (Helm)..."
 	ansible-playbook ansible/phase_consul.yml -i $(INVENTORY)
+
+# Prepare the load generator (lg) as a campaign host: kubectl, helm, istioctl, linkerd and
+# ansible at the workstation's versions, the kubeconfig, an SSH key for the cluster nodes, a
+# clone of the repository in /root/thesis and /root/thesis-results. Run from the workstation.
+lg-bootstrap:
+	@echo "Bootstrapping the load generator..."
+	ansible-playbook ansible/lg_bootstrap.yml -i $(INVENTORY)
