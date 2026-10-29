@@ -1,0 +1,14 @@
+# Allow every service in the mesh to call every other, including the API Gateway calling
+# the backends. With ACLs off this is already Consul's default, but stating it keeps the
+# behaviour explicit and stable if ACLs are ever enabled.
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: allow-all
+  namespace: thesis-test
+spec:
+  destination:
+    name: "*"
+  sources:
+    - name: "*"
+      action: allow

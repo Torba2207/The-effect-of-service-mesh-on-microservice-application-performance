@@ -1,0 +1,64 @@
+# C-S configuration: Consul service mesh on Kubernetes (consul-k8s Helm chart).
+# PROVISIONAL - to be reviewed with the thesis supervisor before any C-S campaign
+# (see docs/test-scenario.typ, "Consul configuration - under review").
+#
+# Choices made here:
+#   - Helm install, no ACLs. Without ACLs Consul allows all service-to-service traffic by
+#     default; intentions.yaml still states that explicitly, so the setup does not depend
+#     on an implicit default.
+#   - Service-to-service mTLS is ALWAYS on in Consul's mesh (Connect CA); there is no
+#     switch for it. global.tls below only encrypts Consul's own control-plane traffic
+#     (consul-dataplane <-> servers, HTTP/gRPC API) - it is not the mesh mTLS.
+#   - Ingress is the Consul API Gateway (Gateway API resources in api-gateway.yaml).
+#   - One server replica: enough for a test bed, but it is a single point of failure and
+#     differs from the 3-replica production default.
+global:
+  name: consul
+  datacenter: thesis
+  tls:
+    enabled: true
+  acls:
+    manageSystemACLs: false
+  metrics:
+    enabled: true
+    enableAgentMetrics: false
+  crds:
+    # The controller would otherwise watch TCPRoute, whose CRD is not in the cluster (see
+    # apiGateway.manageExternalCRDs below). No TCP routes are used here.
+    enableTcpRoute: false
+
+server:
+  replicas: 1
+  # The servers keep the Raft store and the service catalog on a PersistentVolume.
+  # The cluster has no StorageClass of its own: phase_consul.yml installs
+  # local-path-provisioner and sets server.storageClass (override with
+  # -e consul_storage_class=<name>).
+  storage: 2Gi
+
+ui:
+  enabled: false
+
+connectInject:
+  enabled: true
+  # Inject every pod in namespaces labelled consul-inject=enabled (only thesis-test),
+  # so the app manifests stay identical to the Istio and Linkerd ones.
+  default: true
+  namespaceSelector: |
+    matchLabels:
+      consul-inject: enabled
+  transparentProxy:
+    defaultEnabled: true
+    # Rewrites HTTP probes so kubelet (outside the mesh) can still reach them: the
+    # Consul sidecar only accepts mTLS on its inbound listener.
+    defaultOverwriteProbes: true
+  metrics:
+    defaultEnabled: true
+  apiGateway:
+    # The cluster already has the Gateway API CRDs (v1.2.1, standard channel, installed
+    # outside Helm and shared with the Istio phase). Letting the chart manage them would
+    # make Helm fail on ownership or replace them with its bundled v0.6.2.
+    manageExternalCRDs: false
+    managedGatewayClass:
+      # Same exposure model as the Istio ingress gateway: a NodePort assigned at install
+      # time, resolved after every `make consul` and passed to the load tests with -u.
+      serviceType: NodePort

@@ -1,10 +1,10 @@
-# 🚀 The Effect of Service Mesh on Microservice Application Performance
+# The Effect of Service Mesh on Microservice Application Performance
 
 A **.NET 8 microservices sample** demonstrating an API Gateway (**YARP**) routing to multiple backend services.
 
 This project is designed to run **with or without a service mesh** (e.g., Istio, Linkerd) to measure **performance differences** such as latency, CPU, and memory usage.
 
-## ⚡ Quick Start for Teammates
+## Quick Start for Teammates
 
 For full environment bootstrap (VPN, Linux/Windows scripts, GHCR, Ansible/Kubernetes flow), use:
 
@@ -12,25 +12,25 @@ For full environment bootstrap (VPN, Linux/Windows scripts, GHCR, Ansible/Kubern
 
 ---
 
-## 📋 Requirements
+## Requirements
 
 * [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 * Optional: `curl` or any HTTP client
 
-### 🐧 Install on Linux (Ubuntu/Debian)
+### Install on Linux (Ubuntu/Debian)
 
 ```bash
 sudo apt update
 sudo apt install dotnet-sdk-8.0 aspnetcore-runtime-8.0
 ```
 
-### 🪟 Install on Windows
+### Install on Windows
 
 ```bash
 winget install Microsoft.DotNet.SDK.8
 ```
 
-### ✅ Verify installation
+### Verify installation
 
 ```bash
 dotnet --version
@@ -39,7 +39,7 @@ dotnet --version
 
 ---
 
-## 🏗️ Solution Structure
+## Solution Structure
 
 ```
 ServiceMeshStudy/
@@ -54,11 +54,11 @@ ServiceMeshStudy/
 ├── DigitalFiltersService/         # Image filtering & convolution (port 5007)
 ```
 
-💡 All services are **independent Web APIs**, and the gateway routes incoming traffic.
+All services are **independent Web APIs**, and the gateway routes incoming traffic.
 
 ---
 
-## 🔌 Port Assignments
+## Port Assignments
 
 | Service                      | Port |
 | ---------------------------- | ---- |
@@ -73,9 +73,9 @@ ServiceMeshStudy/
 
 ---
 
-## ▶️ Running the Application
+## Running the Application
 
-### 🧰 Option A — Visual Studio 2022
+### Option A — Visual Studio 2022
 
 1. Open `ServiceMeshTestApplication.sln`
 2. Set **Multiple Startup Projects**
@@ -87,7 +87,7 @@ ServiceMeshStudy/
 
 ---
 
-### 💻 Option B — Command Line
+### Option B — Command Line
 
 #### Build solution
 
@@ -108,7 +108,7 @@ dotnet run --urls "http://localhost:5000"
 env DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet run --project FibonacciService/FibonacciService.csproj
 ```
 
-🪟 On Windows:
+On Windows:
 
 ```cmd
 set DOTNET_SYSTEM_NET_DISABLEIPV6=1 && dotnet run ...
@@ -116,7 +116,7 @@ set DOTNET_SYSTEM_NET_DISABLEIPV6=1 && dotnet run ...
 
 ---
 
-### ⚡ Minimal Setup Example
+### Minimal Setup Example
 
 ```bash
 # Gateway
@@ -131,7 +131,7 @@ env DOTNET_SYSTEM_NET_DISABLEIPV6=1 dotnet run --project DifferentialEquationsSe
 
 ---
 
-### 🐳 Option C — Docker / Container Registry
+### Option C — Docker / Container Registry
 
 Run the following commands from the `ServiceMeshTestApplication` directory:
 
@@ -145,7 +145,7 @@ docker push ghcr.io/torba2207/permutation-service:latest
 
 ---
 
-## 🧪 Testing Endpoints
+## Testing Endpoints
 
 ### Locatig the Istio Gateway
 
@@ -165,7 +165,7 @@ curl http://ai-service/api/Ai/health
 curl -i -X POST http://ai-service/api/Ai/generate -H "Content-Type: application/json" -d '{"user_input": "Give me 10 random numbers between 1 and 100 with seed 42"}'
 ```
 
-### 🔍 Health Checks
+### Health Checks
 
 ```bash
 curl http://localhost:5000/Permutation/health
@@ -177,7 +177,7 @@ curl http://localhost:5000/Video/health
 curl http://localhost:5000/Filters/health
 ```
 
-✅ Expected Response:
+Expected Response:
 
 ```json
 { "status": "healthy" }
@@ -185,7 +185,7 @@ curl http://localhost:5000/Filters/health
 
 ---
 
-### ➗ Integration Service
+### Integration Service
 
 Calculate the integral of a function using numerical integration:
 
@@ -195,7 +195,7 @@ curl -X POST http://localhost:5000/api/integration/calculate \
   -d '{"function":"x^2","lowerBound":0,"upperBound":1,"steps":1000000}'
 ```
 
-✅ Expected Response (Approximate Result: 0.333):
+Expected Response (Approximate Result: 0.333):
 
 ```json
 {
@@ -224,11 +224,11 @@ curl -X POST http://localhost:5000/api/integration/antiderivative \
   -d '{"Expression":"x^2"}'
 ```
 
-✅ Expected Result: Antiderivative expression (e.g., `(1/3)*x^3`)
+Expected Result: Antiderivative expression (e.g., `(1/3)*x^3`)
 
 ---
 
-### 📈 Differential Equations
+### Differential Equations
 
 Numerically solve a differential equation (dy/dx = f(x,y)):
 
@@ -238,7 +238,7 @@ curl -X POST http://localhost:5000/api/differential/solve \
   -d '{"function":"x^2","initialConditionY":1,"steps":5}'
 ```
 
-✅ Expected Response (Approximate Result):
+Expected Response (Approximate Result):
 
 ```json
 {
@@ -258,11 +258,11 @@ curl -X POST http://localhost:5000/api/differential/solve \
   -d '{"function":"x^2","initialConditionX":0,"initialConditionY":0,"range":2,"steps":5}'
 ```
 
-✅ Note: The `steps` parameter is only required when the equation contains Y (e.g., "dy/dx = y + x"). Otherwise, it represents the range multiplier.
+Note: The `steps` parameter is only required when the equation contains Y (e.g., "dy/dx = y + x"). Otherwise, it represents the range multiplier.
 
 ---
 
-### 🔢 Permutations
+### Permutations
 
 Generate all permutations of a set (O(n!) time complexity - use small sets):
 
@@ -272,7 +272,7 @@ curl -X POST http://localhost:5000/api/permutation/generate \
   -d '{"set":[1,2,3]}'
 ```
 
-✅ Expected Response (Approximate Result for [1,2,3] = 6 permutations):
+Expected Response (Approximate Result for [1,2,3] = 6 permutations):
 
 ```json
 {
@@ -294,7 +294,7 @@ curl -X POST http://localhost:5000/api/permutation/generate-from-ai \
 ```
 
 
-✅ Expected Response (Approximate Result for [1,2,3] = 6 permutations):
+Expected Response (Approximate Result for [1,2,3] = 6 permutations):
 
 ```json
 {
@@ -316,7 +316,7 @@ curl -X POST http://localhost:5000/api/permutation/generate-from-ai \
 
 ---
 
-### 🔁 Fibonacci (Large Numbers)
+### Fibonacci (Large Numbers)
 
 Calculate Fibonacci numbers with support for very large n values:
 
@@ -326,7 +326,7 @@ curl -X POST http://localhost:5000/api/fibonacci/calculate \
   -d '{"n": 100}'
 ```
 
-✅ Expected Response (Approximate Result for n=100 = large integer):
+Expected Response (Approximate Result for n=100 = large integer):
 
 ```json
 {
@@ -340,7 +340,7 @@ curl -X POST http://localhost:5000/api/fibonacci/calculate \
 
 ---
 
-### 📹 Video Service
+### Video Service
 
 Video processing service for compression and frame analysis. Collects CPU and memory metrics during processing.
 
@@ -350,7 +350,7 @@ curl -X POST http://localhost:5000/api/video/compress \
   -F "file=@/path/to/video.mp4"
 ```
 
-✅ Expected Response (Approximate Result):
+Expected Response (Approximate Result):
 
 ```json
 {
@@ -374,7 +374,7 @@ curl -X POST http://localhost:5000/api/video/split-frames \
 
 ---
 
-### 🎨 Digital Filters Service
+### Digital Filters Service
 
 Image and matrix filtering service using convolution kernels for various filter types.
 
@@ -383,7 +383,7 @@ Image and matrix filtering service using convolution kernels for various filter 
 curl http://localhost:5000/api/filters/available
 ```
 
-✅ Expected Response:
+Expected Response:
 
 ```json
 ["blur", "sharpen", "edgedetection", "grayscale"]
@@ -403,7 +403,7 @@ curl -X POST http://localhost:5000/api/filters/apply \
   }'
 ```
 
-✅ Expected Response (Blur filter reduces intensity variation):
+Expected Response (Blur filter reduces intensity variation):
 
 ```json
 {
@@ -422,7 +422,7 @@ curl -X POST http://localhost:5000/api/filters/apply-image \
   -F "filterType=sharpen"
 ```
 
-✅ Expected Response: PNG image file stream (processed image)
+Expected Response: PNG image file stream (processed image)
 
 #### Apply AI-generated Filter (server generates matrix)
 
@@ -437,7 +437,7 @@ curl -X POST http://localhost:5000/api/filters/apply-ai-matrix \
   }'
 ```
 
-✅ Expected Response:
+Expected Response:
 
 ```json
 {
@@ -451,7 +451,7 @@ Notes:
 - The AI is asked only for a numeric matrix of the given size. The server clamps matrix values to 0..255 before applying the filter.
 - If AI cannot produce a matrix, the endpoint will return an HTTP 500 with an explanatory error message; check service logs for AI payload details.
 
-### 🔢 AI Service
+### AI Service
 
 AI-powered data generation service for random numbers and synthetic image generation.
 
@@ -462,7 +462,7 @@ curl -X POST http://localhost:5000/api/Ai/generate \
   -d '{"user_input": "Give me 10 random numbers between 1 and 100 with seed 42"}'
 ```
 
-✅ Expected Response:
+Expected Response:
 
 ```json
 {
@@ -480,7 +480,7 @@ curl -X POST http://localhost:5000/api/Ai/generate \
   -d '{"user_input": "Generate an image with seed 42 width 512 height 512"}'
 ```
 
-✅ Expected Response:
+Expected Response:
 
 ```json
 {
@@ -496,9 +496,9 @@ Retrieve generated image:
 curl http://localhost:5000/api/Ai/image/generated_42_512_512.png
 ```
 
-✅ Expected Response: Base64-encoded PNG image or image data
+Expected Response: Base64-encoded PNG image or image data
 
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 ### If Pods stucked in pulling images
 
@@ -511,7 +511,7 @@ ansible workers -i inventory.ini -b -m systemd -a "name=containerd state=restart
 ansible workers -i inventory.ini -b -m systemd -a "name=containerd state=restarted"
 ```
 
-### ❌ Port Already in Use
+### Port Already in Use
 
 **Problem**: "Address already in use" error when starting a service
 
@@ -537,7 +537,7 @@ taskkill /PID <PID> /F
 
 ---
 
-### ⚠️ 502 / 503 Errors (Service Unavailable)
+### 502 / 503 Errors (Service Unavailable)
 
 **Problem**: Gateway returns "Bad Gateway" or "Service Unavailable"
 
@@ -573,7 +573,7 @@ Solution: Start VideoService on port 5006
 
 ---
 
-### 🌐 IPv6 Issues
+### IPv6 Issues
 
 **Problem**: Address family not supported errors or connection timeouts
 
@@ -599,7 +599,7 @@ Or add to launchSettings.json:
 
 ---
 
-### 📉 Unsupported Functions
+### Unsupported Functions
 
 **Problem**: "Function not supported" or calculation errors
 
@@ -658,7 +658,7 @@ Or add to launchSettings.json:
 
 ---
 
-## ⚙️ Configuration Notes
+## Configuration Notes
 
 * **Routing**: `Gateway/appsettings.json`
 * **Ports**: `launchSettings.json`

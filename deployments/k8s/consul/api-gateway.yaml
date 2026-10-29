@@ -1,0 +1,60 @@
+# Consul API Gateway: the single path-routed entry point for the C-S configuration,
+# playing the role of the Istio ingress gateway and the meshed NGINX controller.
+# consul-k8s creates a Deployment and a NodePort Service named after the Gateway
+# (api-gateway) in this namespace; the NodePort is assigned at install time.
+#
+# Listener on 8080 rather than 80: the gateway runs as non-root and cannot bind a
+# privileged port. Clients never see this port, only the NodePort.
+#
+# KNOWN GAP: there is no /api/Ai route. The gateway can only route to services in the
+# Consul catalog, and the AI host is an external VM outside the mesh, so the ai S1
+# scenario cannot be driven through this gateway. The S2-ext chains are unaffected:
+# permutation and filters reach the AI host through their own sidecars.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: api-gateway
+  namespace: thesis-test
+spec:
+  gatewayClassName: consul
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8080
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: thesis-routes
+  namespace: thesis-test
+spec:
+  parentRefs:
+    - name: api-gateway
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: /api/permutation }
+      backendRefs:
+        - { kind: Service, name: permutation-service, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /api/fibonacci }
+      backendRefs:
+        - { kind: Service, name: fibonacci-service, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /api/integration }
+      backendRefs:
+        - { kind: Service, name: integration-service, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /api/differential }
+      backendRefs:
+        - { kind: Service, name: differential-equations-service, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /api/filters }
+      backendRefs:
+        - { kind: Service, name: digital-filters-service, port: 80 }
+    - matches:
+        - path: { type: PathPrefix, value: /api/video }
+      backendRefs:
+        - { kind: Service, name: video-service, port: 80 }

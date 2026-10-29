@@ -112,6 +112,96 @@ workflow (`deployments/Makefile`) and measured independently.
   show plaintext.
 ]
 
+#warn[
+  *Consul configuration (C-S) — provisional, to be reviewed with the thesis supervisor
+  (promotor) before any C-S campaign is run.* `make consul` deploys it through
+  `deployments/ansible/phase_consul.yml`, which installs the `hashicorp/consul` Helm chart
+  with the values in `deployments/k8s/consul/`. The current choices and the points that
+  need a decision:
+
+  - *Helm install, no ACLs.* Without ACLs Consul allows all service-to-service traffic; an
+    explicit allow-all `ServiceIntentions` keeps that independent of the default. Enabling
+    ACLs would be closer to production but requires a ServiceAccount named after each
+    Service in every deployment.
+  - *mTLS is always on* (Consul Connect CA), like Linkerd; there is no Istio-style switch.
+    `global.tls` only encrypts Consul's own control-plane traffic. A C-P variant would
+    therefore again be *proxy bypass*, not encryption-off — and it is *not yet defined*
+    for this setup: the API Gateway always speaks mTLS to its backends, so excluding the
+    application ports from the proxy (the L-P approach) would break routing.
+  - *Ingress is the Consul API Gateway* (Gateway API, NodePort assigned at install time,
+    listener 8080). This is *asymmetric* with L-S, which enters through a meshed NGINX
+    controller; the alternative is the same meshed NGINX for Consul, with inbound 80/443
+    excluded from interception because Consul's sidecar rejects non-mTLS clients.
+  - *The `ai` S1 cell cannot run through the API Gateway.* The gateway routes only to
+    services in the Consul catalog and the AI host is an external VM, so there is no
+    `/api/Ai` route. The S2-ext chains are unaffected (they reach the AI host through the
+    services' own sidecars). Options: register the AI host via a terminating gateway,
+    route `ai` S1 through meshed NGINX, or drop that cell for C-S. A broader option, joining
+    the AI host to the mesh in every configuration, is described in the next note.
+  - *All mesh traffic is declared HTTP* (`ProxyDefaults` protocol `http`), so Envoy works
+    at L7 as it does under Istio; the gateway's `HTTPRoute`s require it.
+  - *One server replica* with a 2 Gi volume (Consul keeps state in Raft, unlike Istio and
+    Linkerd). The cluster has no StorageClass, so the playbook installs
+    `local-path-provisioner` (a directory on the server pod's node; not made the cluster
+    default, left installed between phases). It is a component the other configurations do
+    not have, although it is idle during the measurements.
+  - *Gateway API CRDs are shared, not chart-managed.* The cluster already has the v1.2.1
+    standard-channel CRDs; the chart's own (v0.6.2) are disabled, as is the TCPRoute
+    watcher (no TCPRoute CRD on the cluster, none needed).
+  - *Chart pinned to 2.0.4* (Consul 2.0.4), verified on Kubernetes 1.34.3 on 2026-10-16:
+    all six services and the gateway register in the catalog, S1, S2-int and both S2-ext
+    chains answer 200 through the gateway, and direct per-service NodePorts are refused.
+    Egress to the AI host leaves through the sidecar's `original-destination` passthrough
+    cluster (plaintext, like Istio's passthrough), so no CIDR exclusion is needed.
+  - *TLS version to compare.* The gateway-to-service mTLS negotiated TLS 1.2
+    (`ECDHE-ECDSA-AES128-GCM-SHA256`) by default. Before comparing encryption cost across
+    meshes, check what Istio and Linkerd negotiate and decide whether to align versions.
+  - The metrics collector and the Phase A/B scripts do not accept `-m consul` yet (sidecar
+    container `consul-dataplane`, control-plane namespace `consul`).
+]
+
+#note[
+  *Proposed additional scenario — the AI host inside the mesh (to be reviewed with the
+  thesis supervisor).* Today the AI host is an external dependency in every configuration:
+  `ai-service` is a selector-less Service with manual Endpoints, the in-cluster sidecars send
+  it plaintext through their passthrough route, and nothing runs on the VM. Joining the VM to
+  the mesh would make it a regular mesh member (own identity, mTLS on the last hop, its own
+  inbound proxy). This is *not* specific to Consul — all three meshes support VM workloads:
+
+  - *Istio* (1.29): `WorkloadGroup`/`WorkloadEntry` plus `istio-sidecar` (Envoy, systemd) on
+    the VM, certificates from istiod. Works across separate networks through an east–west
+    gateway, so it needs no routing changes here.
+  - *Linkerd* (edge-26.5.1): mesh expansion (`ExternalWorkload`, since 2.15) with
+    `linkerd-proxy` and a SPIRE agent on the VM for identity. To be confirmed, but it is
+    expected to need a flat network (VM and pods reaching each other by IP).
+  - *Consul*: a Consul client agent plus Envoy on the VM; the agent needs two-way
+    connectivity with the Consul servers (pod IPs). Once registered, the AI host would also
+    be reachable through the API Gateway, closing the `ai` S1 gap above.
+
+  *Network constraint (checked 2026-10-16):* the AI VM (10.29.20.121) has no route to the
+  cluster's pod/service range (10.233.0.0/16). Istio can work around this with its gateway;
+  Linkerd and Consul would need routing to the Calico pod network.
+
+  *Consequences for the experiment.* The S2-ext chains would change meaning from "mesh →
+  external dependency" (plaintext egress) to "mesh → meshed service" (mTLS, plus an inbound
+  proxy on the VM), so every AI cell of the mesh configurations would have to be measured
+  again: `ai` S1, permutation→ai and filters→ai for L-P, L-S, I-P, I-S (12 Phase A cells),
+  plus the AI share of Phase B; the three C-S cells would follow. Baseline is unaffected.
+  The P variants need defining for the VM too: Istio's `PeerAuthentication` DISABLE covers it
+  automatically, while L-P would need the same port exclusions on the VM's proxy.
+
+  *Risks.* The AI services run as Docker containers on the GPU host; a host-level sidecar
+  intercepts traffic with iptables, which Docker also rewrites for its published ports, so
+  the two must be tested together. Rough effort: about one day for Istio, one to two days
+  each for Linkerd and Consul.
+
+  *Recommendation.* Treat it as an *additional* scenario ("AI inside the mesh"), not a
+  replacement: the existing AI data stays valid as the external-dependency variant, and the
+  pair would show how the mesh tax differs between calling an external service and calling a
+  meshed one. If approved, start with Istio, which also tests the sidecar/Docker interaction
+  without touching the cluster network.
+]
+
 = Services Under Test and Fixed Workloads
 
 All seven backend services are exercised. Each service exposes several endpoints; they are
@@ -365,6 +455,7 @@ injected-`linkerd-proxy` NGINX controller for Linkerd) so that north–south
     [B (baseline)], [NGINX ingress (unmeshed): `http://<node-ip>:30080/api/<service>/...`. Per-service NodePorts also exist as a fallback.],
     [I-S / I-P (Istio)], [Istio ingress gateway (meshed Envoy): `http://<node-ip>:$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')/api/<service>/...`.],
     [L-S / L-P (Linkerd)], [NGINX ingress (meshed: controller injected with `linkerd-proxy` + `service-upstream: "true"`): `http://<node-ip>:30080/api/<service>/...`. Per-service NodePorts: permutation 30101, fibonacci 30102, differential 30103, integration 30104, video 30106, filters 30107.],
+    [C-S (Consul, provisional)], [Consul API Gateway (Envoy, Gateway API): `http://<node-ip>:$(kubectl -n thesis-test get svc api-gateway -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')/api/<service>/...`. Dynamic like Istio's; no `/api/Ai` route. Per-service NodePorts do *not* work: Consul's sidecar accepts only mTLS inbound. See the Consul note in Experimental Configurations.],
   ),
   caption: [Ingress resolution per configuration. `<node-ip>` is any worker node, e.g. `10.29.20.113`. The NGINX NodePort is pinned to `30080` (HTTP) / `30443` (HTTPS) by the Linkerd phase playbook; the Istio gateway NodePort is dynamic and must be re-resolved after every `make istio`.],
 )
@@ -713,4 +804,6 @@ To make results reproducible across operators and time:
 - *Linkerd "no-mTLS" is approximate* — see the caveat in §2. Treat L-P as a
   proxy-bypass data point, not an encryption-isolation data point.
 - *AI service isolation.* The AI service runs on a dedicated VM outside the meshed worker
-  pool; its sidecar/overhead semantics differ and are reported separately.
+  pool; its sidecar/overhead semantics differ and are reported separately. Joining it to
+  the mesh is a proposed additional scenario (see the note in §2), not part of the current
+  matrix.
