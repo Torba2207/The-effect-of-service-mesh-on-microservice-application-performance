@@ -33,22 +33,27 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 
-# SSH key: read from $SSH_PRIVATE_KEY if set, else from the SSH_PRIVATE_KEY entry in
-# the repo-root .env (override the file with ENV_FILE=/path/to/.env).
-ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
-SSH_KEY="${SSH_PRIVATE_KEY:-}"
-if [ -z "$SSH_KEY" ]; then
-  [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
-  SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
-fi
-[ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
-
-SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
 LG_IP="10.29.20.130"
 LG_DIR="/root/thesis-tests/phaseB"
 CTX="projekt-badawchy-cluster"
 PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
+LOADGEN_DIR="$(cd "$HERE/.." && pwd)"
+source "$HERE/../common/lg_local.sh"
+
+# SSH key (only to drive lg from a workstation): read from $SSH_PRIVATE_KEY if set, else from
+# the SSH_PRIVATE_KEY entry in the repo-root .env (override the file with ENV_FILE=/path/to/.env).
+if [ "$LG_LOCAL" != 1 ]; then
+  ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
+  SSH_KEY="${SSH_PRIVATE_KEY:-}"
+  if [ -z "$SSH_KEY" ]; then
+    [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
+    SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
+  fi
+  [ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
+  SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
+  KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
+fi
 
 # --- defaults ---
 NODE_IP="10.29.20.113"; URL=""; LEVELS="low med high"; REPS=10
@@ -69,20 +74,21 @@ done
 case "$FIB_N" in ''|*[!0-9]*) echo "ERROR: -N must be a positive integer (got '$FIB_N')"; exit 2 ;; esac
 [ "$FIB_N" -ge 1 ] || { echo "ERROR: -N must be >= 1"; exit 2; }
 
-RESULTS="$HERE/results"; mkdir -p "$RESULTS"
+RESULTS="$RESULTS_ROOT/phaseB/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
-KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
 
 echo "============================================================"
 echo " Phase B :: config=$CONFIG mesh=$MESH mtls=$MTLS"
 echo " URL=$URL  levels=[$LEVELS] reps=$REPS  warmup=$WARMUP steady=$STEADY cooldown=${COOLDOWN}s"
 echo " AI=$INCLUDE_AI  fibonacci n=$FIB_N"
+echo " Results: $CSV"
+[ "$LG_LOCAL" = 1 ] && echo " Runner: on lg (k6 local, results outside the clone)" || echo " Runner: workstation (k6 on lg over SSH)"
 [ "$INCLUDE_AI" = "true" ] || echo " WARNING: -X given - AI scenarios excluded, this is NOT a valid Phase B run"
 echo "============================================================"
 
 # --- preflight ---
-echo "[preflight] lg ssh..."
-ssh $KEY_OPTS root@"$LG_IP" 'command -v k6 >/dev/null' || { echo "k6 missing on lg"; exit 1; }
+echo "[preflight] k6 on lg..."
+lg_sh 'command -v k6 >/dev/null' || { echo "k6 missing on lg"; exit 1; }
 echo "[preflight] kube context..."
 kubectl --context "$CTX" get ns thesis-test >/dev/null || { echo "kube context unreachable"; exit 1; }
 echo "[preflight] target URL..."
@@ -97,9 +103,9 @@ fi
 
 # --- sync assets + script to lg ---
 echo "[sync] copying aggregate.js + assets to lg:$LG_DIR ..."
-ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR/assets"
-scp $KEY_OPTS "$HERE/aggregate.js" root@"$LG_IP":"$LG_DIR/" >/dev/null
-scp $KEY_OPTS "$HERE/../common/assets/filter_input_128.png" "$HERE/../common/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
+lg_sh "mkdir -p $LG_DIR/assets"
+lg_put "$LG_DIR" "$HERE/aggregate.js"
+lg_put "$LG_DIR/assets" "$HERE/../common/assets/filter_input_128.png" "$HERE/../common/assets/sample_360p_1s.mp4"
 
 # --- Prometheus port-forward ---
 start_pf() {
@@ -125,20 +131,20 @@ run_one() {
   echo "---- $run_id ----"
 
   # warm-up (discarded)
-  ssh $KEY_OPTS root@"$LG_IP" \
+  lg_sh \
     "cd $LG_DIR && $K6_ENV LEVEL=$level DURATION=$WARMUP K6_SUMMARY_OUT=/tmp/warm.json k6 run --quiet aggregate.js" \
     >/dev/null 2>&1 || true
 
   # steady (measured)
   local start end
   start=$(date -u +%s)
-  ssh $KEY_OPTS root@"$LG_IP" \
+  lg_sh \
     "cd $LG_DIR && $K6_ENV LEVEL=$level DURATION=$STEADY K6_SUMMARY_OUT=/tmp/${run_id}.json k6 run --quiet aggregate.js" \
     > "$RESULTS/k6_${run_id}.log" 2>&1 || true
   end=$(date -u +%s)
 
   # retrieve per-scenario summary
-  ssh $KEY_OPTS root@"$LG_IP" "cat /tmp/${run_id}.json" > "$RESULTS/k6_${run_id}.json" 2>/dev/null || echo '{"scenarios":{}}' > "$RESULTS/k6_${run_id}.json"
+  lg_sh "cat /tmp/${run_id}.json" > "$RESULTS/k6_${run_id}.json" 2>/dev/null || echo '{"scenarios":{}}' > "$RESULTS/k6_${run_id}.json"
 
   sleep "$COOLDOWN"
   ensure_pf
