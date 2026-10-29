@@ -1,0 +1,189 @@
+---
+# Turns the load generator (lg) into a full campaign host, so deployments (make <config>) and
+# campaigns (run_phaseA_Core.sh, run_phaseB.sh) run there - e.g. in tmux - instead of on a
+# workstation that has to keep the VPN up. Run from the workstation: `make lg-bootstrap`.
+# Safe to re-run.
+#
+# Tool versions match the workstation that produced the existing data (kubectl matches the
+# cluster's API server instead, to stay inside the supported version skew).
+#
+# On lg afterwards:
+#   repository clone   /root/thesis           (updated by hand: git pull / git checkout)
+#   campaign results   /root/thesis-results   (outside the clone; fetch them with
+#                                              loadGenTests/common/fetch_lg_results.py)
+
+- name: Bootstrap the load generator as a campaign host
+  hosts: load_generator
+  gather_facts: false
+  vars:
+    kube_context: projekt-badawchy-cluster
+    kubectl_version: v1.34.3
+    helm_version: v4.3.0
+    istio_version: 1.29.2
+    linkerd_version: edge-26.5.1
+    # Linkerd publishes no checksum file; this is the asset digest from the GitHub release.
+    linkerd_sha256: 0fdc998cdfba824b22562ccdfa9d4c0d1d7b129c42e4c6ad05c5ad8a3f2e6906
+    ansible_core_version: 2.21.5
+    python_kubernetes_version: 37.0.1
+    ansible_collections:
+      - kubernetes.core:==6.6.0
+      - community.general:==13.5.0
+    ansible_venv: /opt/ansible
+    repo_url: https://github.com/Torba2207/The-effect-of-service-mesh-on-microservice-application-performance.git
+    repo_dir: /root/thesis
+    results_dir: /root/thesis-results
+    lg_ssh_key: /root/.ssh/id_ed25519_thesis
+  tasks:
+    # The Ubuntu installer gives the root LV only half of the volume group (11 of 22 GB).
+    - name: Extend the root volume to the whole disk
+      ansible.builtin.shell: |
+        free="$(vgs --noheadings -o vg_free_count ubuntu-vg | tr -d ' ')"
+        if [ "$free" -gt 0 ]; then
+          lvextend -r -l +100%FREE /dev/ubuntu-vg/ubuntu-lv && echo extended
+        fi
+      register: lv_extend
+      changed_when: "'extended' in lv_extend.stdout"
+
+    - name: Install base packages
+      ansible.builtin.apt:
+        name: [make, rsync, git, curl, tmux, python3-venv]
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install kubectl
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl"
+        checksum: "sha256:https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/amd64/kubectl.sha256"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    - name: Download helm
+      ansible.builtin.get_url:
+        url: "https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz"
+        checksum: "sha256:https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz.sha256sum"
+        dest: "/tmp/helm-{{ helm_version }}.tar.gz"
+        mode: "0644"
+
+    - name: Install helm
+      ansible.builtin.unarchive:
+        src: "/tmp/helm-{{ helm_version }}.tar.gz"
+        remote_src: true
+        dest: /usr/local/bin
+        include: [linux-amd64/helm]
+        extra_opts: [--strip-components=1]
+        creates: /usr/local/bin/helm
+
+    - name: Download istioctl
+      ansible.builtin.get_url:
+        url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istioctl-{{ istio_version }}-linux-amd64.tar.gz"
+        checksum: "sha256:https://github.com/istio/istio/releases/download/{{ istio_version }}/istioctl-{{ istio_version }}-linux-amd64.tar.gz.sha256"
+        dest: "/tmp/istioctl-{{ istio_version }}.tar.gz"
+        mode: "0644"
+
+    - name: Install istioctl
+      ansible.builtin.unarchive:
+        src: "/tmp/istioctl-{{ istio_version }}.tar.gz"
+        remote_src: true
+        dest: /usr/local/bin
+        creates: /usr/local/bin/istioctl
+
+    - name: Install the linkerd CLI
+      ansible.builtin.get_url:
+        url: "https://github.com/linkerd/linkerd2/releases/download/{{ linkerd_version }}/linkerd2-cli-{{ linkerd_version }}-linux-amd64"
+        checksum: "sha256:{{ linkerd_sha256 }}"
+        dest: /usr/local/bin/linkerd
+        mode: "0755"
+
+    # ansible-core and the Kubernetes client the kubernetes.core modules need, in a venv so
+    # the versions do not depend on Ubuntu's packages.
+    - name: Install ansible-core and the Python Kubernetes client
+      ansible.builtin.pip:
+        name:
+          - "ansible-core=={{ ansible_core_version }}"
+          - "kubernetes=={{ python_kubernetes_version }}"
+        virtualenv: "{{ ansible_venv }}"
+        virtualenv_command: python3 -m venv
+
+    - name: Put the ansible commands on PATH
+      ansible.builtin.file:
+        src: "{{ ansible_venv }}/bin/{{ item }}"
+        dest: "/usr/local/bin/{{ item }}"
+        state: link
+      loop: [ansible, ansible-playbook, ansible-galaxy]
+
+    - name: Install the Ansible collections
+      ansible.builtin.command: "{{ ansible_venv }}/bin/ansible-galaxy collection install {{ ansible_collections | join(' ') }}"
+      register: galaxy
+      changed_when: "'was installed successfully' in galaxy.stdout"
+
+    # Only the thesis cluster's context, with credentials embedded, from the workstation.
+    - name: Install the kubeconfig for the thesis cluster
+      ansible.builtin.copy:
+        content: "{{ lookup('ansible.builtin.pipe', 'kubectl config view --minify --flatten --context ' ~ kube_context) }}\n"
+        dest: /root/.kube/config
+        mode: "0600"
+
+    # lg gets its own key for the cluster nodes (00_deep_clean.yml connects to the workers);
+    # the workstation's private key is never copied.
+    - name: Create the lg SSH key
+      ansible.builtin.command: ssh-keygen -t ed25519 -N "" -C "lg-thesis" -f {{ lg_ssh_key }}
+      args:
+        creates: "{{ lg_ssh_key }}"
+
+    - name: Read the lg public key
+      ansible.builtin.slurp:
+        src: "{{ lg_ssh_key }}.pub"
+      register: lg_pubkey
+
+    - name: Trust the cluster nodes' host keys
+      ansible.builtin.shell: |
+        ssh-keygen -F {{ hostvars[item].ansible_host }} >/dev/null || ssh-keyscan -t ed25519 {{ hostvars[item].ansible_host }} >> /root/.ssh/known_hosts
+      loop: "{{ groups['control_plane'] + groups['workers'] }}"
+      changed_when: false
+
+    - name: Clone the repository (an existing clone is left as it is)
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dir }}"
+        update: false
+
+    # .env is gitignored; the playbooks and runners read SSH_PRIVATE_KEY from it.
+    - name: Point the clone's .env at the lg key
+      ansible.builtin.copy:
+        content: "SSH_PRIVATE_KEY={{ lg_ssh_key }}\n"
+        dest: "{{ repo_dir }}/.env"
+        mode: "0600"
+
+    - name: Create the results directory
+      ansible.builtin.file:
+        path: "{{ results_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Report installed versions
+      ansible.builtin.shell: |
+        kubectl version --client | head -1
+        echo "helm $(helm version --short)"
+        echo "istioctl $(istioctl version --remote=false)"
+        echo "linkerd $(linkerd version --client --short)"
+        ansible --version | head -1
+        ansible-galaxy collection list 2>/dev/null | grep -E 'kubernetes.core|community.general'
+        kubectl --context {{ kube_context }} get nodes --no-headers | wc -l | sed 's/^/cluster nodes visible: /'
+        df -h / | tail -1
+      register: versions
+      changed_when: false
+
+    - name: Summary
+      ansible.builtin.debug:
+        var: versions.stdout_lines
+
+- name: Authorize the lg key on the cluster nodes
+  hosts: control_plane:workers
+  gather_facts: false
+  tasks:
+    - name: Add the lg public key to root's authorized_keys
+      ansible.builtin.lineinfile:
+        path: /root/.ssh/authorized_keys
+        line: "{{ hostvars['lg'].lg_pubkey.content | b64decode | trim }}"
+        create: true
+        mode: "0600"
