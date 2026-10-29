@@ -40,6 +40,42 @@ With the defaults (3 levels × 10 reps) that is 30 runs, about **1.75 h**.
 - **The target configuration is already deployed** with the matching `make` target from
   `deployments/` — see [Setups](#setups-deploy-verify-run). The Core does not deploy or switch anything.
 
+## Running everything on the load generator
+
+The runners (this one and `phaseB/run_phaseB.sh`) also work directly on `lg`, which removes the
+dependency on the workstation and its VPN connection during a campaign. On `lg` they run k6
+locally, need no SSH key, and write results **outside the git clone**, to `/root/thesis-results`
+(same layout as `loadGenTests/`), so the clone always stays clean for `git pull`.
+
+One-time setup, from the workstation: `cd deployments && make lg-bootstrap`. It installs kubectl,
+helm, istioctl, linkerd and ansible at the versions used so far, the kubeconfig for the thesis
+cluster, an SSH key that lets `lg` reach the cluster nodes (for `make clean`), and clones the
+repository to `/root/thesis`.
+
+A campaign on `lg`:
+
+```bash
+ssh root@10.29.20.130
+tmux new -s campaign                      # survives the SSH session and VPN drops
+cd /root/thesis && git pull               # or: git checkout <branch>
+cd deployments && make baseline           # deploy - never while a campaign is running
+cd ../loadGenTests/phaseA && ./run_phaseA_Core.sh -s fibonacci -m baseline -t na
+# detach with Ctrl-b d; re-attach later with: tmux attach -t campaign
+```
+
+Back on the workstation, merge the new results into the repository and commit them as usual:
+
+```bash
+loadGenTests/common/fetch_lg_results.py --dry-run   # what would be merged
+loadGenTests/common/fetch_lg_results.py             # merge, then archive the files on lg
+```
+
+The fetch refuses to run while a campaign is active on `lg`. CSV rows are appended only if they
+are not in the repository yet; k6 summaries and logs are copied. Fetched files are moved on `lg`
+to `/root/thesis-results-fetched/<timestamp>/`, so rows deleted in the repository are not
+brought back by a later fetch. `LG_LOCAL=1|0` forces either mode; `RESULTS_ROOT` overrides where
+results are written.
+
 ---
 
 ## Quick start
