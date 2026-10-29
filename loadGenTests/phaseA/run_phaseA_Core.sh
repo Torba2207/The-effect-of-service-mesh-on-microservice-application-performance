@@ -77,6 +77,8 @@ LG_DIR="/root/thesis-tests/phaseA"
 CTX="projekt-badawchy-cluster"
 PROM_SVC="cluster-monitor-kube-prome-prometheus"
 PROM_LOCAL="http://localhost:9090"
+LOADGEN_DIR="$(cd "$HERE/.." && pwd)"
+source "$COMMON/lg_local.sh"
 
 # --- Parse Arguments ---
 # TODO: validate -l, -r, -W, -S, -C, -n and -u before any SSH, like -m/-t/-c/-N/-R below.
@@ -188,7 +190,7 @@ if [ ! -d "$HERE/$SERVICE_DIR" ]; then
   exit 1
 fi
 
-RESULTS="$HERE/$SERVICE_DIR/results"; mkdir -p "$RESULTS"
+RESULTS="$RESULTS_ROOT/phaseA/$SERVICE_DIR/results"; mkdir -p "$RESULTS"
 if [ "$SCENARIO_TAG" = "S1" ]; then
   CSV="$RESULTS/master.csv"
 else
@@ -215,12 +217,15 @@ echo " Service Dir: $SERVICE_DIR | Script: $JS_FILE"
 [ "$SERVICE_NAME" = "fibonacci" ] && echo " Fibonacci work unit: n = $FIB_N"
 [ -n "$RATES" ] && echo " Rates (low/med/high): $RATE_LOW / $RATE_MED / $RATE_HIGH req/s"
 echo " Results: $CSV"
+[ "$LG_LOCAL" = 1 ] && echo " Runner: on lg (k6 local, results outside the clone)" || echo " Runner: workstation (k6 on lg over SSH)"
 echo "------------------------------------------------------------"
 echo " Load Levels: [$LEVELS] | Repetitions:$REPS"
 echo " Warmup: $WARMUP | Measurement: $STEADY | Cooldown:${COOLDOWN}s"
 echo "============================================================"
 
 # --- 3. SSH Setup & Preflight ---
+# The SSH key is only needed to drive lg from a workstation.
+if [ "$LG_LOCAL" != 1 ]; then
 SSH_KEY="${SSH_PRIVATE_KEY:-}"
 normalize_ssh_key_path() {
   local p="$1"
@@ -252,6 +257,7 @@ chmod 600 "$SSH_KEY_TMP"
 SSH_KEY="$SSH_KEY_TMP"
 SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
 KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
+fi
 
 cleanup() {
   kill "${PF_PID:-}" 2>/dev/null || true
@@ -259,8 +265,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "[preflight] lg ssh..."
-ssh $KEY_OPTS root@"$LG_IP" 'command -v k6 >/dev/null' || { echo "k6 missing on lg"; exit 1; }
+echo "[preflight] k6 on lg..."
+lg_sh 'command -v k6 >/dev/null' || { echo "k6 missing on lg"; exit 1; }
 echo "[preflight] kube context..."
 kubectl --context "$CTX" get ns thesis-test >/dev/null || { echo "kube context unreachable"; exit 1; }
 
@@ -293,12 +299,12 @@ eval "$PREFLIGHT_CMD" || true
 
 # --- 4. Sync Files ---
 echo "[sync] copying $JS_FILE to lg:$LG_DIR ..."
-ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR/assets"
-scp $KEY_OPTS "$HERE/$SERVICE_DIR/$JS_FILE" root@"$LG_IP":"$LG_DIR/" >/dev/null
+lg_sh "mkdir -p $LG_DIR/assets"
+lg_put "$LG_DIR" "$HERE/$SERVICE_DIR/$JS_FILE"
 
 if [ "$HAS_ASSETS" == "true" ]; then
   echo "[sync] copying asset $ASSET_FILE to lg:$LG_DIR/assets/ ..."
-  scp $KEY_OPTS "$COMMON/assets/$ASSET_FILE" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
+  lg_put "$LG_DIR/assets" "$COMMON/assets/$ASSET_FILE"
 fi
 
 # --- 5. Prometheus Setup ---
@@ -326,20 +332,20 @@ run_one() {
   echo "---- $run_id ----"
 
   # warm-up (discarded)
-  ssh $KEY_OPTS root@"$LG_IP" \
+  lg_sh \
     "cd $LG_DIR && $K6_ENV LEVEL=$level DURATION=$WARMUP K6_SUMMARY_OUT=/tmp/warm.json k6 run --quiet $JS_FILE" \
     >/dev/null 2>&1 || true
 
   # steady (measured)
   local start end
   start=$(date -u +%s)
-  ssh $KEY_OPTS root@"$LG_IP" \
+  lg_sh \
     "cd $LG_DIR && $K6_ENV LEVEL=$level DURATION=$STEADY K6_SUMMARY_OUT=/tmp/${run_id}.json k6 run --quiet $JS_FILE" \
     > "$RESULTS/k6_${run_id}.log" 2>&1 || true
   end=$(date -u +%s)
 
   # retrieve per-scenario summary
-  ssh $KEY_OPTS root@"$LG_IP" "cat /tmp/${run_id}.json" > "$RESULTS/k6_${run_id}.json" 2>/dev/null || echo '{"scenarios":{}}' > "$RESULTS/k6_${run_id}.json"
+  lg_sh "cat /tmp/${run_id}.json" > "$RESULTS/k6_${run_id}.json" 2>/dev/null || echo '{"scenarios":{}}' > "$RESULTS/k6_${run_id}.json"
 
   sleep "$COOLDOWN"
   ensure_pf
@@ -361,5 +367,5 @@ for level in $LEVELS; do
 done
 
 echo "============================================================"
-echo " DONE: $CONFIG -> $CSV  (+ results/timeseries_${CONFIG}.csv)"
+echo " DONE: $CONFIG -> $CSV  (+ timeseries_${CONFIG}.csv next to it)"
 echo "============================================================"
