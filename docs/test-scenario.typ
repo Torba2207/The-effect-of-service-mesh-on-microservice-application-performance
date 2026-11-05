@@ -166,21 +166,90 @@ workflow (`deployments/Makefile`) and measured independently.
   `ai-service` is a selector-less Service with manual Endpoints, the in-cluster sidecars send
   it plaintext through their passthrough route, and nothing runs on the VM. Joining the VM to
   the mesh would make it a regular mesh member (own identity, mTLS on the last hop, its own
-  inbound proxy). This is *not* specific to Consul — all three meshes support VM workloads:
+  inbound proxy). Whether the meshes can do this *on this cluster* was checked against their
+  documentation and the cluster's network (2026-11-04; nothing has been installed on the AI
+  host yet). Bare metal makes no difference: "VM" in all three documentations means any Linux
+  host outside the cluster.
 
-  - *Istio* (1.29): `WorkloadGroup`/`WorkloadEntry` plus `istio-sidecar` (Envoy, systemd) on
-    the VM, certificates from istiod. Works across separate networks through an east–west
-    gateway, so it needs no routing changes here.
-  - *Linkerd* (edge-26.5.1): mesh expansion (`ExternalWorkload`, since 2.15) with
-    `linkerd-proxy` and a SPIRE agent on the VM for identity. To be confirmed, but it is
-    expected to need a flat network (VM and pods reaching each other by IP).
-  - *Consul*: a Consul client agent plus Envoy on the VM; the agent needs two-way
-    connectivity with the Consul servers (pod IPs). Once registered, the AI host would also
-    be reachable through the API Gateway, closing the `ai` S1 gap above.
+  *Network facts.* Calico runs with `vxlanMode: Always` and `natOutgoing: true` on the pool
+  10.233.64.0/18: pod IPs are not reachable from outside the cluster, and pod traffic leaving
+  the cluster is NATed to the node IP. Pods reach the AI host (10.29.20.121), the AI host reaches
+  the node IPs, but it has no route to pods or Services. The AI host's firewall is off. The AI
+  service only *receives* calls from the cluster; it never calls in-cluster services.
 
-  *Network constraint (checked 2026-10-16):* the AI VM (10.29.20.121) has no route to the
-  cluster's pod/service range (10.233.0.0/16). Istio can work around this with its gateway;
-  Linkerd and Consul would need routing to the Calico pod network.
+  - *Istio (1.29) — feasible without network changes.* `WorkloadGroup`/`WorkloadEntry` plus the
+    `istio-sidecar` package on the host; the host reaches istiod through an east–west gateway.
+    The single-network model expects direct pod ↔ VM connectivity, but only the pod → VM
+    direction carries our traffic, and it works. Caveats: the sidecar package is published for
+    Debian and CentOS 8 (Ubuntu 24.04 is Debian-based but not listed), and with no
+    LoadBalancer the east–west gateway has to be exposed through a NodePort or `externalIPs`,
+    which is not the documented setup.
+  - *Consul (2.0.4) — feasible without network changes.* A Consul client agent plus Envoy on the
+    host. Consul documents a mode for exactly this case (pod IPs unreachable, node IPs
+    reachable): the servers expose gossip and RPC as host ports
+    (`server.exposeGossipAndRPCPorts`, `server.ports.serflan.port: 9301`, both supported by the
+    chart in use). This changes the C-S server configuration, not the data plane. Mesh traffic
+    goes from the pods' Envoys to the host's Envoy by the host IP, which works. The combination
+    "client agent on a host + consul-dataplane installation + Consul TLS" is not described in
+    one place and must be tested. Once registered, the AI host would also be reachable through
+    the API Gateway, closing the `ai` S1 gap above.
+  - *Linkerd (edge-26.5.1) — not feasible as the network is today; feasible after adding
+    routes on the AI host.* Mesh expansion requires "IP connectivity from the machine to every
+    pod in the mesh" (a flat network) and DNS on the machine that resolves in-cluster names,
+    plus SPIRE for workload identity and a hand-written iptables setup for the proxy binary.
+    Neither network requirement holds today. The ways to meet them are listed under *Making
+    the pod network routable from the AI host* below.
+
+  *Making the pod network routable from the AI host (needed for Linkerd only).* State checked
+  on 2026-11-04: Calico v3.30.6 installed by Kubespray with `calico_backend: vxlan`, so BIRD
+  (Calico's BGP daemon) is not running; a `BGPConfiguration` exists (AS 64512, node-to-node mesh
+  on) but has no effect, and there are no `BGPPeer`s. Each of the six nodes owns one /26 block
+  of the pod pool (node1 10.233.102.128/26, node2 10.233.75.64/26, node3 10.233.71.0/26, node4
+  10.233.74.64/26, node5 10.233.97.128/26, node6 10.233.75.0/26). The Service network is
+  10.233.0.0/18 (CoreDNS at 10.233.0.3). The nodes (10.29.20.101–103, .111–113) and the AI host
+  (.121) share one subnet, so the AI host can send pod traffic straight to the owning node,
+  with no tunnel. Options, from least to most invasive:
+
+  + *Static per-node routes on the AI host* (no cluster change): one `ip route add <block> via
+    <node IP>` per block, generated by a script from the `blockaffinities` before each
+    campaign, since blocks can be added or reassigned. Packets reach the node that hosts the
+    pod; the reply returns through the same node (the connection was opened by the AI host, so
+    `natOutgoing` does not apply), so the path is symmetric. One route for the whole /18
+    through a single node is unlikely to work: replies from pods on other nodes would take a
+    different path, and Calico may drop such asymmetric traffic as invalid (expected, not
+    tested). For DNS, a route to 10.233.0.0/18 through any node lets kube-proxy on that node
+    translate the Service IP; likely to work, must be tested.
+  + *BGP peering of the AI host with Calico.* (a) Switch the Calico backend to BIRD, keeping
+    `vxlanMode: Always` (Kubespray `calico_network_backend: bird` and a re-run with
+    `--tags network`; a manual ConfigMap edit would be reverted by the next Kubespray run).
+    (b) Set `nodeToNodeMeshEnabled: false`: with VXLAN, Felix programs the inter-node routes
+    from IPAM itself, and without the mesh each node advertises only its own block, so the AI
+    host always learns "block → owning node". (c) Add a global `BGPPeer` for 10.29.20.121
+    (applied with `calicoctl`; no Calico API server is installed). (d) Run FRR on the AI host,
+    accepting only 10.233.64.0/18 and longer prefixes and advertising nothing. Optionally,
+    `serviceClusterIPs: 10.233.0.0/18` in the `BGPConfiguration` also makes Service IPs, and
+    with them cluster DNS, reachable from the host. The result is the same forwarding path as
+    option 1, but the routes follow the cluster automatically. Changing the backend restarts
+    `calico-node` on every node and needs the supervisor's consent and access to the Kubespray
+    inventory.
+  + *Routing without encapsulation* (`vxlanMode: Never` with BGP): possible because all nodes
+    share one L2 segment, but it changes the inter-node pod path. Rejected (see below).
+
+  An unsupported shortcut also exists: the AI host never calls in-cluster services, so its
+  proxy only needs the Linkerd control plane (destination and policy; identity comes from
+  SPIRE). Exposing those through NodePorts and pointing the proxy at them
+  (`LINKERD2_PROXY_DESTINATION_SVC_ADDR`, `LINKERD2_PROXY_POLICY_SVC_ADDR`) might work without
+  any routing change. This departs from the documentation and is untested.
+
+  *Validity of the comparison after a routing change.* Options 1 and 2 with `vxlanMode: Always`
+  leave every measured data path unchanged. Pod → pod traffic between nodes still goes through
+  VXLAN, and pod → AI host traffic is still NATed to the node IP. The new routes carry only
+  connections opened from the AI host (proxy control traffic, DNS), and BIRD only exchanges
+  routes. The existing B, I-S, I-P, L-S and L-P data therefore stay comparable with new data.
+  Option 2 restarts `calico-node`, so a short control baseline run (S1 and S2-int) should
+  confirm that the numbers are within the previous spread before campaigns continue. Option 3
+  removes the VXLAN overhead and changes the MTU on every inter-node hop, including S2-int, so
+  the whole matrix would have to be measured again; it is not proposed.
 
   *Consequences for the experiment.* The S2-ext chains would change meaning from "mesh →
   external dependency" (plaintext egress) to "mesh → meshed service" (mTLS, plus an inbound
@@ -190,16 +259,26 @@ workflow (`deployments/Makefile`) and measured independently.
   The P variants need defining for the VM too: Istio's `PeerAuthentication` DISABLE covers it
   automatically, while L-P would need the same port exclusions on the VM's proxy.
 
-  *Risks.* The AI services run as Docker containers on the GPU host; a host-level sidecar
-  intercepts traffic with iptables, which Docker also rewrites for its published ports, so
-  the two must be tested together. Rough effort: about one day for Istio, one to two days
-  each for Linkerd and Consul.
+  *Risks.* The AI services run as Docker containers on the GPU host, and Docker rewrites
+  iptables for its published ports. Istio's and Linkerd's host proxies intercept traffic with
+  iptables too, so the two must be tested together; Consul's host Envoy needs no interception
+  by default (it listens on its own port and forwards to `localhost:5005`), so the risk is
+  lowest there. Rough effort: about one day each for Istio and Consul; about two days for
+  Linkerd with static routes (SPIRE and the manual iptables setup), a less certain estimate.
+
+  *Consequence for the comparison.* Without any routing change the scenario covers Istio and
+  Consul only. Static routes on the AI host bring Linkerd in without touching the cluster;
+  BGP does the same but changes the cluster's Calico setup. The supervisor should decide
+  between a two-mesh scenario, static routes, and BGP.
 
   *Recommendation.* Treat it as an *additional* scenario ("AI inside the mesh"), not a
   replacement: the existing AI data stays valid as the external-dependency variant, and the
   pair would show how the mesh tax differs between calling an external service and calling a
-  meshed one. If approved, start with Istio, which also tests the sidecar/Docker interaction
-  without touching the cluster network.
+  meshed one. If approved, start with Istio (it also tests the sidecar/Docker interaction),
+  then Consul, then Linkerd with static routes. BGP only if the supervisor prefers a permanent
+  cluster-side setup. The proxy overhead (a few ms) is small next to the ~500 ms inference time,
+  so the cells of this scenario should be measured interleaved (configurations alternated
+  repetition by repetition), not in separate campaigns.
 ]
 
 = Services Under Test and Fixed Workloads
