@@ -82,7 +82,7 @@ echo " Phase B :: config=$CONFIG mesh=$MESH mtls=$MTLS"
 echo " URL=$URL  levels=[$LEVELS] reps=$REPS  warmup=$WARMUP steady=$STEADY cooldown=${COOLDOWN}s"
 echo " AI=$INCLUDE_AI  fibonacci n=$FIB_N"
 echo " Results: $CSV"
-[ "$LG_LOCAL" = 1 ] && echo " Runner: on lg (k6 local, results outside the clone)" || echo " Runner: workstation (k6 on lg over SSH)"
+[ "$LG_LOCAL" = 1 ] && echo " Runner: on lg (k6 local)" || echo " Runner: workstation (k6 on lg over SSH)"
 [ "$INCLUDE_AI" = "true" ] || echo " WARNING: -X given - AI scenarios excluded, this is NOT a valid Phase B run"
 echo "============================================================"
 
