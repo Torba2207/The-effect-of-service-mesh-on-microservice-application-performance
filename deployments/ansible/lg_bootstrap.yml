@@ -154,6 +154,12 @@
       register: galaxy
       changed_when: "'installed ' in galaxy.stdout"
 
+    - name: Create /root/.kube
+      ansible.builtin.file:
+        path: /root/.kube
+        state: directory
+        mode: "0700"
+
     # Only the thesis cluster's context, with credentials embedded, from the workstation.
     - name: Install the kubeconfig for the thesis cluster
       ansible.builtin.copy:
