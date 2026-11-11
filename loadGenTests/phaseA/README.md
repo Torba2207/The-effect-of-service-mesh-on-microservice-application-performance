@@ -14,14 +14,16 @@ With the defaults (3 levels × 10 reps) that is 30 runs, about **1.75 h**.
 
 | File | Runs on | Purpose |
 |------|---------|---------|
-| `run_phaseA_Core.sh` | workstation | The orchestrator. Validates flags, runs preflight checks, drives k6 on the load generator, pulls Prometheus metrics, writes CSVs. |
-| `phaseA_Data.sh` | workstation (sourced) | Per-scenario settings: k6 script, assets, default rates, result label, smoke request. Never run on its own. |
+| `run_phaseA_Core.sh` | workstation or lg | The orchestrator. Validates flags, runs preflight checks, drives k6 on the load generator, pulls Prometheus metrics, writes CSVs. |
+| `phaseA_Data.sh` | workstation or lg (sourced) | Per-scenario settings: k6 script, assets, default rates, result label, smoke request. Never run on its own. |
 | `<Service>/<name>-test.js` | lg (k6) | One k6 script per scenario. |
 | `<Service>/results/` | — | Output of every run (see [Output](#output)). |
-| `<Service>/run_phaseA_S1.sh` | workstation | **Legacy**, baseline-only per-service scripts. Superseded by the Core; kept only because the banked baseline S1 data was produced with them. |
-| `../common/collect_metrics.py` | workstation | Queries Prometheus for the steady window and merges k6 latency into the master CSV. |
-| `../common/extract_timeseries.py` | workstation | Pulls the CPU/RAM curves of one run into the time-series CSV. |
+| `<Service>/run_phaseA_S1.sh` | workstation only | **Legacy**, baseline-only per-service scripts. Superseded by the Core; kept only because the banked baseline S1 data was produced with them. |
+| `../common/collect_metrics.py` | workstation or lg (called by the runner) | Queries Prometheus for the steady window and merges k6 latency into the master CSV. |
+| `../common/extract_timeseries.py` | workstation or lg (called by the runner) | Pulls the CPU/RAM curves of one run into the time-series CSV. |
 | `../common/assets/` | — | Fixed binary work units (`filter_input_128.png`, `sample_360p_1s.mp4`). |
+| `../common/lg_local.sh` | workstation or lg (sourced) | Detects whether the runner is on lg and switches k6 calls and the results directory accordingly ([Running everything on the load generator](#running-everything-on-the-load-generator)). |
+| `../common/lg_campaign.sh` | lg | Wraps a runner on lg: checks and pulls the studies branch, runs the campaign, commits and pushes the results. |
 
 ---
 
@@ -44,37 +46,47 @@ With the defaults (3 levels × 10 reps) that is 30 runs, about **1.75 h**.
 
 The runners (this one and `phaseB/run_phaseB.sh`) also work directly on `lg`, which removes the
 dependency on the workstation and its VPN connection during a campaign. On `lg` they run k6
-locally, need no SSH key, and write results **outside the git clone**, to `/root/thesis-results`
-(same layout as `loadGenTests/`), so the clone always stays clean for `git pull`.
+locally and need no SSH key. Results travel through git: the campaign is wrapped in
+`../common/lg_campaign.sh`, which works on the branch `studies_lg_based`.
 
 One-time setup, from the workstation: `cd deployments && make lg-bootstrap`. It installs kubectl,
 helm, istioctl, linkerd and ansible at the versions used so far, the kubeconfig for the thesis
 cluster, an SSH key that lets `lg` reach the cluster nodes (for `make clean`), and clones the
-repository to `/root/thesis`.
+repository to `/root/thesis`. The versions are pinned once: a re-run skips anything already
+installed, even if its version in `deployments/ansible/lg_bootstrap.yml` changed (delete the
+binary on `lg` first to change it).
+
+Scripts that work on `lg`: `run_phaseA_Core.sh`, `../phaseB/run_phaseB.sh` and
+`../phaseB/timeseries/capture_run.sh` (plus the collectors they call). Workstation only: the
+legacy `<Service>/run_phaseA_S1.sh`, `../phaseB/ai_probe/run_ai_probe.sh` (legacy) and
+`../ai_capacity/run_ai_capacity.sh` (it also samples the GPU on the AI host over SSH).
+
+Once per `lg` (besides the bootstrap): `git checkout studies_lg_based` in `/root/thesis`, a git
+identity (`git config --global user.name ...` / `user.email ...`), and write access to the
+repository for `lg` (the bootstrap clones over anonymous https, which can only pull).
 
 A campaign on `lg`:
 
 ```bash
 ssh root@10.29.20.130
 tmux new -s campaign                      # survives the SSH session and VPN drops
-cd /root/thesis && git pull               # or: git checkout <branch>
-cd deployments && make baseline           # deploy - never while a campaign is running
-cd ../loadGenTests/phaseA && ./run_phaseA_Core.sh -s fibonacci -m baseline -t na
+cd /root/thesis/deployments && make baseline   # deploy - never while a campaign is running
+cd /root/thesis
+loadGenTests/common/lg_campaign.sh -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m baseline -t na
 # detach with Ctrl-b d; re-attach later with: tmux attach -t campaign
 ```
 
-Back on the workstation, merge the new results into the repository and commit them as usual:
+`lg_campaign.sh` refuses to start unless the clone is on `studies_lg_based` (`-b` for another
+branch) with no local changes, a git identity is set and `lg` can push. It then pulls the branch
+(fast-forward only), runs the runner given after `--`, commits everything new under `*/results/`
+and pushes; `-n` commits without pushing. Results are committed even if the runner fails (its exit
+code is in the commit message); a campaign stopped with Ctrl-C is not committed. On the
+workstation the results arrive with `git pull` of the branch. k6 `*.log` files are gitignored and
+stay on `lg`.
 
-```bash
-loadGenTests/common/fetch_lg_results.py --dry-run   # what would be merged
-loadGenTests/common/fetch_lg_results.py             # merge, then archive the files on lg
-```
-
-The fetch refuses to run while a campaign is active on `lg`. CSV rows are appended only if they
-are not in the repository yet; k6 summaries and logs are copied. Fetched files are moved on `lg`
-to `/root/thesis-results-fetched/<timestamp>/`, so rows deleted in the repository are not
-brought back by a later fetch. `LG_LOCAL=1|0` forces either mode; `RESULTS_ROOT` overrides where
-results are written.
+Without the wrapper a runner on `lg` still works, but its results only land in the clone
+uncommitted. `LG_LOCAL=1|0` forces either mode; `RESULTS_ROOT` overrides where results are
+written.
 
 ---
 
