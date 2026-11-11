@@ -12,19 +12,24 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; PB="$(cd "$HERE/.." && pwd)"
 REPO_ROOT="$(cd "$PB/../.." && pwd)"
 
-# SSH key: $SSH_PRIVATE_KEY if set, else the SSH_PRIVATE_KEY entry in the repo-root .env
-# (override the file with ENV_FILE=/path/to/.env).
-ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
-SSH_KEY="${SSH_PRIVATE_KEY:-}"
-if [ -z "$SSH_KEY" ]; then
-  [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
-  SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
-fi
-[ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
-
-SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
 LG_IP="10.29.20.130"; LG_DIR="/root/thesis-tests/phaseB"
 CTX="projekt-badawchy-cluster"; PROM_SVC="cluster-monitor-kube-prome-prometheus"; PROM="http://localhost:9090"
+LOADGEN_DIR="$(cd "$PB/.." && pwd)"
+source "$PB/../common/lg_local.sh"
+
+# SSH key (only to drive lg from a workstation): $SSH_PRIVATE_KEY if set, else the
+# SSH_PRIVATE_KEY entry in the repo-root .env (override the file with ENV_FILE=/path/to/.env).
+if [ "$LG_LOCAL" != 1 ]; then
+  ENV_FILE="${ENV_FILE:-$REPO_ROOT/.env}"
+  SSH_KEY="${SSH_PRIVATE_KEY:-}"
+  if [ -z "$SSH_KEY" ]; then
+    [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found and \$SSH_PRIVATE_KEY unset"; exit 1; }
+    SSH_KEY="$(sed -n 's/^SSH_PRIVATE_KEY=//p' "$ENV_FILE" | head -1 | sed 's/^["'\'']//;s/["'\'']$//')"
+  fi
+  [ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ] || { echo "ERROR: SSH key not found (SSH_PRIVATE_KEY='$SSH_KEY')"; exit 1; }
+  SSH_OPTS="-o StrictHostKeyChecking=no -o BatchMode=yes -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=8"
+  KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
+fi
 
 NODE_IP="10.29.20.113"; URL=""; LEVEL="high"; WARMUP="30s"; STEADY="120s"; STEP="5"; INCLUDE_AI="false"
 CONFIG=""; MESH=""; MTLS=""
@@ -34,15 +39,15 @@ while getopts "c:m:t:l:u:n:W:S:p:I" opt; do case "$opt" in
   p) STEP="$OPTARG";; I) INCLUDE_AI="true";; *) echo bad; exit 2;; esac; done
 [ -z "$CONFIG" ] || [ -z "$MESH" ] || [ -z "$MTLS" ] && { echo "ERROR: -c -m -t required"; exit 2; }
 [ -z "$URL" ] && URL="http://${NODE_IP}:30080"
-KEY_OPTS="-i $SSH_KEY $SSH_OPTS"
-OUT="$PB/results/ts"; mkdir -p "$OUT"
+OUT="$RESULTS_ROOT/phaseB/results/ts"; mkdir -p "$OUT"
 RUN="${CONFIG}_${LEVEL}_ts"
 echo "== capture $RUN :: mesh=$MESH mtls=$MTLS url=$URL steady=$STEADY step=${STEP}s =="
+[ "$LG_LOCAL" = 1 ] && echo "   runner: on lg (k6 local) -> $OUT" || echo "   runner: workstation (k6 on lg over SSH) -> $OUT"
 
 # sync
-ssh $KEY_OPTS root@"$LG_IP" "mkdir -p $LG_DIR/assets"
-scp $KEY_OPTS "$PB/aggregate.js" root@"$LG_IP":"$LG_DIR/" >/dev/null
-scp $KEY_OPTS "$PB/../common/assets/filter_input_128.png" "$PB/../common/assets/sample_360p_1s.mp4" root@"$LG_IP":"$LG_DIR/assets/" >/dev/null
+lg_sh "mkdir -p $LG_DIR/assets"
+lg_put "$LG_DIR" "$PB/aggregate.js"
+lg_put "$LG_DIR/assets" "$PB/../common/assets/filter_input_128.png" "$PB/../common/assets/sample_360p_1s.mp4"
 
 # prometheus port-forward
 kubectl --context "$CTX" -n monitoring port-forward "svc/$PROM_SVC" 9090:9090 >/dev/null 2>&1 &
@@ -51,16 +56,16 @@ PF=$!; trap 'kill $PF 2>/dev/null || true' EXIT; sleep 4
 K6ENV="BASE_URL=$URL INCLUDE_AI=$INCLUDE_AI IMG_PATH=assets/filter_input_128.png VID_PATH=assets/sample_360p_1s.mp4"
 
 echo "[warmup $WARMUP]"
-ssh $KEY_OPTS root@"$LG_IP" "cd $LG_DIR && $K6ENV LEVEL=$LEVEL DURATION=$WARMUP K6_SUMMARY_OUT=/tmp/warm.json k6 run --quiet aggregate.js" >/dev/null 2>&1 || true
+lg_sh "cd $LG_DIR && $K6ENV LEVEL=$LEVEL DURATION=$WARMUP K6_SUMMARY_OUT=/tmp/warm.json k6 run --quiet aggregate.js" >/dev/null 2>&1 || true
 
 echo "[steady $STEADY + per-request csv]"
 START=$(date -u +%s)
-ssh $KEY_OPTS root@"$LG_IP" "cd $LG_DIR && $K6ENV LEVEL=$LEVEL DURATION=$STEADY K6_SUMMARY_OUT=/tmp/${RUN}.json k6 run --quiet --out csv=/tmp/${RUN}_k6.csv aggregate.js" > "$OUT/k6_${RUN}.log" 2>&1 || true
+lg_sh "cd $LG_DIR && $K6ENV LEVEL=$LEVEL DURATION=$STEADY K6_SUMMARY_OUT=/tmp/${RUN}.json k6 run --quiet --out csv=/tmp/${RUN}_k6.csv aggregate.js" > "$OUT/k6_${RUN}.log" 2>&1 || true
 END=$(date -u +%s)
 
 # retrieve k6 per-request csv (gzip on the wire)
-ssh $KEY_OPTS root@"$LG_IP" "gzip -c /tmp/${RUN}_k6.csv" > "$OUT/${RUN}_k6.csv.gz" 2>/dev/null || true
-ssh $KEY_OPTS root@"$LG_IP" "rm -f /tmp/${RUN}_k6.csv" 2>/dev/null || true
+lg_sh "gzip -c /tmp/${RUN}_k6.csv" > "$OUT/${RUN}_k6.csv.gz" 2>/dev/null || true
+lg_sh "rm -f /tmp/${RUN}_k6.csv" 2>/dev/null || true
 
 echo "[build time-series + plot]"
 python3 "$HERE/timeseries.py" --prom "$PROM" --mesh "$MESH" --start "$START" --end "$END" \
