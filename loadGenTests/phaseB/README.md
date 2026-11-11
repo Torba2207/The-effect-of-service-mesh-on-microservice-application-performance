@@ -19,11 +19,11 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy byp
 | File | Runs on | Purpose |
 |------|---------|---------|
 | `aggregate.js` | lg (k6) | One k6 scenario per service, all concurrent; writes a per-scenario latency JSON. |
-| `run_phaseB.sh` | workstation | Orchestrates one config: warmup→steady→cooldown × levels × reps; pulls Prometheus; writes CSVs. |
-| `collect_metrics.py` | workstation | Queries Prometheus for per-service CPU/RAM over the steady window; merges k6 latency → `results/master.csv`. |
-| `extract_timeseries.py` | workstation | Per run, pulls CPU/RAM **curves** (`query_range`) → `results/timeseries_<config>.csv`. |
-| `ai_probe/` | workstation + lg | **Legacy.** Closed-loop (1 VU) probe built for the old CPU AI VM; superseded now that AI runs inside the aggregate. |
-| `timeseries/` | workstation + lg | Single-run capture with true per-second latency (`capture_run.sh`). |
+| `run_phaseB.sh` | workstation or lg | Orchestrates one config: warmup→steady→cooldown × levels × reps; pulls Prometheus; writes CSVs. |
+| `collect_metrics.py` | workstation or lg (called by the runner) | Queries Prometheus for per-service CPU/RAM over the steady window; merges k6 latency → `results/master.csv`. |
+| `extract_timeseries.py` | workstation or lg (called by the runner) | Per run, pulls CPU/RAM **curves** (`query_range`) → `results/timeseries_<config>.csv`. |
+| `ai_probe/` | workstation only | **Legacy.** Closed-loop (1 VU) probe built for the old CPU AI VM; superseded now that AI runs inside the aggregate. |
+| `timeseries/` | workstation or lg | Single-run capture with true per-second latency (`capture_run.sh`). |
 | `make_plots.py`, `make_ai_plot.py` | workstation | Comparison figures → `results/plots/`. |
 | `../common/assets/` | — | Fixed work-unit inputs (`filter_input_128.png`, `sample_360p_1s.mp4`) + `make_assets.sh`, shared across phases. |
 
@@ -33,6 +33,9 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy byp
   `ssh`/`scp`. SSH key for `root@lg` from `$SSH_PRIVATE_KEY` or the `SSH_PRIVATE_KEY=` line of the
   repo-root `.env` (override the file with `ENV_FILE=`).
 - Load generator `lg` (10.29.20.130): `k6` installed. The script + assets are synced automatically.
+- `run_phaseB.sh` and `timeseries/capture_run.sh` can also run on `lg` itself (no VPN or SSH key
+  needed there), wrapped in `../common/lg_campaign.sh` so the results are committed and pushed —
+  see "Running everything on the load generator" in `../phaseA/README.md`.
 - **AI host (10.29.20.121) up**, and the `ai-service` Service in `thesis-test` pointing at it —
   the preflight refuses to start otherwise.
 - The target config must already be **deployed** with the matching `make` target from
