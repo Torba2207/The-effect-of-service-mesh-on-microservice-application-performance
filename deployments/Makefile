@@ -69,7 +69,7 @@ consul: set-context teardown clean
 
 # Prepare the load generator (lg) as a campaign host: kubectl, helm, istioctl, linkerd and
 # ansible at the workstation's versions, the kubeconfig, an SSH key for the cluster nodes, a
-# clone of the repository in /root/thesis and /root/thesis-results. Run from the workstation.
+# clone of the repository in /root/thesis. Run from the workstation.
 lg-bootstrap:
 	@echo "Bootstrapping the load generator..."
 	ansible-playbook ansible/lg_bootstrap.yml -i $(INVENTORY)
