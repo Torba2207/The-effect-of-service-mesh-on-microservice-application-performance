@@ -14,13 +14,21 @@
         <span id="wrong_token_mes" hidden>Wrong token</span>
     </div>
     <div id="scheduler" hidden>
-        Here is gonna be scheduler
+        <button id="start_job">start job</button>
+        <div>
+            Task Queue
+            <div id="task_queue"> 
+            
+            </div>  
+        </div>
     </div>
     <script>
         const save_token_button = document.getElementById("save_token")
         const token_field = document.getElementById("token-field")
         const login_comp = document.getElementById("login")
         const scheduler_comp = document.getElementById("scheduler")
+        const start_job_button = document.getElementById("start_job")
+        const task_queue = document.getElementById("task_queue")
         function setToken(token){
             localStorage.setItem("auth_token",token)
         }
@@ -34,6 +42,49 @@
             if(compToShow)
                 compToShow.hidden = false
         }
+
+
+        // reusable function to handle cases when unauth problem comes out
+        function unAuthHandle(){
+            console.log("Not auth")
+            localStorage.removeItem("auth_token")
+            toggleComp(scheduler_comp, login_comp)
+            toggleComp(document.getElementById("empty_token_mes"), document.getElementById("wrong_token_mes"))
+        }
+
+
+
+        //Function to start the job
+        async function JobStart(){
+            try{
+                const res = await fetch("/api/jobs", {
+                    method:"POST",
+                    headers:{
+                        "Authorization":"Bearer "+getToken(),
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({})
+                })
+                const data = await res.json()
+                if(res.status===401){
+                    unAuthHandle();
+                    return;
+                }else if(!res.ok){
+                    
+                    throw(data.message?data.message:"Server error")
+                }
+                
+                const span_w_id=document.createElement('span')
+                span_w_id.textContent=data.id
+                task_queue.prepend(span_w_id, document.createElement('br'))
+            }
+            catch(e){
+                console.log(e)
+            }
+        }
+
+
+        //Basic Function for auth
         async function Auth() {
             
             try{
@@ -41,10 +92,7 @@
                 "Authorization":"Bearer "+getToken()
                 }})
                 if(res.status===401){
-                    console.log("Not auth")
-                    localStorage.removeItem("auth_token")
-                    toggleComp(scheduler_comp, login_comp)
-                    toggleComp(document.getElementById("empty_token_mes"), document.getElementById("wrong_token_mes"))
+                    unAuthHandle();
                     return;
                 }
                 else if(!res.ok){
@@ -73,10 +121,15 @@
                 Auth()
 
             })
+
+        
+
         if(getToken()){
             Auth()
         }
+
         
+        start_job_button.addEventListener("click",JobStart)
 
     </script>
 </body>
