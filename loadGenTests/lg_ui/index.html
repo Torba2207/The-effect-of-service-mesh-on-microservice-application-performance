@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Scheduler</title>
+</head>
+<body>
+    <div id="login">
+        <label for="token-field">Token</label>
+        <input id="token-field" type="text">
+        <button id="save_token">Save</button><br>
+        <span id="empty_token_mes" hidden>Provide token</span>
+        <span id="wrong_token_mes" hidden>Wrong token</span>
+    </div>
+    <div id="scheduler" hidden>
+        Here is gonna be scheduler
+    </div>
+    <script>
+        const save_token_button = document.getElementById("save_token")
+        const token_field = document.getElementById("token-field")
+        const login_comp = document.getElementById("login")
+        const scheduler_comp = document.getElementById("scheduler")
+        function setToken(token){
+            localStorage.setItem("auth_token",token)
+        }
+        function getToken(){
+            return localStorage.getItem("auth_token")
+        }
+
+        function toggleComp(compToHide, compToShow){
+            if(compToHide)
+                compToHide.hidden = true
+            if(compToShow)
+                compToShow.hidden = false
+        }
+        async function Auth() {
+            
+            try{
+                const res = await fetch("/api/ping", {headers:{
+                "Authorization":"Bearer "+getToken()
+                }})
+                if(res.status===401){
+                    console.log("Not auth")
+                    localStorage.removeItem("auth_token")
+                    toggleComp(scheduler_comp, login_comp)
+                    toggleComp(document.getElementById("empty_token_mes"), document.getElementById("wrong_token_mes"))
+                    return;
+                }
+                else if(!res.ok){
+                    throw("Server unreachable")
+                }
+                toggleComp(login_comp, scheduler_comp)
+                toggleComp(null,document.getElementById("wrong_token_mes"))
+                toggleComp(null,document.getElementById("empty_token_mes"))
+                
+            }catch(e){
+                console.log(e)
+            }
+
+        }
+        
+
+        save_token_button.addEventListener("click", ()=>{
+                let token = token_field.value.trim()
+                if(token===""){
+                    toggleComp(document.getElementById("wrong_token_mes"), 
+                    document.getElementById("empty_token_mes"))
+                    return;
+                }
+                setToken(token);
+                
+                Auth()
+
+            })
+        if(getToken()){
+            Auth()
+        }
+        
+
+    </script>
+</body>
+</html>
