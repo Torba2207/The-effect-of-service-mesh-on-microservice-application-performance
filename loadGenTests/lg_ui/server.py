@@ -7,11 +7,17 @@ from datetime import datetime
 import shlex
 import subprocess
 
+
 HERE = Path (__file__).resolve().parent
 TOKEN = os.environ["LG_UI_TOKEN"]
 JOBS_DIR = Path(os.environ["LG_JOBS_DIR"]).resolve()
 JOBS_DIR.mkdir(parents=True, exist_ok=True)
 TEST_CMD = 'for i in 1 2 3 4 5; do echo "$i"; sleep 2; done'
+STARTED = "started"
+DONE = "done" 
+RUNNING = "running"
+QUEUED = "queued"
+INTERRUPTED = "interrupted"
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version="HTTP/1.1"
@@ -69,7 +75,8 @@ class Handler(BaseHTTPRequestHandler):
                 echo "${{PIPESTATUS[0]}}" > rc
                 """
                 (job_dir / "run.sh").write_text(script)
-                subprocess.run(["tmux","new-session", "-d","-s",f"job-{job_id}","bash",f"{job_dir}/run.sh"], check=True)
+                Path(job_dir/"started").touch(exist_ok=False)
+                subprocess.run(["tmux","new-session", "-d","-s",f"job-{job_id}","bash",str(job_dir/"run.sh")], check=True)
                 self.send_json(HTTPStatus.CREATED, {"id": job_id})
             except FileExistsError:
                 self.send_json(HTTPStatus.CONFLICT, {"ok":False, "message":"File already exist"})
@@ -78,6 +85,39 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_json(HTTPStatus.NOT_FOUND, {"ok":False})
         
+    def get_job_sessions(self):
+        try:
+            result = subprocess.run(["tmux", "ls", "-f", "#{m:job-*,#{session_name}}", "-F", "#{session_name}"], capture_output=True, text=True)
+        except FileNotFoundError as e:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"ok": False, "message": str(e)})
+        return set(result.stdout.splitlines())
+
+    def job_state(self, job_dir, sessions):
+        files_list = os.listdir(JOBS_DIR/job_dir)
+        if "rc" in files_list:
+            return DONE
+        
+        if job_dir in sessions:
+            return RUNNING
+        if STARTED not in files_list:
+            return QUEUED
+        return INTERRUPTED
+
+    def list_jobs(self):
+        sessions = self.get_job_sessions()
+        jobs_ids = os.listdir(JOBS_DIR)
+        jobs=[]
+        for job_id in jobs_ids:
+            state = self.job_state(job_id, sessions)
+            job = [job_id,state]
+            if state == "done":
+                job.append(Path(JOBS_DIR/job_id/"rc").read_text())
+            jobs.append(job)
+        return jobs
+            
+
+
+
 
 if __name__ == "__main__":
     addr = os.environ.get("LG_UI_ADDR", "0.0.0.0")
