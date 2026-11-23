@@ -4,7 +4,7 @@ KUBECTX   = projekt-badawchy-cluster
 TEST_NS   = thesis-test
 ISTIO_PA  = k8s/istio
 
-.PHONY: clean teardown baseline istio istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap
+.PHONY: clean teardown baseline istio istio-mtls istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap
 
 # Deployment steps must run in order (teardown before clean before install) even under `make -j`
 # -- some shells alias make to `make -j<N>`, which otherwise runs teardown and clean at once.
@@ -32,6 +32,17 @@ baseline: set-context teardown clean
 istio: set-context teardown clean
 	@echo "Deploying Istio via Ansible..."
 	ansible-playbook ansible/phase_istio.yml -i $(INVENTORY)
+
+# I-S configuration: full Istio deploy (same as `make istio`), then mTLS forced on with
+# PeerAuthentication STRICT. `make istio` alone leaves Istio PERMISSIVE, which is not a measured
+# configuration.
+istio-mtls: istio
+	@echo "Enforcing mTLS in $(TEST_NS) (PeerAuthentication STRICT)..."
+	kubectl --context $(KUBECTX) apply -f $(ISTIO_PA)/peer-authentication-strict.yaml
+	@echo "Waiting for $(TEST_NS) deployments to become Available..."
+	kubectl --context $(KUBECTX) -n $(TEST_NS) wait --for=condition=Available deployment --all --timeout=300s
+	@echo "mTLS mode: $$(kubectl --context $(KUBECTX) -n $(TEST_NS) get peerauthentication default -o jsonpath='{.spec.mtls.mode}')"
+	@echo "Gateway NodePort (pass to Phase A as -u http://<node>:PORT; it changes on every install): $$(kubectl --context $(KUBECTX) -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')"
 
 # I-P configuration: full Istio deploy (same as `make istio`), then mTLS switched off with
 # PeerAuthentication DISABLE. The Envoy sidecars stay in the data path; only encryption is
