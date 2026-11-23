@@ -65,24 +65,35 @@ Once per `lg` (besides the bootstrap): `git checkout studies_lg_based` in `/root
 identity (`git config --global user.name ...` / `user.email ...`), and write access to the
 repository for `lg` (the bootstrap clones over anonymous https, which can only pull).
 
-A campaign on `lg`:
+The easiest way is the **campaign scheduler**: open http://10.29.20.130:8080, pick the phase,
+configuration and scenario, and add the job to the queue. Jobs run one after another, each as one
+`lg_campaign.sh` call; see [`../lg_ui/README.md`](../lg_ui/README.md).
+
+The same campaign from a terminal on `lg`:
 
 ```bash
 ssh root@10.29.20.130
 tmux new -s campaign                      # survives the SSH session and VPN drops
-cd /root/thesis/deployments && make baseline   # deploy - never while a campaign is running
 cd /root/thesis
-loadGenTests/common/lg_campaign.sh -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m baseline -t na
+loadGenTests/common/lg_campaign.sh -d baseline -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m baseline -t na
+loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m istio -t on
 # detach with Ctrl-b d; re-attach later with: tmux attach -t campaign
 ```
 
 `lg_campaign.sh` refuses to start unless the clone is on `studies_lg_based` (`-b` for another
 branch) with no local changes, a git identity is set and `lg` can push. It then pulls the branch
-(fast-forward only), runs the runner given after `--`, commits everything new under `*/results/`
-and pushes; `-n` commits without pushing. Results are committed even if the runner fails (its exit
-code is in the commit message); a campaign stopped with Ctrl-C is not committed. On the
-workstation the results arrive with `git pull` of the branch. k6 `*.log` files are gitignored and
-stay on `lg`.
+(fast-forward only), deploys with `make -C deployments <target>` when given `-d <target>` (a failed
+deploy stops it before the runner), appends `-u http://10.29.20.113:<gateway NodePort>` to the
+runner arguments when given `-G` (Istio), runs the runner given after `--`, commits everything new
+under `*/results/` and pushes; `-n` commits without pushing. Results are committed even if the
+runner fails (its exit code is in the commit message); a campaign stopped with Ctrl-C is not
+committed. On the workstation the results arrive with `git pull` of the branch. k6 `*.log` files
+are gitignored and stay on `lg`.
+
+Only one campaign runs at a time: `lg_campaign.sh` holds `/run/lock/thesis-campaign.lock` for the
+whole run, deploy included, and a second one (from the scheduler or a terminal) waits or refuses
+to start. A bare `make <config>` typed by hand does not take the lock — do not deploy by hand while
+a campaign is running.
 
 Without the wrapper a runner on `lg` still works, but its results only land in the clone
 uncommitted. `LG_LOCAL=1|0` forces either mode; `RESULTS_ROOT` overrides where results are
@@ -123,7 +134,7 @@ cleans the worker nodes, so switching setups is always one command. Deploying ta
 | B   | no mesh               | `make baseline`     | *(none)*                        | `baseline`       | `:30080`, static |
 | L-S | Linkerd, mTLS         | `make linkerd`      | `-m linkerd -t on`              | `linkerd_mtls`   | `:30080`, static |
 | L-P | Linkerd, proxy bypass | `make linkerd-nomtls` | `-m linkerd -t off`           | `linkerd_nomtls` | `:30080`, static |
-| I-S | Istio, STRICT         | `make istio` + STRICT policy | `-m istio -t on -u …`   | `istio_mtls`     | **dynamic**, pass `-u` |
+| I-S | Istio, STRICT         | `make istio-mtls`   | `-m istio -t on -u …`           | `istio_mtls`     | **dynamic**, pass `-u` |
 | I-P | Istio, DISABLE        | `make istio-nomtls` | `-m istio -t off -u …`          | `istio_nomtls`   | **dynamic**, pass `-u` |
 
 All commands below assume the repo root as the starting directory, and `SVC` is any scenario key
@@ -179,13 +190,12 @@ cd loadGenTests/phaseA && ./run_phaseA_Core.sh -s "$SVC" -m linkerd -t off
 ### I-S — Istio with mTLS STRICT
 
 ```bash
-(cd deployments && make istio)
-kubectl --context projekt-badawchy-cluster apply -f deployments/k8s/istio/peer-authentication-strict.yaml
+(cd deployments && make istio-mtls)      # make istio + PeerAuthentication STRICT; prints the mode and the gateway NodePort
 ```
 
 Then resolve the gateway port, verify and run — see [Running against Istio](#running-against-istio)
-below, with `-t on`. There is no single `make` target for I-S yet; `make istio` alone leaves Istio
-in its default PERMISSIVE mode, which is **not** a measured configuration.
+below, with `-t on`. `make istio` alone leaves Istio in its default PERMISSIVE mode, which is
+**not** a measured configuration.
 
 ### I-P — Istio with mTLS DISABLE
 
