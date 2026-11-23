@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
 # Runs one campaign on lg on a git branch and publishes its results there:
-#   1. checks that the clone is on the studies branch and has no local changes;
-#   2. syncs it with origin (fast-forward only), so the campaign runs the latest pushed code and
+#   1. takes the campaign lock, so only one campaign runs on lg at a time;
+#   2. checks that the clone is on the studies branch and has no local changes;
+#   3. syncs it with origin (fast-forward only), so the campaign runs the latest pushed code and
 #      appends to the latest pushed CSVs;
-#   3. runs the given runner, which writes its results into the clone (loadGenTests/.../results);
-#   4. commits the new results and pushes the branch.
+#   4. optionally deploys the configuration (-d) and resolves the Istio gateway (-G);
+#   5. runs the given runner, which writes its results into the clone (loadGenTests/.../results);
+#   6. commits the new results and pushes the branch.
 #
-# Run on lg, e.g. in tmux:
+# Run on lg, e.g. in tmux, or queue it from the scheduler page (loadGenTests/lg_ui):
 #   cd /root/thesis
-#   loadGenTests/common/lg_campaign.sh -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m linkerd -t on
+#   loadGenTests/common/lg_campaign.sh -d linkerd -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m linkerd -t on
+#   loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseB/run_phaseB.sh -c istio_mtls -m istio -t on
 #   loadGenTests/common/lg_campaign.sh -- loadGenTests/phaseB/run_phaseB.sh -c baseline -m baseline -t na
 #
 # Options (before --):
 #   -b BRANCH   branch the clone must be on       (default: studies_lg_based)
 #   -n          commit, but do not push
+#   -d TARGET   deploy first: make -C deployments TARGET (after the sync, under the lock); a failed
+#               deploy stops here, before the runner
+#   -G          append -u http://<node>:<port> to the runner arguments, with the Istio ingress
+#               gateway's NodePort (it changes on every Istio install); after -d if both are given
+#
+# The lock ($LG_CAMPAIGN_LOCK, default /run/lock/thesis-campaign.lock) is held for the whole run,
+# deploy included; a second lg_campaign.sh refuses to start while it is held. A bare `make <config>`
+# typed by hand does not take it - do not deploy by hand while a campaign is running.
 #
 # Checked before the campaign starts, so a 2 h run never ends in a failed push:
 #   - git user.name / user.email are set on lg (git config --global ...);
@@ -26,26 +37,44 @@
 set -euo pipefail
 
 LG_IP="10.29.20.130"
+NODE_IP="10.29.20.113"            # the runners' default ingress node
+CTX="projekt-badawchy-cluster"
+LOCK="${LG_CAMPAIGN_LOCK:-/run/lock/thesis-campaign.lock}"
+DEPLOY_TARGETS="baseline linkerd linkerd-nomtls istio-mtls istio-nomtls istio consul"
+USAGE="usage: $0 [-b BRANCH] [-n] [-d TARGET] [-G] -- <runner> [runner args]"
 
 die() { printf 'ERROR: %b\n' "$*" >&2; exit 1; }
 
 main() {
-  local branch="studies_lg_based" push=1 opt
-  while getopts "b:n" opt; do
+  local branch="studies_lg_based" push=1 deploy="" gateway=0 opt
+  while getopts "b:nd:G" opt; do
     case "$opt" in
       b) branch="$OPTARG" ;;
       n) push=0 ;;
-      *) echo "usage: $0 [-b BRANCH] [-n] -- <runner> [runner args]"; exit 2 ;;
+      d) deploy="$OPTARG" ;;
+      G) gateway=1 ;;
+      *) echo "$USAGE"; exit 2 ;;
     esac
   done
   shift $((OPTIND - 1))
   [ "${1:-}" != "--" ] || shift
-  [ $# -ge 1 ] || die "no runner given (usage: $0 [-b BRANCH] [-n] -- <runner> [runner args])"
+  [ $# -ge 1 ] || die "no runner given ($USAGE)"
+  if [ -n "$deploy" ]; then
+    case " $DEPLOY_TARGETS " in
+      *" $deploy "*) ;;
+      *) die "-d must be one of: $DEPLOY_TARGETS (got '$deploy')" ;;
+    esac
+  fi
 
   case " $(hostname -I 2>/dev/null) " in
     *" $LG_IP "*) ;;
     *) die "run this on lg ($LG_IP); on a workstation start the runner directly" ;;
   esac
+
+  # fd 9 holds the lock until this script exits; every child below gets 9>&- so that nothing
+  # left running in the background (a port-forward, say) keeps the lock after the campaign.
+  exec 9>>"$LOCK" || die "cannot open the campaign lock $LOCK"
+  flock -n 9 || die "another campaign is running on lg (lock $LOCK is held)"
 
   # The runner path may be relative to the current directory or to the repository root.
   local runner="$1"; shift
@@ -78,10 +107,28 @@ main() {
     die "local $branch has diverged from origin/$branch; resolve it by hand"
 
   if [ "$push" = 1 ]; then
-    git push --dry-run -q origin "$branch" >/dev/null 2>&1 ||
+    git push --dry-run -q origin "$branch" 9>&- >/dev/null 2>&1 ||
       die "lg cannot push to origin ($(git remote get-url origin)); give it write access or use -n"
   fi
   echo "[git] on $branch at $(git rev-parse --short HEAD)"
+
+  # --- deploy ---
+  local deployed=""
+  if [ -n "$deploy" ]; then
+    echo "[deploy] make -C deployments $deploy ($(date -u +%H:%M:%SZ)) ..."
+    make -C "$repo/deployments" "$deploy" 9>&- ||
+      die "deployment failed (make $deploy); the campaign was not started"
+    deployed="Deployed with \`make $deploy\` first. "
+    echo "[deploy] done ($(date -u +%H:%M:%SZ))"
+  fi
+  if [ "$gateway" = 1 ]; then
+    local gwport
+    gwport="$(kubectl --context "$CTX" -n istio-system get svc istio-ingressgateway \
+      -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 9>&- || true)"
+    [ -n "$gwport" ] || die "-G: cannot read the Istio ingress gateway NodePort (is Istio deployed?)"
+    set -- "$@" -u "http://$NODE_IP:$gwport"
+    echo "[deploy] Istio gateway: http://$NODE_IP:$gwport"
+  fi
 
   # --- campaign ---
   # RESULTS_ROOT is set explicitly so a value exported in the shell cannot send the results
@@ -90,7 +137,7 @@ main() {
   start="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "[campaign] ${runner#"$repo"/} $*"
   set +e
-  RESULTS_ROOT="$repo/loadGenTests" LG_LOCAL=1 "$runner" "$@"
+  RESULTS_ROOT="$repo/loadGenTests" LG_LOCAL=1 "$runner" "$@" 9>&-
   rc=$?
   set -e
   echo "[campaign] runner exit code: $rc"
@@ -105,7 +152,7 @@ main() {
     echo "[git] no new results to commit"
   else
     git commit -q -m "studies(lg): ${runner#"$repo"/} $*" \
-      -m "Run on lg from $start to $(date -u +%Y-%m-%dT%H:%M:%SZ), runner exit code $rc."
+      -m "${deployed}Run on lg from $start to $(date -u +%Y-%m-%dT%H:%M:%SZ), runner exit code $rc."
     echo "[git] committed $(git rev-parse --short HEAD)"
   fi
 
