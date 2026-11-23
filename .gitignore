@@ -134,3 +134,6 @@ healthchecksdb
 
 loadGenTests/phaseB/assets/*.mp4
 loadGenTests/phaseB/assets/*.png
+
+# Python bytecode (lg_campaign.sh refuses to run on a clone with untracked files)
+__pycache__/
