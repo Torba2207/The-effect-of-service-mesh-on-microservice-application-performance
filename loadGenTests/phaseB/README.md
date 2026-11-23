@@ -35,7 +35,8 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy byp
 - Load generator `lg` (10.29.20.130): `k6` installed. The script + assets are synced automatically.
 - `run_phaseB.sh` and `timeseries/capture_run.sh` can also run on `lg` itself (no VPN or SSH key
   needed there), wrapped in `../common/lg_campaign.sh` so the results are committed and pushed —
-  see "Running everything on the load generator" in `../phaseA/README.md`.
+  see "Running everything on the load generator" in `../phaseA/README.md`. The easiest way is the
+  campaign scheduler on http://10.29.20.130:8080 (`../lg_ui/README.md`).
 - **AI host (10.29.20.121) up**, and the `ai-service` Service in `thesis-test` pointing at it —
   the preflight refuses to start otherwise.
 - The target config must already be **deployed** with the matching `make` target from
@@ -56,7 +57,7 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy byp
 # Istio — resolve the dynamic Envoy gateway NodePort for -u
 GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc istio-ingressgateway \
   -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
-./run_phaseB.sh -c istio_mtls   -m istio -t on  -u http://10.29.20.113:$GWPORT   # make istio + STRICT
+./run_phaseB.sh -c istio_mtls   -m istio -t on  -u http://10.29.20.113:$GWPORT   # make istio-mtls
 ./run_phaseB.sh -c istio_nomtls -m istio -t off -u http://10.29.20.113:$GWPORT   # make istio-nomtls
 ```
 **Validate first:** `-r 1 -l high` per config and confirm `fail_rate < 0.01` before the full run.
