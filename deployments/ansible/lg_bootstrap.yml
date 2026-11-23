@@ -17,6 +17,8 @@
 #   repository clone   /root/thesis   (campaigns run through loadGenTests/common/lg_campaign.sh,
 #                                      which pulls the studies branch, then commits and pushes
 #                                      the results)
+#   campaign scheduler http://10.29.20.130:8080, systemd unit lg-ui (loadGenTests/lg_ui); its
+#                      token is in /etc/lg-ui.env, generated on the first run and kept after
 
 - name: Bootstrap the load generator as a campaign host
   hosts: load_generator
@@ -39,6 +41,9 @@
     repo_url: https://github.com/Torba2207/The-effect-of-service-mesh-on-microservice-application-performance.git
     repo_dir: /root/thesis
     lg_ssh_key: /root/.ssh/id_ed25519_thesis
+    lg_ui_env: /etc/lg-ui.env
+    lg_ui_jobs_dir: /root/lg_ui_jobs   # outside the clone: lg_campaign.sh needs a clean tree
+    lg_ui_port: 8080
   tasks:
     # The Ubuntu installer gives the root LV only half of the volume group (11 of 22 GB).
     - name: Extend the root volume to the whole disk
@@ -198,6 +203,58 @@
         dest: "{{ repo_dir }}/.env"
         mode: "0600"
 
+    # --- campaign scheduler (loadGenTests/lg_ui): standard library only, nothing to install ---
+    - name: Create the scheduler's settings with a random token (kept on later runs)
+      ansible.builtin.shell: |
+        umask 077
+        printf 'LG_UI_TOKEN=%s\nLG_JOBS_DIR=%s\nLG_UI_PORT=%s\n' \
+          "$(openssl rand -hex 16)" {{ lg_ui_jobs_dir }} {{ lg_ui_port }} > {{ lg_ui_env }}
+      args:
+        creates: "{{ lg_ui_env }}"
+
+    # KillMode=process: a restart or stop ends server.py only. The tmux server it started - with
+    # the worker and every running campaign in it - stays, so restarting the unit never kills a
+    # campaign. (The worker keeps its old code until its tmux session lg-worker is killed; the
+    # server starts a new one within seconds.)
+    - name: Install the scheduler's systemd unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/lg-ui.service
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Thesis campaign scheduler (loadGenTests/lg_ui)
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          User=root
+          WorkingDirectory={{ repo_dir }}
+          EnvironmentFile={{ lg_ui_env }}
+          Environment=PYTHONUNBUFFERED=1
+          ExecStart=/usr/bin/python3 {{ repo_dir }}/loadGenTests/lg_ui/server.py
+          Restart=on-failure
+          RestartSec=5
+          KillMode=process
+
+          [Install]
+          WantedBy=multi-user.target
+      register: lg_ui_unit
+
+    # The clone may be on a branch without the scheduler yet; then the unit is installed but not
+    # started, and the next run of this playbook starts it.
+    - name: Check that the clone has the scheduler
+      ansible.builtin.stat:
+        path: "{{ repo_dir }}/loadGenTests/lg_ui/server.py"
+      register: lg_ui_code
+
+    - name: Enable and start the scheduler
+      ansible.builtin.systemd:
+        name: lg-ui
+        enabled: true
+        state: "{{ 'restarted' if lg_ui_unit.changed else 'started' }}"
+        daemon_reload: true
+      when: lg_ui_code.stat.exists
+
     # Shows what is actually installed: after a version change above, compare it here.
     - name: Report installed versions
       ansible.builtin.shell: |
@@ -209,6 +266,7 @@
         ansible-galaxy collection list 2>/dev/null | grep -E 'kubernetes.core|community.general'
         k6 version 2>&1 | head -1
         kubectl --context {{ kube_context }} get nodes --no-headers | wc -l | sed 's/^/cluster nodes visible: /'
+        echo "scheduler lg-ui: $(systemctl is-active lg-ui 2>/dev/null || true), port {{ lg_ui_port }}, token in {{ lg_ui_env }}"
         df -h / | tail -1
       register: versions
       changed_when: false

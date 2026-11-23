@@ -4,7 +4,7 @@
 # from Prometheus (via port-forward), and appends rows to results/master.csv.
 #
 # The active configuration must already be deployed before calling this (deployments/:
-# make baseline | linkerd | linkerd-nomtls | istio-nomtls, or make istio + the STRICT policy).
+# make baseline | linkerd | linkerd-nomtls | istio-mtls | istio-nomtls).
 # One invocation = 3 levels x N reps. Every run drives all nine scenarios, AI included.
 #
 # Usage:
