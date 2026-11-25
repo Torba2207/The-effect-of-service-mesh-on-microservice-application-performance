@@ -1,0 +1,27 @@
+apiVersion: v1
+items:
+- apiVersion: crd.projectcalico.org/v1
+  kind: FelixConfiguration
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":"2026-04-27T18:31:35Z"}'
+    creationTimestamp: "2026-04-27T18:31:35Z"
+    generation: 1
+    name: default
+    resourceVersion: "974"
+    uid: aa4f31ef-dbc5-48da-b744-8297df7a57c4
+  spec:
+    bpfConnectTimeLoadBalancing: TCP
+    bpfEnabled: false
+    bpfExternalServiceMode: Tunnel
+    bpfHostNetworkedNATWithoutCTLB: Enabled
+    bpfLogLevel: ""
+    floatingIPs: Disabled
+    ipipEnabled: false
+    logSeverityScreen: Info
+    reportingInterval: 0s
+    vxlanEnabled: true
+    wireguardEnabled: false
+kind: List
+metadata:
+  resourceVersion: ""
