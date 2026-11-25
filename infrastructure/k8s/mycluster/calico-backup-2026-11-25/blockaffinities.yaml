@@ -1,0 +1,101 @@
+apiVersion: v1
+items:
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2
+    name: node1-10-233-102-128-26
+    resourceVersion: "1241"
+    uid: ebb48482-670b-4ef3-8361-1ef9a82554af
+  spec:
+    cidr: 10.233.102.128/26
+    deleted: "false"
+    node: node1
+    state: confirmed
+    type: host
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:03Z"
+    generation: 2
+    name: node2-10-233-75-64-26
+    resourceVersion: "1284"
+    uid: 038cbd06-8829-4fba-a0dc-5cd5dbf5af1a
+  spec:
+    cidr: 10.233.75.64/26
+    deleted: "false"
+    node: node2
+    state: confirmed
+    type: host
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2
+    name: node3-10-233-71-0-26
+    resourceVersion: "1248"
+    uid: 40f24024-b9f4-44ab-8d36-c7855c5f9689
+  spec:
+    cidr: 10.233.71.0/26
+    deleted: "false"
+    node: node3
+    state: confirmed
+    type: host
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:04Z"
+    generation: 2
+    name: node4-10-233-74-64-26
+    resourceVersion: "1305"
+    uid: 5234e123-0b6d-4cbe-a5a6-57f0673230e9
+  spec:
+    cidr: 10.233.74.64/26
+    deleted: "false"
+    node: node4
+    state: confirmed
+    type: host
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2
+    name: node5-10-233-97-128-26
+    resourceVersion: "1235"
+    uid: 5b72e48e-0d02-4c17-8d8b-67f96eb06cb7
+  spec:
+    cidr: 10.233.97.128/26
+    deleted: "false"
+    node: node5
+    state: confirmed
+    type: host
+- apiVersion: crd.projectcalico.org/v1
+  kind: BlockAffinity
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:03Z"
+    generation: 2
+    name: node6-10-233-75-0-26
+    resourceVersion: "1266"
+    uid: 4384772a-aa3a-4c50-b398-d467c63275a9
+  spec:
+    cidr: 10.233.75.0/26
+    deleted: "false"
+    node: node6
+    state: confirmed
+    type: host
+kind: List
+metadata:
+  resourceVersion: ""
