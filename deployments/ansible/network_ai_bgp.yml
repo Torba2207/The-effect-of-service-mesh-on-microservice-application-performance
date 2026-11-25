@@ -1,0 +1,162 @@
+---
+# Flat network: makes the bare-metal AI host a BGP neighbour of the Calico cluster, so it
+# learns a route to every pod block (and, with calico_advertise_cluster_ips in the Kubespray
+# inventory, to the Service CIDR / cluster DNS) without static routes.
+#
+# Topology (cluster migrated to Calico BGP without encapsulation on 2026-11-25):
+#   - cluster: AS 64512, BIRD node-to-node full mesh (must stay on: without VXLAN it is what
+#     programs the inter-node pod routes);
+#   - AI host: FRR, AS 64513, eBGP with every node. It ACCEPTS only the pod and Service CIDRs
+#     and ADVERTISES NOTHING, so it can never attract cluster traffic or become a transit hop;
+#   - Calico global BGPPeer with keepOriginalNextHop: each block is installed on the AI host
+#     via its owning node, so AI host -> pod is one hop and the reply path is symmetric.
+#
+# Optional (-e ai_no_nat=true): a disabled Calico IPPool for the AI host's /32. Calico never
+# NATs traffic to a destination inside any IP pool (enabled or not), so pods then reach the AI
+# host with their own IPs. Prerequisite: the BGP routes above, otherwise the replies have no
+# way back. Consequence: if FRR on the AI host is down, pod -> AI calls fail.
+#
+# Usage (from deployments/):  make ai-bgp            # FRR + BGPPeer
+#                              make ai-bgp-nonat      # + no NAT for pod -> AI
+# Rollback: calicoctl delete bgppeer <bgp_peer_name>; calicoctl delete ippool <nonat_pool_name>;
+#           systemctl disable --now frr on the AI host.
+
+- name: Read cluster node addresses
+  hosts: control_plane[0]
+  gather_facts: false
+  tasks:
+    - name: Get InternalIP of every node
+      command: >-
+        kubectl --kubeconfig /etc/kubernetes/admin.conf get nodes
+        -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}'
+      register: _node_ips
+      changed_when: false
+
+    - name: Publish node list
+      set_fact:
+        calico_node_ips: "{{ _node_ips.stdout_lines | select | list }}"
+
+- name: FRR on the AI host
+  hosts: ai_bgp_host
+  become: true
+  gather_facts: false
+  vars:
+    cluster_as: 64512
+    ai_as: 64513
+    accept_prefixes:
+      - 10.233.64.0/18   # pod IP pool
+      - 10.233.0.0/18    # Service CIDR (advertised only with calico_advertise_cluster_ips)
+    node_ips: "{{ hostvars[groups['control_plane'][0]].calico_node_ips }}"
+  handlers:
+    - name: Restart frr
+      systemd:
+        name: frr
+        state: restarted
+  tasks:
+    - name: Install FRR
+      apt:
+        name: frr
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Enable bgpd
+      lineinfile:
+        path: /etc/frr/daemons
+        regexp: '^bgpd='
+        line: 'bgpd=yes'
+      notify: Restart frr
+
+    - name: Write frr.conf
+      copy:
+        dest: /etc/frr/frr.conf
+        owner: frr
+        group: frr
+        mode: '0640'
+        content: |
+          ! Managed by deployments/ansible/network_ai_bgp.yml - local edits are overwritten.
+          frr defaults traditional
+          hostname {{ inventory_hostname }}
+          log syslog informational
+          service integrated-vtysh-config
+          !
+          {% for p in accept_prefixes %}
+          ip prefix-list K8S seq {{ (loop.index * 10) }} permit {{ p }} le 32
+          {% endfor %}
+          !
+          route-map K8S-IN permit 10
+           match ip address prefix-list K8S
+          exit
+          route-map K8S-IN deny 100
+          exit
+          route-map NOTHING-OUT deny 10
+          exit
+          !
+          router bgp {{ ai_as }}
+           bgp router-id {{ ansible_host }}
+           bgp log-neighbor-changes
+           neighbor CALICO peer-group
+           neighbor CALICO remote-as {{ cluster_as }}
+          {% for ip in node_ips %}
+           neighbor {{ ip }} peer-group CALICO
+          {% endfor %}
+           !
+           address-family ipv4 unicast
+            maximum-paths {{ [node_ips | length, 1] | max }}
+            neighbor CALICO activate
+            neighbor CALICO soft-reconfiguration inbound
+            neighbor CALICO route-map K8S-IN in
+            neighbor CALICO route-map NOTHING-OUT out
+           exit-address-family
+          exit
+      notify: Restart frr
+
+    - name: Start FRR
+      systemd:
+        name: frr
+        enabled: true
+        state: started
+
+- name: Calico side of the peering
+  hosts: control_plane[0]
+  gather_facts: false
+  vars:
+    ai_as: 64513
+    ai_ip: "{{ hostvars[groups['ai_bgp_host'][0]].ansible_host }}"
+    bgp_peer_name: "{{ groups['ai_bgp_host'][0] | replace('_', '-') }}"
+    nonat_pool_name: "no-nat-{{ groups['ai_bgp_host'][0] | replace('_', '-') }}"
+    ai_no_nat: false
+  tasks:
+    - name: Apply global BGPPeer for the AI host
+      shell: |
+        calicoctl.sh apply -f - <<'EOF'
+        apiVersion: projectcalico.org/v3
+        kind: BGPPeer
+        metadata:
+          name: {{ bgp_peer_name }}
+        spec:
+          peerIP: {{ ai_ip }}
+          asNumber: {{ ai_as }}
+          keepOriginalNextHop: true
+        EOF
+      changed_when: true
+
+    - name: Apply disabled IPPool so pod -> AI traffic is not NATed
+      when: ai_no_nat | bool
+      shell: |
+        calicoctl.sh apply -f - <<'EOF'
+        apiVersion: projectcalico.org/v3
+        kind: IPPool
+        metadata:
+          name: {{ nonat_pool_name }}
+        spec:
+          cidr: {{ ai_ip }}/32
+          blockSize: 32
+          disabled: true
+          disableBGPExport: true
+          natOutgoing: false
+          ipipMode: Never
+          vxlanMode: Never
+          nodeSelector: "!all()"
+        EOF
+      changed_when: true
