@@ -4,7 +4,7 @@ KUBECTX   = projekt-badawchy-cluster
 TEST_NS   = thesis-test
 ISTIO_PA  = k8s/istio
 
-.PHONY: clean teardown baseline istio istio-mtls istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap
+.PHONY: clean teardown baseline istio istio-mtls istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap ai-bgp ai-bgp-nonat
 
 # Deployment steps must run in order (teardown before clean before install) even under `make -j`
 # -- some shells alias make to `make -j<N>`, which otherwise runs teardown and clean at once.
@@ -84,3 +84,14 @@ consul: set-context teardown clean
 lg-bootstrap:
 	@echo "Bootstrapping the load generator..."
 	ansible-playbook ansible/lg_bootstrap.yml -i $(INVENTORY)
+
+# Flat network: the AI host becomes a BGP neighbour of Calico (FRR on the host + a global
+# BGPPeer), so it has routes to every pod block. Independent of the mesh phase; re-run after
+# adding or replacing nodes. ai-bgp-nonat additionally stops NATing pod -> AI traffic.
+ai-bgp:
+	@echo "Peering the AI host with Calico over BGP..."
+	ansible-playbook ansible/network_ai_bgp.yml -i $(INVENTORY) -l 'control_plane,ai_bgp_host'
+
+ai-bgp-nonat:
+	@echo "Peering the AI host with Calico over BGP, no NAT for pod -> AI..."
+	ansible-playbook ansible/network_ai_bgp.yml -i $(INVENTORY) -l 'control_plane,ai_bgp_host' -e ai_no_nat=true
