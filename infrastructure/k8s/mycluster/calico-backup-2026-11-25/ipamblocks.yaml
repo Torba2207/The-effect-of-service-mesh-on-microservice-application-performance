@@ -1,0 +1,1261 @@
+apiVersion: v1
+items:
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2
+    name: 10-233-102-128-26
+    resourceVersion: "1244"
+    uid: 7258072e-56f0-4b30-b856-1caadb1761e3
+  spec:
+    affinity: host:node1
+    allocations:
+    - 0
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node1
+      secondary:
+        node: node1
+        type: vxlanTunnelAddress
+    cidr: 10.233.102.128/26
+    deleted: false
+    sequenceNumber: 1777314722594418177
+    sequenceNumberForAllocation:
+      "0": 1777314722594418176
+    strictAffinity: false
+    unallocated:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2
+    name: 10-233-71-0-26
+    resourceVersion: "1250"
+    uid: 9a3ce4ba-d430-4b92-bb29-5d41c1cc511e
+  spec:
+    affinity: host:node3
+    allocations:
+    - 0
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node3
+      secondary:
+        node: node3
+        type: vxlanTunnelAddress
+    cidr: 10.233.71.0/26
+    deleted: false
+    sequenceNumber: 1777314722715269504
+    sequenceNumberForAllocation:
+      "0": 1777314722715269503
+    strictAffinity: false
+    unallocated:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:04Z"
+    generation: 1858
+    name: 10-233-74-64-26
+    resourceVersion: "57488442"
+    uid: 90e6e15f-9963-47aa-a7ae-3eb5b3961601
+  spec:
+    affinity: host:node4
+    allocations:
+    - 0
+    - 1
+    - 2
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 3
+    - null
+    - 10
+    - null
+    - 9
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 7
+    - null
+    - null
+    - null
+    - 5
+    - null
+    - null
+    - null
+    - 6
+    - 8
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 4
+    - null
+    - null
+    - null
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node4
+      secondary:
+        node: node4
+        type: vxlanTunnelAddress
+    - handle_id: k8s-pod-network.117d4fd8b00567a112633e5171069bb161f5bdda009adc5c8c260d10529ea4bb
+      secondary:
+        namespace: kube-system
+        node: node4
+        pod: calico-kube-controllers-7b7cd6dc87-xcw75
+        timestamp: 2026-04-27 18:32:19.422856836 +0000 UTC
+    - handle_id: k8s-pod-network.348e311987cfa850969114151a4b2cc5af9496a27714cb83cbf79be365cf1b8c
+      secondary:
+        namespace: kube-system
+        node: node4
+        pod: coredns-64b5cc5cbc-4lt7k
+        timestamp: 2026-04-27 18:32:23.998769758 +0000 UTC
+    - handle_id: k8s-pod-network.76c548c58d5bc5e602b04560ffe1d2a00fc8237bb6e7b4b1e1cbba425357c57b
+      secondary:
+        namespace: kube-system
+        node: node4
+        pod: metrics-server-5b57c547cb-khhjp
+        timestamp: 2026-05-04 12:15:02.197836925 +0000 UTC
+    - handle_id: k8s-pod-network.f7cf080690680c40eb673cb07317787ea92ee9a88cbe10586e4f14fb4e34df7f
+      secondary:
+        namespace: monitoring
+        node: node4
+        pod: prometheus-cluster-monitor-kube-prome-prometheus-0
+        timestamp: 2026-06-02 14:57:05.063218512 +0000 UTC
+    - handle_id: k8s-pod-network.dee87cddfe243d914f8379d4ae7c501193751b4f99d151b28f6184365da5eb46
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: permutation-service-9c5bf74f5-hcx8g
+        timestamp: 2026-11-23 13:10:12.240251787 +0000 UTC
+    - handle_id: k8s-pod-network.040c7d550bf0cee84bb94eeef8529fa0b8578a521da35b663ff89d34eabc7c29
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: integration-service-64586c8df6-cg7wn
+        timestamp: 2026-11-23 13:10:14.560515184 +0000 UTC
+    - handle_id: k8s-pod-network.d2cbec24257de81b25d93f0e605c5f53bb73cbaed48252c6b672bbfba6fa9a10
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: fibonacci-service-d769468dd-2gncp
+        timestamp: 2026-11-23 13:10:16.283725216 +0000 UTC
+    - handle_id: k8s-pod-network.0554982f9b444dbf856f6d860a5cd151704ae499eafb11afe341b3c141496184
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: differential-equations-service-545cbf8dfb-45724
+        timestamp: 2026-11-23 13:10:18.061907814 +0000 UTC
+    - handle_id: k8s-pod-network.3c277963e405261a6925e9fbc624893db01dfbf2fb7870cfba8cdd4c030b5890
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: digital-filters-service-54984c668c-5sqgp
+        timestamp: 2026-11-23 13:10:27.267332916 +0000 UTC
+    - handle_id: k8s-pod-network.c80b9ad49d01da5eb64ed61d7e274b6cc028c6f0667cf353182c89ced6051bfe
+      secondary:
+        namespace: thesis-test
+        node: node4
+        pod: video-service-555bcb77cf-2kgfn
+        timestamp: 2026-11-23 13:10:27.404922519 +0000 UTC
+    cidr: 10.233.74.64/26
+    deleted: false
+    sequenceNumber: 1777314724353285101
+    sequenceNumberForAllocation:
+      "0": 1777314724353283244
+      "1": 1777314724353283245
+      "2": 1777314724353283246
+      "3": 1777314724353285088
+      "4": 1777314724353285056
+      "5": 1777314724353285027
+      "6": 1777314724353285013
+      "7": 1777314724353285087
+      "8": 1777314724353285014
+      "9": 1777314724353285053
+      "10": 1777314724353285042
+      "11": 1777314724353285023
+      "12": 1777314724353285067
+      "13": 1777314724353285068
+      "14": 1777314724353285044
+      "15": 1777314724353285059
+      "16": 1777314724353283619
+      "17": 1777314724353285054
+      "18": 1777314724353285100
+      "19": 1777314724353285029
+      "20": 1777314724353285099
+      "21": 1777314724353285081
+      "22": 1777314724353285085
+      "23": 1777314724353285058
+      "24": 1777314724353285043
+      "25": 1777314724353285002
+      "26": 1777314724353285030
+      "27": 1777314724353285070
+      "28": 1777314724353284997
+      "29": 1777314724353285083
+      "30": 1777314724353285028
+      "31": 1777314724353285025
+      "32": 1777314724353285001
+      "33": 1777314724353285072
+      "34": 1777314724353285016
+      "35": 1777314724353285041
+      "36": 1777314724353285069
+      "37": 1777314724353284988
+      "38": 1777314724353285097
+      "39": 1777314724353284984
+      "40": 1777314724353285086
+      "41": 1777314724353284983
+      "42": 1777314724353285095
+      "43": 1777314724353285057
+      "44": 1777314724353285000
+      "45": 1777314724353285055
+      "46": 1777314724353285096
+      "47": 1777314724353285098
+      "48": 1777314724353284998
+      "49": 1777314724353284986
+      "50": 1777314724353285015
+      "51": 1777314724353285003
+      "52": 1777314724353284999
+      "53": 1777314724353285026
+      "54": 1777314724353285045
+      "55": 1777314724353285011
+      "56": 1777314724353285040
+      "57": 1777314724353285031
+      "58": 1777314724353285071
+      "59": 1777314724353283720
+      "60": 1777314724353285073
+      "61": 1777314724353285084
+      "62": 1777314724353285012
+      "63": 1777314724353285039
+    strictAffinity: false
+    unallocated:
+    - 49
+    - 39
+    - 37
+    - 41
+    - 51
+    - 48
+    - 52
+    - 44
+    - 25
+    - 32
+    - 28
+    - 8
+    - 50
+    - 6
+    - 62
+    - 55
+    - 34
+    - 11
+    - 19
+    - 53
+    - 57
+    - 30
+    - 5
+    - 26
+    - 31
+    - 54
+    - 10
+    - 24
+    - 63
+    - 35
+    - 56
+    - 14
+    - 15
+    - 4
+    - 23
+    - 45
+    - 17
+    - 9
+    - 43
+    - 60
+    - 27
+    - 33
+    - 36
+    - 13
+    - 12
+    - 58
+    - 21
+    - 7
+    - 61
+    - 29
+    - 3
+    - 22
+    - 40
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:03Z"
+    generation: 2165
+    name: 10-233-75-0-26
+    resourceVersion: "57488451"
+    uid: 52f1e7ce-c019-4053-aeb4-533630e53ae2
+  spec:
+    affinity: host:node6
+    allocations:
+    - 0
+    - 1
+    - null
+    - null
+    - null
+    - 9
+    - 10
+    - null
+    - null
+    - null
+    - 8
+    - 2
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 7
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 11
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 6
+    - null
+    - 5
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 4
+    - null
+    - 3
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node6
+      secondary:
+        node: node6
+        type: vxlanTunnelAddress
+    - handle_id: k8s-pod-network.cad89e074de832dfde28df1d923a230293f9e3321d36157ff5e59a3a4a6e6d7b
+      secondary:
+        namespace: kube-system
+        node: node6
+        pod: coredns-64b5cc5cbc-kfrkm
+        timestamp: 2026-04-27 18:32:27.574542255 +0000 UTC
+    - handle_id: k8s-pod-network.e53f80620fc6c1f278046810added10e16175394ac765aeff437d65812acce6a
+      secondary:
+        namespace: monitoring
+        node: node6
+        pod: cluster-monitor-kube-prome-operator-5495dd699-5w79w
+        timestamp: 2026-06-02 14:56:54.503610766 +0000 UTC
+    - handle_id: k8s-pod-network.55ca5b0c80672414d2b49f584769bef9d47f22e6e46eb42d080a31daf70017b0
+      secondary:
+        namespace: default
+        node: node6
+        pod: net-test
+        timestamp: 2026-06-06 07:26:40.252086647 +0000 UTC
+    - handle_id: k8s-pod-network.813da8f2314e4c3ad606285f7b6a2b7caa4c37a3dc113eaee3e43db137dbbb2e
+      secondary:
+        namespace: local-path-storage
+        node: node6
+        pod: local-path-provisioner-866d54d4c8-g26mf
+        timestamp: 2026-10-16 10:03:11.472974828 +0000 UTC
+    - handle_id: k8s-pod-network.4e75eaeac8f60fdbbbe610411274e185e99d7cd5c3910cc4ed6f4b137bfedf3f
+      secondary:
+        namespace: istio-system
+        node: node6
+        pod: istiod-6d584f88d4-4vbvg
+        timestamp: 2026-11-23 13:09:46.312643759 +0000 UTC
+    - handle_id: k8s-pod-network.402a5330da16097bacbb0625225141a094c59f7934d17f7cf459c4dad179f5b0
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: permutation-service-9c5bf74f5-ghdl8
+        timestamp: 2026-11-23 13:10:12.235789418 +0000 UTC
+    - handle_id: k8s-pod-network.3909f687d413cd9fe7552b9d6400a6174506bcbdda81eb7a8fd90bb93eda8efe
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: integration-service-64586c8df6-vhvjv
+        timestamp: 2026-11-23 13:10:14.571510072 +0000 UTC
+    - handle_id: k8s-pod-network.6d13e1065b34d00875be8e1db447c655a02ee2bcccef0766e781b2d77c17cd1e
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: fibonacci-service-d769468dd-xkbst
+        timestamp: 2026-11-23 13:10:16.289525668 +0000 UTC
+    - handle_id: k8s-pod-network.7ff57fbc81bd2c736e7cde2d554115c5f233297d00559e0b7d5001d948f1e18e
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: differential-equations-service-545cbf8dfb-psgq5
+        timestamp: 2026-11-23 13:10:25.132181621 +0000 UTC
+    - handle_id: k8s-pod-network.ef354bd64983348636829f64cbbe1ace692c87ba99cc8a190ba09bb76d1df495
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: video-service-555bcb77cf-zcmj7
+        timestamp: 2026-11-23 13:10:27.54583939 +0000 UTC
+    - handle_id: k8s-pod-network.f21fea80d0e580596d3e53e7624c79f75917a59d3963e912ea27772f6be47fe2
+      secondary:
+        namespace: thesis-test
+        node: node6
+        pod: digital-filters-service-54984c668c-gb2dc
+        timestamp: 2026-11-23 13:10:27.548227775 +0000 UTC
+    cidr: 10.233.75.0/26
+    deleted: false
+    sequenceNumber: 1777314723169308473
+    sequenceNumberForAllocation:
+      "0": 1777314723169306309
+      "1": 1777314723169306310
+      "2": 1777314723169308357
+      "3": 1777314723169308398
+      "4": 1777314723169308451
+      "5": 1777314723169308470
+      "6": 1777314723169308471
+      "7": 1777314723169308377
+      "8": 1777314723169308446
+      "9": 1777314723169308371
+      "10": 1777314723169308469
+      "11": 1777314723169306825
+      "12": 1777314723169308416
+      "13": 1777314723169308397
+      "14": 1777314723169308359
+      "15": 1777314723169308374
+      "16": 1777314723169308379
+      "17": 1777314723169308419
+      "18": 1777314723169308468
+      "19": 1777314723169308381
+      "20": 1777314723169308435
+      "21": 1777314723169308415
+      "22": 1777314723169308433
+      "23": 1777314723169308383
+      "24": 1777314723169308363
+      "25": 1777314723169308358
+      "26": 1777314723169308382
+      "27": 1777314723169308438
+      "28": 1777314723169308418
+      "29": 1777314723169308472
+      "30": 1777314723169308399
+      "31": 1777314723169308439
+      "32": 1777314723169308437
+      "33": 1777314723169308393
+      "34": 1777314723169308395
+      "35": 1777314723169308455
+      "36": 1777314723169308414
+      "37": 1777314723169308450
+      "38": 1777314723169308457
+      "39": 1777314723169308417
+      "40": 1777314723169308432
+      "41": 1777314723169308413
+      "42": 1777314723169308412
+      "43": 1777314723169308467
+      "44": 1777314723169308434
+      "45": 1777314723169308466
+      "46": 1777314723169308380
+      "47": 1777314723169308400
+      "48": 1777314723169308375
+      "49": 1777314723169308372
+      "50": 1777314723169308454
+      "51": 1777314723169308453
+      "52": 1777314723169308458
+      "53": 1777314723169308360
+      "54": 1777314723169308456
+      "55": 1777314723169308409
+      "56": 1777314723169308378
+      "57": 1777314723169307291
+      "58": 1777314723169308394
+      "59": 1777314723169308410
+      "60": 1777314723169308430
+      "61": 1777314723169308426
+      "62": 1777314723169308396
+      "63": 1777314723169308436
+    strictAffinity: false
+    unallocated:
+    - 14
+    - 53
+    - 25
+    - 24
+    - 2
+    - 9
+    - 49
+    - 23
+    - 26
+    - 46
+    - 7
+    - 19
+    - 56
+    - 16
+    - 48
+    - 15
+    - 47
+    - 13
+    - 3
+    - 62
+    - 58
+    - 34
+    - 30
+    - 33
+    - 59
+    - 39
+    - 17
+    - 12
+    - 36
+    - 21
+    - 28
+    - 61
+    - 42
+    - 41
+    - 60
+    - 32
+    - 31
+    - 20
+    - 63
+    - 44
+    - 27
+    - 8
+    - 40
+    - 22
+    - 37
+    - 35
+    - 50
+    - 38
+    - 51
+    - 54
+    - 52
+    - 4
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:03Z"
+    generation: 2
+    name: 10-233-75-64-26
+    resourceVersion: "1286"
+    uid: a76b0896-a9dc-49f5-802a-2ea5f7dcedb7
+  spec:
+    affinity: host:node2
+    allocations:
+    - 0
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node2
+      secondary:
+        node: node2
+        type: vxlanTunnelAddress
+    cidr: 10.233.75.64/26
+    deleted: false
+    sequenceNumber: 1777314723611848834
+    sequenceNumberForAllocation:
+      "0": 1777314723611848833
+    strictAffinity: false
+    unallocated:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+    - 30
+    - 31
+    - 32
+    - 33
+    - 34
+    - 35
+    - 36
+    - 37
+    - 38
+    - 39
+    - 40
+    - 41
+    - 42
+    - 43
+    - 44
+    - 45
+    - 46
+    - 47
+    - 48
+    - 49
+    - 50
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+- apiVersion: crd.projectcalico.org/v1
+  kind: IPAMBlock
+  metadata:
+    annotations:
+      projectcalico.org/metadata: '{"creationTimestamp":null}'
+    creationTimestamp: "2026-04-27T18:32:02Z"
+    generation: 2048
+    name: 10-233-97-128-26
+    resourceVersion: "57488375"
+    uid: a41f9429-0a66-4567-8d46-677e64089b4a
+  spec:
+    affinity: host:node5
+    allocations:
+    - 0
+    - 1
+    - 2
+    - null
+    - 9
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 7
+    - null
+    - null
+    - null
+    - null
+    - 10
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 8
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - null
+    - 4
+    - null
+    - 5
+    - 6
+    - null
+    - 3
+    - null
+    attributes:
+    - handle_id: vxlan-tunnel-addr-node5
+      secondary:
+        node: node5
+        type: vxlanTunnelAddress
+    - handle_id: k8s-pod-network.b1ae2204983abd8897b706c1af288d45d3808bb1f3d9ef9ed32deea2247fee71
+      secondary:
+        namespace: kube-system
+        node: node5
+        pod: dns-autoscaler-5594cbb9c4-k7h55
+        timestamp: 2026-04-27 18:32:25.031893988 +0000 UTC
+    - handle_id: k8s-pod-network.579cc5ac315368ea270efcfabe4673d8c70d6715701f6319b7e2ecdb85138020
+      secondary:
+        namespace: monitoring
+        node: node5
+        pod: cluster-monitor-kube-state-metrics-66667467dd-jjllr
+        timestamp: 2026-06-02 14:56:54.482216822 +0000 UTC
+    - handle_id: k8s-pod-network.19329176bb83400b541ffd64d420a2f5f1fced8fa1db00756e081cc99bd94e64
+      secondary:
+        namespace: monitoring
+        node: node5
+        pod: cluster-monitor-grafana-d654ffd67-shb7f
+        timestamp: 2026-06-02 14:56:54.499366039 +0000 UTC
+    - handle_id: k8s-pod-network.a06c1ee10f363cb65b3b5ce9d09ca6d1bdc35b9b0c4dad91d731816b8c52a150
+      secondary:
+        namespace: istio-system
+        node: node5
+        pod: istio-ingressgateway-85c8f4b645-tpt6m
+        timestamp: 2026-11-23 13:09:58.40339996 +0000 UTC
+    - handle_id: k8s-pod-network.dc5de209b5247ad60e1017fef87a6c9bb0130a0eb632fe9ba9a96fc29cb6c8ae
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: permutation-service-9c5bf74f5-vr9qd
+        timestamp: 2026-11-23 13:10:12.217397722 +0000 UTC
+    - handle_id: k8s-pod-network.9bbc0055b7347606b42e6883c8728593bb4bc8942c9243526620e123828b0165
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: integration-service-64586c8df6-g684j
+        timestamp: 2026-11-23 13:10:14.53934456 +0000 UTC
+    - handle_id: k8s-pod-network.6ea88f1d36fc5e11e2c0b1de2b0b459a7a65d8c23c8ae121b5eb23f53c7a9478
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: fibonacci-service-d769468dd-t9x22
+        timestamp: 2026-11-23 13:10:16.271569403 +0000 UTC
+    - handle_id: k8s-pod-network.f51c9532090551d675d2ba6955831ea3ffcf8989cb3e349167f10e87da101ed1
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: differential-equations-service-545cbf8dfb-zfj7m
+        timestamp: 2026-11-23 13:10:18.026639083 +0000 UTC
+    - handle_id: k8s-pod-network.5329c361270af2b315018afb01714ebd2f692de9fe37f1e8fa0dbf2270e4ebb8
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: digital-filters-service-54984c668c-k9xhn
+        timestamp: 2026-11-23 13:10:19.763872784 +0000 UTC
+    - handle_id: k8s-pod-network.071d6256b258be58a404d97516452776f7a3b82b82236c53288713961bd099bd
+      secondary:
+        namespace: thesis-test
+        node: node5
+        pod: video-service-555bcb77cf-tdk8k
+        timestamp: 2026-11-23 13:10:21.511642423 +0000 UTC
+    cidr: 10.233.97.128/26
+    deleted: false
+    sequenceNumber: 1777314722514700757
+    sequenceNumberForAllocation:
+      "0": 1777314722514698710
+      "1": 1777314722514698711
+      "2": 1777314722514699196
+      "3": 1777314722514700668
+      "4": 1777314722514700755
+      "5": 1777314722514700680
+      "6": 1777314722514700714
+      "7": 1777314722514700679
+      "8": 1777314722514700724
+      "9": 1777314722514700641
+      "10": 1777314722514700716
+      "11": 1777314722514700736
+      "12": 1777314722514700698
+      "13": 1777314722514700676
+      "14": 1777314722514700695
+      "15": 1777314722514700693
+      "16": 1777314722514700667
+      "17": 1777314722514700665
+      "18": 1777314722514700652
+      "19": 1777314722514700712
+      "20": 1777314722514700753
+      "21": 1777314722514700741
+      "22": 1777314722514700743
+      "23": 1777314722514700654
+      "24": 1777314722514700664
+      "25": 1777314722514700756
+      "26": 1777314722514700733
+      "27": 1777314722514700717
+      "28": 1777314722514700636
+      "29": 1777314722514700738
+      "30": 1777314722514700638
+      "31": 1777314722514700650
+      "32": 1777314722514700739
+      "33": 1777314722514700653
+      "34": 1777314722514700662
+      "35": 1777314722514700700
+      "36": 1777314722514700681
+      "37": 1777314722514700709
+      "38": 1777314722514700678
+      "39": 1777314722514700754
+      "40": 1777314722514700697
+      "41": 1777314722514700655
+      "42": 1777314722514700651
+      "43": 1777314722514700740
+      "44": 1777314722514700723
+      "45": 1777314722514700682
+      "46": 1777314722514700696
+      "47": 1777314722514700699
+      "48": 1777314722514700731
+      "49": 1777314722514700663
+      "50": 1777314722514700690
+      "51": 1777314722514700692
+      "52": 1777314722514700721
+      "53": 1777314722514700666
+      "54": 1777314722514700707
+      "55": 1777314722514700720
+      "56": 1777314722514700677
+      "57": 1777314722514700750
+      "58": 1777314722514700722
+      "59": 1777314722514700751
+      "60": 1777314722514700752
+      "61": 1777314722514700719
+      "62": 1777314722514699197
+      "63": 1777314722514700742
+    strictAffinity: false
+    unallocated:
+    - 30
+    - 9
+    - 28
+    - 23
+    - 33
+    - 42
+    - 18
+    - 31
+    - 41
+    - 53
+    - 17
+    - 3
+    - 49
+    - 24
+    - 16
+    - 34
+    - 36
+    - 5
+    - 7
+    - 38
+    - 56
+    - 45
+    - 13
+    - 50
+    - 15
+    - 12
+    - 35
+    - 46
+    - 14
+    - 40
+    - 47
+    - 54
+    - 37
+    - 51
+    - 19
+    - 6
+    - 27
+    - 58
+    - 8
+    - 55
+    - 52
+    - 61
+    - 44
+    - 48
+    - 26
+    - 10
+    - 11
+    - 21
+    - 63
+    - 32
+    - 29
+    - 43
+    - 22
+kind: List
+metadata:
+  resourceVersion: ""
