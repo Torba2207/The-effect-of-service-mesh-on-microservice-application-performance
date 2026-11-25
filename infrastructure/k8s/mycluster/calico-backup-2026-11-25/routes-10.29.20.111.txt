@@ -1,0 +1,35 @@
+default via 10.29.20.1 dev ens33 proto dhcp src 10.29.20.111 metric 100 
+10.29.20.0/24 dev ens33 proto kernel scope link src 10.29.20.111 metric 100 
+10.29.20.1 dev ens33 proto dhcp scope link src 10.29.20.111 metric 100 
+10.233.71.0/26 via 10.233.71.0 dev vxlan.calico onlink 
+blackhole 10.233.74.64/26 proto 80 
+10.233.74.65 dev cali7535c863677 scope link 
+10.233.74.66 dev cali78995978528 scope link 
+10.233.74.80 dev cali5c4a0d45f86 scope link 
+10.233.74.82 dev cali98efce75c32 scope link 
+10.233.74.84 dev cali73347a0f063 scope link 
+10.233.74.102 dev cali1c484d21f76 scope link 
+10.233.74.106 dev cali7f572ee9dbf scope link 
+10.233.74.110 dev cali2e8cbebaf1e scope link 
+10.233.74.111 dev cali2b9ea0bd2f2 scope link 
+10.233.74.123 dev calibd55e889134 scope link 
+10.233.75.0/26 via 10.233.75.0 dev vxlan.calico onlink 
+10.233.75.64/26 via 10.233.75.64 dev vxlan.calico onlink 
+10.233.97.128/26 via 10.233.97.128 dev vxlan.calico onlink 
+10.233.102.128/26 via 10.233.102.128 dev vxlan.calico onlink 
+---
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+ens33            UP             00:50:56:b9:a1:3e <BROADCAST,MULTICAST,UP,LOWER_UP> 
+kube-ipvs0       DOWN           4a:af:8b:29:54:c6 <BROADCAST,NOARP> 
+vxlan.calico     UNKNOWN        66:9d:a3:05:39:af <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali7535c863677@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali78995978528@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+nodelocaldns     DOWN           f6:c7:f3:90:ff:30 <BROADCAST,NOARP> 
+cali7f572ee9dbf@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali2e8cbebaf1e@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali1c484d21f76@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali2b9ea0bd2f2@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali73347a0f063@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali98efce75c32@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+cali5c4a0d45f86@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 
+calibd55e889134@if2 UP             ee:ee:ee:ee:ee:ee <BROADCAST,MULTICAST,UP,LOWER_UP> 

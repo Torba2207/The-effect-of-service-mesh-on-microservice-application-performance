@@ -1,0 +1,20 @@
+default via 10.29.20.1 dev ens33 proto dhcp src 10.29.20.103 metric 100 
+10.29.20.0/24 dev ens33 proto kernel scope link src 10.29.20.103 metric 100 
+10.29.20.1 dev ens33 proto dhcp scope link src 10.29.20.103 metric 100 
+blackhole 10.233.71.0/26 proto 80 
+10.233.74.64 dev vxlan.calico scope link 
+10.233.74.64/26 via 10.233.74.64 dev vxlan.calico onlink 
+10.233.75.0 dev vxlan.calico scope link 
+10.233.75.0/26 via 10.233.75.0 dev vxlan.calico onlink 
+10.233.75.64 dev vxlan.calico scope link 
+10.233.75.64/26 via 10.233.75.64 dev vxlan.calico onlink 
+10.233.97.128 dev vxlan.calico scope link 
+10.233.97.128/26 via 10.233.97.128 dev vxlan.calico onlink 
+10.233.102.128 dev vxlan.calico scope link 
+10.233.102.128/26 via 10.233.102.128 dev vxlan.calico onlink 
+---
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+ens33            UP             00:50:56:b9:46:77 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+kube-ipvs0       DOWN           4a:af:8b:29:54:c6 <BROADCAST,NOARP> 
+vxlan.calico     UNKNOWN        66:a4:6f:e0:c4:da <BROADCAST,MULTICAST,UP,LOWER_UP> 
+nodelocaldns     DOWN           f6:c7:f3:90:ff:30 <BROADCAST,NOARP> 

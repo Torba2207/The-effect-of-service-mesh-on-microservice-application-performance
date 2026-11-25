@@ -55,7 +55,7 @@ case "$SERVICE_ARG" in
     SERVICE_DIR="IntegrationService"
     SERVICE_SLUG="integration"
     JS_FILE="integration-test.js"
-    PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"function\":\"x\",\"lowerBound\":0,\"upperBound\":1,\"steps\":10}' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/integration/calculate\""
+    PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"function\":\"x^2\",\"lowerBound\":0,\"upperBound\":1,\"steps\":10}' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/integration/calculate\""
     ;;
   "permutation")
     SERVICE_DIR="PermutationService"

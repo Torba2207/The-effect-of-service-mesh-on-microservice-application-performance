@@ -48,7 +48,9 @@ calico_pool_blocksize: 26
 # calico_veth_mtu: 1440
 
 # Advertise Cluster IPs
-# calico_advertise_cluster_ips: true
+# Enabled 2026-11-25: the AI host (BGP peer, deployments/ansible/network_ai_bgp.yml) learns
+# the Service CIDR, so it can reach cluster DNS (10.233.0.3) for mesh expansion.
+calico_advertise_cluster_ips: true
 
 # Advertise Service External IPs
 # calico_advertise_service_external_ips:
@@ -82,13 +84,20 @@ calico_pool_blocksize: 26
 # Set calico network backend: "bird", "vxlan" or "none"
 # bird enable BGP routing, required for ipip and no encapsulation modes
 # calico_network_backend: vxlan
+# Flat network (migrated 2026-11-25): BGP via BIRD, no encapsulation, MTU 1500.
+# Kubespray refuses to run if calico_vxlan_mode differs from the live IPPool, so the
+# migration was: (1) backend bird with vxlan Always, (2) calicoctl patch ippool
+# vxlanMode Never + felixconfig vxlanEnabled false, (3) set Never here.
+# Switching the backend deadlocks the calico-node rollout (-bird-ready needs peers
+# that do not run BIRD yet): delete the old calico-node pods one by one.
+calico_network_backend: bird
 
 # IP in IP and VXLAN is mutually exclusive modes.
 # set IP in IP encapsulation mode: "Always", "CrossSubnet", "Never"
-# calico_ipip_mode: 'Never'
+calico_ipip_mode: 'Never'
 
 # set VXLAN encapsulation mode: "Always", "CrossSubnet", "Never"
-# calico_vxlan_mode: 'Always'
+calico_vxlan_mode: 'Never'
 
 # set VXLAN port and VNI
 # calico_vxlan_vni: 4096
