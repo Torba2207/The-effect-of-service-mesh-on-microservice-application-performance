@@ -1,0 +1,162 @@
+---
+# Metrics exporters on the bare-metal AI host, so Prometheus in the cluster can measure what a
+# mesh costs there once the host joins it (scenario D6), and the host's background load before.
+#
+#   cAdvisor        :8080  CPU/RAM/network/disk I/O per Docker container AND per systemd unit
+#                          (--docker_only=false). The host-side mesh proxies run as systemd units
+#                          (Istio `istio`, Consul agent + Envoy, `linkerd-proxy`), so their cost
+#                          appears as container_cpu_usage_seconds_total{id="/system.slice/<unit>"},
+#                          the same metric names collect_metrics.py already uses for sidecars.
+#                          Housekeeping 10 s, as kubelet's built-in cAdvisor in the cluster.
+#   node_exporter   :9100  whole-host CPU, memory, network, softirq; a cross-check for the cgroups.
+#   GPU exporter    :9835  RTX 4070 utilisation and memory (NVML variant: reads the library
+#                          directly instead of spawning nvidia-smi on every scrape). A control
+#                          signal: a mesh is not expected to change GPU work.
+#
+# All three run in their own compose project (/opt/thesis-monitoring), separate from the AI
+# service's (/opt/service-mesh-thesis), so neither project's --remove-orphans touches the other.
+# They run in every configuration alike, so their own cost cancels out in differences.
+# Host networking: no docker-proxy and no extra NAT rules in front of the scrapes.
+#
+# Prometheus is NOT configured here: the cluster side (ScrapeConfig) is a separate step.
+#
+# Usage (from deployments/):  make ai-monitoring
+# Remove: docker compose -p thesis-monitoring down  (in /opt/thesis-monitoring on the host)
+
+- name: Metrics exporters on the AI host
+  hosts: ai_monitored_host
+  become: true
+  gather_facts: false
+  vars:
+    mon_dir: /opt/thesis-monitoring
+    node_exporter_image: quay.io/prometheus/node-exporter:v1.13.1
+    cadvisor_image: ghcr.io/google/cadvisor:v0.61.1
+    gpu_exporter_image: utkuozdemir/nvidia_gpu_exporter:1.19.0-nvml
+    node_exporter_port: 9100
+    cadvisor_port: 8080
+    gpu_exporter_port: 9835
+    # auto: run the GPU exporter only when Docker has the nvidia runtime (as deploy_ai_vm.yml).
+    mon_gpu: auto
+  tasks:
+    - name: Detect the nvidia runtime in Docker
+      shell: docker info 2>/dev/null | grep -qi 'Runtimes:.*nvidia'
+      register: docker_nvidia
+      changed_when: false
+      failed_when: false
+
+    - name: Decide whether to run the GPU exporter
+      set_fact:
+        mon_gpu_enabled: "{{ (mon_gpu | string | lower) in ['true', 'yes', '1'] or ((mon_gpu | string | lower) == 'auto' and docker_nvidia.rc == 0) }}"
+
+    - name: Fail when the GPU exporter is required but Docker cannot use the GPU
+      fail:
+        msg: "mon_gpu={{ mon_gpu }} but Docker has no nvidia runtime; run setup_ai_vm.yml first"
+      when: mon_gpu_enabled | bool and docker_nvidia.rc != 0
+
+    - name: Check that the exporter ports are free or already ours
+      shell: |
+        for p in {{ node_exporter_port }} {{ cadvisor_port }} {{ gpu_exporter_port }}; do
+          owner=$(ss -Hltnp "sport = :$p" | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2)
+          case "$owner" in ""|node_exporter|cadvisor|nvidia_gpu_expo*) ;; *) echo "port $p is used by $owner"; exit 1;; esac
+        done
+      changed_when: false
+
+    - name: Create the compose project directory
+      file:
+        path: "{{ mon_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Write docker-compose.yml
+      copy:
+        dest: "{{ mon_dir }}/docker-compose.yml"
+        mode: '0644'
+        content: |
+          # Managed by deployments/ansible/monitoring_ai_host.yml - local edits are overwritten.
+          name: thesis-monitoring
+          services:
+            node-exporter:
+              image: {{ node_exporter_image }}
+              container_name: monitoring-node-exporter
+              command:
+                - --path.rootfs=/host
+                - --web.listen-address=:{{ node_exporter_port }}
+              network_mode: host
+              pid: host
+              volumes:
+                - /:/host:ro,rslave
+              restart: unless-stopped
+
+            cadvisor:
+              image: {{ cadvisor_image }}
+              container_name: monitoring-cadvisor
+              command:
+                - --port={{ cadvisor_port }}
+                - --docker_only=false
+                - --housekeeping_interval=10s
+                - --store_container_labels=false
+                - --enable_metrics=cpu,memory,network,diskIO
+              network_mode: host
+              privileged: true
+              devices:
+                - /dev/kmsg
+              volumes:
+                - /:/rootfs:ro
+                - /var/run:/var/run:ro
+                - /sys:/sys:ro
+                - /var/lib/docker/:/var/lib/docker:ro
+                - /dev/disk/:/dev/disk:ro
+              restart: unless-stopped
+          {% if mon_gpu_enabled | bool %}
+
+            gpu-exporter:
+              image: {{ gpu_exporter_image }}
+              container_name: monitoring-gpu-exporter
+              command:
+                - --web.listen-address=:{{ gpu_exporter_port }}
+              network_mode: host
+              environment:
+                NVIDIA_DRIVER_CAPABILITIES: utility
+              deploy:
+                resources:
+                  reservations:
+                    devices:
+                      - driver: nvidia
+                        count: all
+                        capabilities: [gpu, utility]
+              restart: unless-stopped
+          {% endif %}
+
+    - name: Start the exporters
+      command: docker compose up -d --remove-orphans
+      args:
+        chdir: "{{ mon_dir }}"
+      register: compose_up
+      changed_when: "'Started' in compose_up.stderr or 'Recreated' in compose_up.stderr or 'Created' in compose_up.stderr"
+
+    - name: Wait until every exporter serves its key metric
+      shell: "curl -sf -m 5 http://127.0.0.1:{{ item.port }}/metrics | grep -q '^{{ item.metric }}'"
+      loop:
+        - {port: "{{ node_exporter_port }}", metric: "node_cpu_seconds_total"}
+        - {port: "{{ cadvisor_port }}", metric: "container_cpu_usage_seconds_total"}
+        - {port: "{{ gpu_exporter_port }}", metric: "nvidia_smi_utilization_gpu_ratio", gpu: true}
+      when: not (item.gpu | default(false)) or (mon_gpu_enabled | bool)
+      register: exporter_ready
+      until: exporter_ready.rc == 0
+      retries: 12
+      delay: 5
+      changed_when: false
+
+    - name: Check that cAdvisor sees the AI containers and systemd units
+      shell: |
+        m=$(curl -sf -m 10 http://127.0.0.1:{{ cadvisor_port }}/metrics | grep '^container_cpu_usage_seconds_total')
+        echo "$m" | grep -q 'name="ai-load-balancer"' || { echo "no ai-load-balancer series"; exit 1; }
+        echo "$m" | grep -q 'id="/system.slice/' || { echo "no systemd unit series (is --docker_only=false applied?)"; exit 1; }
+        echo "docker containers: $(echo "$m" | grep -o 'name="[^"]*"' | sort -u | tr '\n' ' ')"
+        echo "systemd units:     $(echo "$m" | grep -o 'id="/system.slice/[^"]*"' | sort -u | wc -l)"
+      register: cadvisor_check
+      changed_when: false
+
+    - name: Report
+      debug:
+        msg: "{{ cadvisor_check.stdout_lines + ['GPU exporter: ' ~ (mon_gpu_enabled | bool | ternary('on :' ~ gpu_exporter_port, 'off'))] }}"
