@@ -128,6 +128,7 @@
                         <label><input type="checkbox" name="deploy" checked>Deploy the configuration first (make)</label>
                         <label><input type="checkbox" name="push" checked>Push the results</label>
                         <label data-phase="B"><input type="checkbox" name="exclude_ai">Exclude AI (-X, debugging only)</label>
+                        <label id="ai_mesh_field" title="With deploy: make TARGET AI_MESH=1. AI runs get the _aimesh label suffix."><input type="checkbox" name="ai_mesh">AI host in the mesh (AI_MESH=1)</label>
                     </div>
                 </div>
                 <p id="selftest_note" class="muted" hidden>Prints a counter for a minute. Touches neither the cluster nor git: use it to check the scheduler itself.</p>
@@ -265,6 +266,10 @@
         form.rates.disabled = !rates
         form.rates.placeholder = rates ? `default ${rates}` : "fixed in the k6 script"
         if (!rates) form.rates.value = ""
+        // Only the targets that can mesh the AI host offer the option.
+        const aiMeshOk = !!OPTIONS && OPTIONS.ai_mesh_configs.includes(form.config.value)
+        $("ai_mesh_field").hidden = !aiMeshOk
+        if (!aiMeshOk) form.ai_mesh.checked = false
         schedulePreview()
     }
 
@@ -276,6 +281,7 @@
             levels: [...form.querySelectorAll("input[name=level]:checked")].map(cb => cb.value),
             reps: form.reps.value, warmup: form.warmup.value, steady: form.steady.value,
             cooldown: form.cooldown.value, fib_n: form.fib_n.value, label: form.label.value,
+            ai_mesh: form.ai_mesh.checked,
         }
         if (p === "A") { params.scenario = form.scenario.value; params.rates = form.rates.value }
         if (p === "B") params.exclude_ai = form.exclude_ai.checked
