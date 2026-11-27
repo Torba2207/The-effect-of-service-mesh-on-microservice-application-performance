@@ -4,6 +4,20 @@ KUBECTX   = projekt-badawchy-cluster
 TEST_NS   = thesis-test
 ISTIO_PA  = k8s/istio
 
+# AI_MESH=1 joins the bare-metal AI host to the mesh of the target (ansible/ai_mesh.yml): the
+# AI service becomes a mesh member (own proxy, mTLS on the last hop) instead of an external
+# dependency. Default 0 = the AI host stays outside the mesh, as in all earlier measurements.
+# `make teardown` (and so every deploy target) always removes mesh components from the host.
+AI_MESH ?= 0
+AI_MESH_PLAY = ansible-playbook ansible/ai_mesh.yml -i $(INVENTORY)
+AI_STATE = echo "AI host: $$(kubectl --context $(KUBECTX) -n $(TEST_NS) get svc ai-service -o jsonpath='{.spec.selector.app}' 2>/dev/null | grep -q . && echo 'IN the mesh (AI_MESH=1)' || echo 'external dependency (AI_MESH=0)')"
+
+ifeq ($(AI_MESH),1)
+ifneq ($(filter baseline linkerd linkerd-nomtls consul,$(MAKECMDGOALS)),)
+$(error AI_MESH=1 is implemented for the Istio targets only so far (istio, istio-mtls, istio-nomtls); baseline has no mesh)
+endif
+endif
+
 .PHONY: clean teardown baseline istio istio-mtls istio-nomtls linkerd linkerd-nomtls consul set-context lg-bootstrap ai-bgp ai-bgp-nonat ai-monitoring
 
 # Deployment steps must run in order (teardown before clean before install) even under `make -j`
@@ -24,6 +38,8 @@ clean: set-context
 teardown: set-context
 	@echo "Triggering Teardown Playbook..."
 	ansible-playbook ansible/01_teardown.yml -i $(INVENTORY)
+	@echo "Removing mesh components from the AI host (if any)..."
+	$(AI_MESH_PLAY) -e ai_mesh_state=absent
 
 baseline: set-context teardown clean
 	@echo "Deploying Baseline via Ansible..."
@@ -32,6 +48,7 @@ baseline: set-context teardown clean
 istio: set-context teardown clean
 	@echo "Deploying Istio via Ansible..."
 	ansible-playbook ansible/phase_istio.yml -i $(INVENTORY)
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Joining the AI host to the Istio mesh..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=istio; fi
 
 # I-S configuration: full Istio deploy (same as `make istio`), then mTLS forced on with
 # PeerAuthentication STRICT. `make istio` alone leaves Istio PERMISSIVE, which is not a measured
@@ -41,7 +58,9 @@ istio-mtls: istio
 	kubectl --context $(KUBECTX) apply -f $(ISTIO_PA)/peer-authentication-strict.yaml
 	@echo "Waiting for $(TEST_NS) deployments to become Available..."
 	kubectl --context $(KUBECTX) -n $(TEST_NS) wait --for=condition=Available deployment --all --timeout=300s
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Checking the AI host's last hop (expect mutual_tls)..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=istio -e ai_mesh_expect=mutual_tls --tags verify; fi
 	@echo "mTLS mode: $$(kubectl --context $(KUBECTX) -n $(TEST_NS) get peerauthentication default -o jsonpath='{.spec.mtls.mode}')"
+	@$(AI_STATE)
 	@echo "Gateway NodePort (pass to Phase A as -u http://<node>:PORT; it changes on every install): $$(kubectl --context $(KUBECTX) -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')"
 
 # I-P configuration: full Istio deploy (same as `make istio`), then mTLS switched off with
@@ -52,7 +71,9 @@ istio-nomtls: istio
 	kubectl --context $(KUBECTX) apply -f $(ISTIO_PA)/peer-authentication-disable.yaml
 	@echo "Waiting for $(TEST_NS) deployments to become Available..."
 	kubectl --context $(KUBECTX) -n $(TEST_NS) wait --for=condition=Available deployment --all --timeout=300s
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Checking the AI host's last hop (expect none)..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=istio -e ai_mesh_expect=none --tags verify; fi
 	@echo "mTLS mode: $$(kubectl --context $(KUBECTX) -n $(TEST_NS) get peerauthentication default -o jsonpath='{.spec.mtls.mode}')"
+	@$(AI_STATE)
 	@echo "Gateway NodePort (pass to Phase A as -u http://<node>:PORT; it changes on every install): $$(kubectl --context $(KUBECTX) -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')"
 
 linkerd: set-context teardown clean
