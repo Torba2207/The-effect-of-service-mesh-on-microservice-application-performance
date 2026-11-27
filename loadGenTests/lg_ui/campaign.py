@@ -16,13 +16,19 @@ RUNNER = {
 
 # Configuration -> deploy target in deployments/Makefile and the runner's -m/-t labels.
 # istio_*: the Envoy gateway NodePort changes on every install, lg_campaign.sh -G resolves it.
+# ai_mesh: the target can deploy with the AI host inside the mesh (make TARGET AI_MESH=1).
 CONFIGS = {
     "baseline":       {"make": "baseline",       "mesh": "baseline", "mtls": "na"},
     "linkerd_mtls":   {"make": "linkerd",        "mesh": "linkerd",  "mtls": "on"},
     "linkerd_nomtls": {"make": "linkerd-nomtls", "mesh": "linkerd",  "mtls": "off"},
-    "istio_mtls":     {"make": "istio-mtls",     "mesh": "istio",    "mtls": "on",  "gateway": True},
-    "istio_nomtls":   {"make": "istio-nomtls",   "mesh": "istio",    "mtls": "off", "gateway": True},
+    "istio_mtls":     {"make": "istio-mtls",     "mesh": "istio",    "mtls": "on",  "gateway": True, "ai_mesh": True},
+    "istio_nomtls":   {"make": "istio-nomtls",   "mesh": "istio",    "mtls": "off", "gateway": True, "ai_mesh": True},
 }
+
+# Phase A scenarios that call the AI host. With the AI host in the mesh their label carries this
+# suffix (the runner adds it to its default label; common/ai_state.sh refuses a mismatch).
+AI_SCENARIOS = {"ai", "permutation_ai", "digital_ai"}
+AI_MESH_SUFFIX = "_aimesh"
 
 # Phase A scenario keys (loadGenTests/phaseA/phaseA_Data.sh) and the default -R rates of those
 # whose k6 script reads RATE_LOW/MED/HIGH.
@@ -52,6 +58,8 @@ def options():
     """What the page builds its form from."""
     return {
         "configs": list(CONFIGS),
+        "ai_mesh_configs": [c for c, v in CONFIGS.items() if v.get("ai_mesh")],
+        "ai_scenarios": sorted(AI_SCENARIOS),
         "scenarios": {k: {"rates": v} for k, v in SCENARIOS.items()},
         "levels": LEVELS,
         "defaults": DEFAULTS,
@@ -94,6 +102,11 @@ def build(params):
     cfg = CONFIGS[config]
     deploy = bool(params.get("deploy", True))
     push = bool(params.get("push", True))
+    # With deploy: make TARGET AI_MESH=1 (lg_campaign.sh -A). Without: only the labels, for a
+    # cluster that was already deployed that way.
+    ai_mesh = bool(params.get("ai_mesh", False))
+    if ai_mesh and not cfg.get("ai_mesh"):
+        raise BadRequest(f"the AI host can join the mesh only for: {', '.join(c for c, v in CONFIGS.items() if v.get('ai_mesh'))}")
 
     levels = params.get("levels", LEVELS)
     if (not isinstance(levels, list) or not levels or len(set(levels)) != len(levels)
@@ -112,7 +125,7 @@ def build(params):
     args = [RUNNER[phase]]
     clean = {"phase": phase, "config": config, "deploy": deploy, "push": push, "levels": levels,
              "reps": reps, "warmup": warmup, "steady": steady, "cooldown": cooldown, "fib_n": fib_n,
-             "label": label}
+             "label": label, "ai_mesh": ai_mesh}
 
     if phase == "A":
         scenario = params.get("scenario")
@@ -120,6 +133,8 @@ def build(params):
             raise BadRequest("scenario: choose a Phase A scenario")
         args += ["-s", scenario, "-m", cfg["mesh"], "-t", cfg["mtls"]]
         if label:
+            if ai_mesh and scenario in AI_SCENARIOS and not label.endswith(AI_MESH_SUFFIX):
+                raise BadRequest(f"label must end in {AI_MESH_SUFFIX} for an AI scenario with the AI host in the mesh")
             args += ["-c", label]
         rates = str(params.get("rates") or "").strip()
         if rates:
@@ -132,14 +147,19 @@ def build(params):
             if rates != SCENARIOS[scenario]:
                 args += ["-R", rates]
         clean.update(scenario=scenario, rates=rates)
-        title = f"A {scenario} · {label or config}"
+        shown = label or config + (AI_MESH_SUFFIX if ai_mesh and scenario in AI_SCENARIOS else "")
+        title = f"A {scenario} · {shown}"
     else:
-        args += ["-c", label or config, "-m", cfg["mesh"], "-t", cfg["mtls"]]
         exclude_ai = bool(params.get("exclude_ai", False))
+        with_ai_mesh = ai_mesh and not exclude_ai
+        if label and with_ai_mesh and not label.endswith(AI_MESH_SUFFIX):
+            raise BadRequest(f"label must end in {AI_MESH_SUFFIX} with the AI host in the mesh")
+        label_b = label or config + (AI_MESH_SUFFIX if with_ai_mesh else "")
+        args += ["-c", label_b, "-m", cfg["mesh"], "-t", cfg["mtls"]]
         if exclude_ai:
             args.append("-X")
         clean["exclude_ai"] = exclude_ai
-        title = f"B · {label or config}" + (" · no AI (debug)" if exclude_ai else "")
+        title = f"B · {label_b}" + (" · no AI (debug)" if exclude_ai else "")
 
     if fib_n != DEFAULTS["fib_n"]:
         args += ["-N", str(fib_n)]
@@ -158,6 +178,9 @@ def build(params):
     if deploy:
         wrapper += ["-d", cfg["make"]]
         title += " · deploy"
+        if ai_mesh:
+            wrapper.append("-A")
+            title += " (AI in mesh)"
     if cfg.get("gateway"):
         wrapper.append("-G")
     if not push:
