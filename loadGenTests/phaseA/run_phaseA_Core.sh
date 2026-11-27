@@ -136,6 +136,7 @@ else
   esac
 fi
 
+LABEL_GIVEN=0; [ -n "$CONFIG_LABEL" ] && LABEL_GIVEN=1
 if [ -z "$CONFIG_LABEL" ]; then
   if [ "$MESH" = "baseline" ]; then
     CONFIG_LABEL="baseline"
@@ -161,6 +162,16 @@ fi
 # --- 1. Load Datafile ---
 if ! source "$HERE/phaseA_Data.sh" "$SERVICE_NAME"; then
   exit 1
+fi
+
+# AI scenarios: is the AI host an external dependency or a mesh member (make ... AI_MESH=1)?
+# In mesh mode the default label gets the _aimesh suffix, and an explicit -c must carry it.
+AI_MODE=""; AI_EP=""
+if [ "$USES_AI" = "true" ]; then
+  source "$COMMON/ai_state.sh"
+  ai_state
+  [ "$AI_MODE" = mesh ] && [ "$LABEL_GIVEN" = 0 ] && CONFIG_LABEL="${CONFIG_LABEL}${AI_MESH_SUFFIX}"
+  ai_label_check "$CONFIG_LABEL"
 fi
 
 # The run label: written to the config column, to run_id and to the time-series filename.
@@ -212,6 +223,7 @@ fi
 echo "============================================================"
 echo " [Phase A] Starting unified test :: $CONFIG"
 echo " Mesh: $MESH | mTLS: $MTLS"
+[ -n "$AI_MODE" ] && echo " AI host: $AI_MODE ($AI_EP)"
 echo " Target URL: $URL"
 echo " Service Dir: $SERVICE_DIR | Script: $JS_FILE"
 [ "$SERVICE_NAME" = "fibonacci" ] && echo " Fibonacci work unit: n = $FIB_N"
@@ -288,10 +300,8 @@ esac
 
 # Show which host the cluster forwards /api/Ai to, so a run never silently hits a stale AI host.
 if [ "$USES_AI" = "true" ]; then
-  AI_EP="$(kubectl --context "$CTX" -n thesis-test get endpoints ai-service \
-    -o jsonpath='{range .subsets[*]}{range .addresses[*]}{.ip}{" "}{end}{end}' 2>/dev/null || true)"
-  [ -n "$AI_EP" ] || { echo "ERROR: service thesis-test/ai-service has no endpoints; apply deployments/k8s/ai-service/ai-service-external.yaml"; exit 1; }
-  echo "[preflight] cluster AI endpoint: $AI_EP"
+  [ -n "$AI_EP" ] || { echo "ERROR: thesis-test/ai-service has no AI host ($AI_MODE mode); external: apply deployments/k8s/ai-service/ai-service-external.yaml, mesh: re-run make <target> AI_MESH=1"; exit 1; }
+  echo "[preflight] cluster AI endpoint: $AI_EP ($AI_MODE)"
 fi
 
 echo "[preflight] target URL..."
