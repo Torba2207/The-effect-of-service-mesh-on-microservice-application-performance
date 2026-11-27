@@ -1,0 +1,70 @@
+# AI host INSIDE the Istio mesh (make istio* AI_MESH=1). Replaces ai-service-external.yaml:
+# instead of a selector-less Service with manual Endpoints, the Service selects the AI host's
+# WorkloadEntry, so sidecars reach it over mTLS and its own Envoy (istio-sidecar package on the
+# host, set up by deployments/ansible/ai_mesh.yml) terminates the connection.
+#
+# __AI_HOST_IP__ is substituted by ai_mesh.yml from the inventory.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-service
+  namespace: thesis-test
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: thesis-test
+  labels:
+    app: ai-service
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5005
+---
+# Template for the host's bootstrap files (istioctl x workload entry configure).
+apiVersion: networking.istio.io/v1
+kind: WorkloadGroup
+metadata:
+  name: ai-service
+  namespace: thesis-test
+spec:
+  metadata:
+    labels:
+      app: ai-service
+  template:
+    serviceAccount: ai-service
+    network: ""
+---
+# Static entry (no auto-registration), so istiod runs with the same settings as without AI_MESH.
+apiVersion: networking.istio.io/v1
+kind: WorkloadEntry
+metadata:
+  name: ai-rtx
+  namespace: thesis-test
+spec:
+  address: __AI_HOST_IP__
+  serviceAccount: ai-service
+  labels:
+    app: ai-service
+---
+# On the host, Docker publishes the AI load balancer on 127.0.0.1:5005 only; Envoy receives
+# inbound :5005 (iptables, ISTIO_INBOUND_PORTS=5005) and hands it to the loopback address.
+apiVersion: networking.istio.io/v1
+kind: Sidecar
+metadata:
+  name: ai-service-host
+  namespace: thesis-test
+spec:
+  workloadSelector:
+    labels:
+      app: ai-service
+  ingress:
+    - port:
+        number: 5005
+        protocol: HTTP
+        name: http
+      defaultEndpoint: 127.0.0.1:5005
