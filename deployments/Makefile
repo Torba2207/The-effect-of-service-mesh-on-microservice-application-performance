@@ -10,11 +10,11 @@ ISTIO_PA  = k8s/istio
 # `make teardown` (and so every deploy target) always removes mesh components from the host.
 AI_MESH ?= 0
 AI_MESH_PLAY = ansible-playbook ansible/ai_mesh.yml -i $(INVENTORY)
-AI_STATE = echo "AI host: $$(kubectl --context $(KUBECTX) -n $(TEST_NS) get svc ai-service -o jsonpath='{.spec.selector.app}' 2>/dev/null | grep -q . && echo 'IN the mesh (AI_MESH=1)' || echo 'external dependency (AI_MESH=0)')"
+AI_STATE = m=$$(kubectl --context $(KUBECTX) -n $(TEST_NS) get svc ai-service -o jsonpath='{.metadata.annotations.thesis/ai-mesh}' 2>/dev/null); if [ -n "$$m" ]; then echo "AI host: IN the $$m mesh (AI_MESH=1)"; else echo "AI host: external dependency (AI_MESH=0)"; fi
 
 ifeq ($(AI_MESH),1)
-ifneq ($(filter baseline linkerd linkerd-nomtls consul,$(MAKECMDGOALS)),)
-$(error AI_MESH=1 is implemented for the Istio targets only so far (istio, istio-mtls, istio-nomtls); baseline has no mesh)
+ifneq ($(filter baseline linkerd linkerd-nomtls,$(MAKECMDGOALS)),)
+$(error AI_MESH=1 is implemented for the Istio targets and consul so far; baseline has no mesh)
 endif
 endif
 
@@ -98,6 +98,8 @@ linkerd-nomtls: set-context teardown clean
 consul: set-context teardown clean
 	@echo "Deploying Consul via Ansible (Helm)..."
 	ansible-playbook ansible/phase_consul.yml -i $(INVENTORY)
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Joining the AI host to the Consul mesh..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=consul; fi
+	@$(AI_STATE)
 
 # Prepare the load generator (lg) as a campaign host: kubectl, helm, istioctl, linkerd and
 # ansible at the workstation's versions, the kubeconfig, an SSH key for the cluster nodes, a
