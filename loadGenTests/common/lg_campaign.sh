@@ -12,6 +12,7 @@
 #   cd /root/thesis
 #   loadGenTests/common/lg_campaign.sh -d linkerd -- loadGenTests/phaseA/run_phaseA_Core.sh -s fibonacci -m linkerd -t on
 #   loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseB/run_phaseB.sh -c istio_mtls -m istio -t on
+#   loadGenTests/common/lg_campaign.sh -d istio-mtls -A -G -- loadGenTests/phaseB/run_phaseB.sh -c istio_mtls_aimesh -m istio -t on
 #   loadGenTests/common/lg_campaign.sh -- loadGenTests/phaseB/run_phaseB.sh -c baseline -m baseline -t na
 #
 # Options (before --):
@@ -19,6 +20,8 @@
 #   -n          commit, but do not push
 #   -d TARGET   deploy first: make -C deployments TARGET (after the sync, under the lock); a failed
 #               deploy stops here, before the runner
+#   -A          with -d: deploy with the AI host inside the mesh (make TARGET AI_MESH=1). The runners
+#               then require the _aimesh label suffix on AI runs (common/ai_state.sh)
 #   -G          append -u http://<node>:<port> to the runner arguments, with the Istio ingress
 #               gateway's NodePort (it changes on every Istio install); after -d if both are given
 #
@@ -41,17 +44,18 @@ NODE_IP="10.29.20.113"            # the runners' default ingress node
 CTX="projekt-badawchy-cluster"
 LOCK="${LG_CAMPAIGN_LOCK:-/run/lock/thesis-campaign.lock}"
 DEPLOY_TARGETS="baseline linkerd linkerd-nomtls istio-mtls istio-nomtls istio consul"
-USAGE="usage: $0 [-b BRANCH] [-n] [-d TARGET] [-G] -- <runner> [runner args]"
+USAGE="usage: $0 [-b BRANCH] [-n] [-d TARGET [-A]] [-G] -- <runner> [runner args]"
 
 die() { printf 'ERROR: %b\n' "$*" >&2; exit 1; }
 
 main() {
-  local branch="studies_lg_based" push=1 deploy="" gateway=0 opt
-  while getopts "b:nd:G" opt; do
+  local branch="studies_lg_based" push=1 deploy="" gateway=0 ai_mesh=0 opt
+  while getopts "b:nd:AG" opt; do
     case "$opt" in
       b) branch="$OPTARG" ;;
       n) push=0 ;;
       d) deploy="$OPTARG" ;;
+      A) ai_mesh=1 ;;
       G) gateway=1 ;;
       *) echo "$USAGE"; exit 2 ;;
     esac
@@ -59,6 +63,7 @@ main() {
   shift $((OPTIND - 1))
   [ "${1:-}" != "--" ] || shift
   [ $# -ge 1 ] || die "no runner given ($USAGE)"
+  [ "$ai_mesh" = 0 ] || [ -n "$deploy" ] || die "-A needs -d TARGET (it changes how TARGET is deployed)"
   if [ -n "$deploy" ]; then
     case " $DEPLOY_TARGETS " in
       *" $deploy "*) ;;
@@ -115,10 +120,12 @@ main() {
   # --- deploy ---
   local deployed=""
   if [ -n "$deploy" ]; then
-    echo "[deploy] make -C deployments $deploy ($(date -u +%H:%M:%SZ)) ..."
-    make -C "$repo/deployments" "$deploy" 9>&- ||
-      die "deployment failed (make $deploy); the campaign was not started"
-    deployed="Deployed with \`make $deploy\` first. "
+    local make_args=("$deploy")
+    [ "$ai_mesh" = 1 ] && make_args+=(AI_MESH=1)
+    echo "[deploy] make -C deployments ${make_args[*]} ($(date -u +%H:%M:%SZ)) ..."
+    make -C "$repo/deployments" "${make_args[@]}" 9>&- ||
+      die "deployment failed (make ${make_args[*]}); the campaign was not started"
+    deployed="Deployed with \`make ${make_args[*]}\` first. "
     echo "[deploy] done ($(date -u +%H:%M:%SZ))"
   fi
   if [ "$gateway" = 1 ]; then
