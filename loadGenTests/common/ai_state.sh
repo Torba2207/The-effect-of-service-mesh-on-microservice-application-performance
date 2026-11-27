@@ -6,9 +6,9 @@
 # external: thesis-test/ai-service is a selector-less Service with manual Endpoints
 #           (deployments/k8s/ai-service/ai-service-external.yaml) - every measurement before the
 #           AI host joined meshes, and every `make <target>` without AI_MESH=1.
-# mesh:     the Service selects the AI host's mesh registration (`make <target> AI_MESH=1`,
-#           deployments/ansible/ai_mesh.yml); Kubernetes Endpoints are then empty by design, so
-#           the address comes from the Istio WorkloadEntry.
+# mesh:     `make <target> AI_MESH=1` (deployments/ansible/ai_mesh.yml); the Service is annotated
+#           with thesis/ai-mesh (istio|consul|linkerd) and thesis/ai-host. Its Kubernetes
+#           Endpoints are empty by design, so the address comes from the annotation.
 #
 # Runs that call the AI host carry AI_MESH_SUFFIX in their configuration label in mesh mode, so
 # the two variants never share a run_id or a CSV row label. Runs that do not touch the AI host
@@ -16,15 +16,16 @@
 AI_MESH_SUFFIX="_aimesh"
 
 ai_state() {
-  local ns=thesis-test sel
-  sel="$(kubectl --context "$CTX" -n "$ns" get svc ai-service -o jsonpath='{.spec.selector.app}' 2>/dev/null || true)"
-  if [ -n "$sel" ]; then
+  local ns=thesis-test mesh
+  # The mesh variants' Service carries these annotations (deployments/k8s/ai-service/ai-service-mesh-*.yaml).
+  mesh="$(kubectl --context "$CTX" -n "$ns" get svc ai-service -o jsonpath='{.metadata.annotations.thesis/ai-mesh}' 2>/dev/null || true)"
+  if [ -n "$mesh" ]; then
     AI_MODE=mesh
-    # The selector matches the entry's spec.labels (metadata labels may be empty).
-    AI_EP="$(kubectl --context "$CTX" -n "$ns" get workloadentries.networking.istio.io \
-      -o jsonpath="{.items[?(@.spec.labels.app==\"$sel\")].spec.address}" 2>/dev/null || true)"
+    AI_MESH_NAME="$mesh"
+    AI_EP="$(kubectl --context "$CTX" -n "$ns" get svc ai-service -o jsonpath='{.metadata.annotations.thesis/ai-host}' 2>/dev/null || true)"
   else
     AI_MODE=external
+    AI_MESH_NAME=""
     AI_EP="$(kubectl --context "$CTX" -n "$ns" get endpoints ai-service \
       -o jsonpath='{range .subsets[*]}{range .addresses[*]}{.ip}{" "}{end}{end}' 2>/dev/null || true)"
   fi
