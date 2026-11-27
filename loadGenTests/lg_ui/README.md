@@ -26,6 +26,7 @@ loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseA/run_p
 | Configuration | the runner's `-m`/`-t` (and the Phase B `-c` label); with *Deploy first*, `lg_campaign.sh -d <make target>` |
 | `istio_*` | `lg_campaign.sh -G`: the Envoy gateway NodePort is read after the deploy and passed as `-u` |
 | Phase A scenario, rates, n, levels, reps, durations, label | the runner's flags; only values that differ from the runner defaults are passed |
+| *AI host in the mesh* (`istio_*` only so far) | with *Deploy first*, `lg_campaign.sh -A` = `make <target> AI_MESH=1` (`deployments/ansible/ai_mesh.yml`); AI runs get the label suffix `_aimesh` (Phase B: `-c <config>_aimesh`; Phase A AI scenarios: the runner adds it). Without deploy it only sets the labels, for a cluster already deployed that way. The runners check the label against the deployed state (`common/ai_state.sh`) and refuse a mismatch. |
 | *Push the results* off | `lg_campaign.sh -n` |
 | Self-test | a one-minute counter: touches neither the cluster nor git, checks the scheduler itself |
 
