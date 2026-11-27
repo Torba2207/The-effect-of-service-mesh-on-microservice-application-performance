@@ -88,6 +88,28 @@
         state: started
         enabled: yes
 
+    # Published ports reached via 127.0.0.1 then go through a kernel DNAT, like traffic from
+    # outside, instead of the userland docker-proxy. Needed when the host joins a mesh: the
+    # host proxy forwards to 127.0.0.1:5005 (ai_mesh.yml), and a docker-proxy hop there would
+    # be a cost that the external-dependency variant does not have. No effect on traffic that
+    # arrives from the network.
+    - name: Disable Docker's userland proxy
+      shell: |
+        python3 - <<'EOF'
+        import json, os
+        p = "/etc/docker/daemon.json"
+        d = json.load(open(p)) if os.path.exists(p) and os.path.getsize(p) else {}
+        if d.get("userland-proxy") is False:
+            print("unchanged")
+        else:
+            d["userland-proxy"] = False
+            json.dump(d, open(p, "w"), indent=4)
+            print("changed")
+        EOF
+      register: userland_proxy
+      changed_when: "'changed' in userland_proxy.stdout"
+      notify: Restart docker
+
     - name: Create project directory for thesis code
       file:
         path: /opt/service-mesh-thesis
