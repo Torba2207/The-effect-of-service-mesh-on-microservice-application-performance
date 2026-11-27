@@ -74,13 +74,21 @@ done
 case "$FIB_N" in ''|*[!0-9]*) echo "ERROR: -N must be a positive integer (got '$FIB_N')"; exit 2 ;; esac
 [ "$FIB_N" -ge 1 ] || { echo "ERROR: -N must be >= 1"; exit 2; }
 
+# With AI in the mix, the label must say whether the AI host is in the mesh (common/ai_state.sh).
+AI_MODE=""; AI_EP=""
+if [ "$INCLUDE_AI" = "true" ]; then
+  source "$HERE/../common/ai_state.sh"
+  ai_state
+  ai_label_check "$CONFIG"
+fi
+
 RESULTS="$RESULTS_ROOT/phaseB/results"; mkdir -p "$RESULTS"
 CSV="$RESULTS/master.csv"
 
 echo "============================================================"
 echo " Phase B :: config=$CONFIG mesh=$MESH mtls=$MTLS"
 echo " URL=$URL  levels=[$LEVELS] reps=$REPS  warmup=$WARMUP steady=$STEADY cooldown=${COOLDOWN}s"
-echo " AI=$INCLUDE_AI  fibonacci n=$FIB_N"
+echo " AI=$INCLUDE_AI${AI_MODE:+ (host $AI_MODE: $AI_EP)}  fibonacci n=$FIB_N"
 echo " Results: $CSV"
 [ "$LG_LOCAL" = 1 ] && echo " Runner: on lg (k6 local)" || echo " Runner: workstation (k6 on lg over SSH)"
 [ "$INCLUDE_AI" = "true" ] || echo " WARNING: -X given - AI scenarios excluded, this is NOT a valid Phase B run"
@@ -96,9 +104,8 @@ curl -s -m 8 -o /dev/null -w '  ingress -> http=%{http_code}\n' -X POST "$URL/ap
   -H 'Content-Type: application/json' -d '{"set":[1,2,3]}' || true
 if [ "$INCLUDE_AI" = "true" ]; then
   echo "[preflight] AI host..."
-  EP="$(kubectl --context "$CTX" -n thesis-test get endpoints ai-service -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)"
-  [ -n "$EP" ] || { echo "ERROR: service thesis-test/ai-service has no endpoints (kubectl apply -f deployments/k8s/ai-service/ai-service-external.yaml)"; exit 1; }
-  curl -s -m 10 -o /dev/null -w "  ai-service ($EP) via ingress -> http=%{http_code}\n" "$URL/api/Ai/health" || true
+  [ -n "$AI_EP" ] || { echo "ERROR: thesis-test/ai-service has no AI host ($AI_MODE mode); external: kubectl apply -f deployments/k8s/ai-service/ai-service-external.yaml, mesh: re-run make <target> AI_MESH=1"; exit 1; }
+  curl -s -m 10 -o /dev/null -w "  ai-service ($AI_EP, $AI_MODE) via ingress -> http=%{http_code}\n" "$URL/api/Ai/health" || true
 fi
 
 # --- sync assets + script to lg ---
