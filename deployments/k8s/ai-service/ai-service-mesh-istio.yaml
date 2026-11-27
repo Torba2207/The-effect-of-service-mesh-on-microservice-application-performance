@@ -17,6 +17,10 @@ metadata:
   namespace: thesis-test
   labels:
     app: ai-service
+  # Tell the runners (loadGenTests/common/ai_state.sh) and the Makefile the AI host is in the mesh.
+  annotations:
+    thesis/ai-mesh: istio
+    thesis/ai-host: __AI_HOST_IP__
 spec:
   selector:
     app: ai-service
