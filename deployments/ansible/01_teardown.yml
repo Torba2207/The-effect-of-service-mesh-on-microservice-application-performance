@@ -5,6 +5,20 @@
   vars:
     test_ns: thesis-test
   tasks:
+    # Consul's API Gateway controller puts gateway-finalizer.consul.hashicorp.com on the Gateway
+    # API objects in thesis-test. Deleting them first, while the controller still runs, lets it
+    # finalize them; left to the namespace deletion they outlived the 60 s wait below and then
+    # helm uninstall removed the controller, leaving the namespace Terminating forever.
+    - name: Delete Gateway API routes and gateways in thesis namespace while their controller runs
+      ansible.builtin.shell: |
+        for kind in httproutes grpcroutes tcproutes gateways; do
+          kubectl -n {{ test_ns }} delete "$kind.gateway.networking.k8s.io" --all --ignore-not-found --wait=true --timeout=60s 2>/dev/null || true
+        done
+      args:
+        executable: /bin/bash
+      changed_when: false
+      ignore_errors: true
+
     - name: Ensure thesis namespace is absent
       kubernetes.core.k8s:
         name: "{{ test_ns }}"
@@ -103,6 +117,33 @@
       args:
         executable: /bin/bash
       ignore_errors: true
+
+    - name: Strip Consul finalizers from Gateway API objects left without a controller
+      ansible.builtin.shell: |
+        for kind in httproutes grpcroutes tcproutes gateways; do
+          kubectl get "$kind.gateway.networking.k8s.io" -A \
+            -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{" "}{.metadata.finalizers}{"\n"}{end}' 2>/dev/null |
+          grep 'consul\.hashicorp\.com' |
+          while read -r ns name _; do
+            kubectl -n "$ns" patch "$kind.gateway.networking.k8s.io" "$name" --type=merge -p '{"metadata":{"finalizers":[]}}'
+          done
+        done
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
+    # The next phase cannot create anything in a Terminating namespace.
+    - name: Assert the thesis namespace is gone
+      ansible.builtin.shell: |
+        kubectl wait --for=delete namespace/{{ test_ns }} --timeout=120s >/dev/null 2>&1 || true
+        if kubectl get namespace {{ test_ns }} -o name 2>/dev/null | grep -q .; then
+          echo "namespace {{ test_ns }} still exists:"
+          kubectl get namespace {{ test_ns }} -o jsonpath='{range .status.conditions[*]}{.type}: {.message}{"\n"}{end}'
+          exit 1
+        fi
+      args:
+        executable: /bin/bash
+      changed_when: false
 
     # helm uninstall leaves the server StatefulSet's PVCs behind; a later install would then
     # start from the old Raft store and catalog. Deleting the namespace removes them.
