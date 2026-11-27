@@ -1,0 +1,55 @@
+# AI host INSIDE the Consul mesh (make consul AI_MESH=1). Replaces ai-service-external.yaml.
+# The AI host runs a Consul client agent and an Envoy sidecar (deployments/ansible/ai_mesh.yml)
+# and registers `ai-service` itself, with tagged_addresses.virtual = this Service's ClusterIP:80
+# - what consul-k8s writes for services in Kubernetes - so the pods' transparent proxies route
+# http://ai-service/ through the mesh (mTLS to the host's Envoy on :21000).
+#
+# __AI_HOST_IP__ is substituted by ai_mesh.yml from the inventory. The annotations tell the
+# runners (loadGenTests/common/ai_state.sh) and the Makefile that the AI host is in the mesh.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: thesis-test
+  labels:
+    app: ai-service
+  annotations:
+    thesis/ai-mesh: consul
+    thesis/ai-host: __AI_HOST_IP__
+spec:
+  # Matches no pod: Kubernetes keeps no endpoints, so nothing can reach the host around the mesh
+  # (the external variant's manual Endpoints are deleted by ai_mesh.yml). The Service is kept
+  # for its name and ClusterIP, which the transparent proxies match.
+  selector:
+    app: ai-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5005
+---
+# The Consul service registered by the host, as a backend the API Gateway can route to.
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: MeshService
+metadata:
+  name: ai-service
+  namespace: thesis-test
+spec:
+  name: ai-service
+---
+# /api/Ai through the API Gateway, as Istio's ai-vs; exists only in this variant (an external
+# AI host is not in the Consul catalog, so the gateway cannot route to it).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ai-route
+  namespace: thesis-test
+spec:
+  parentRefs:
+    - name: api-gateway
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: /api/Ai }
+      backendRefs:
+        - group: consul.hashicorp.com
+          kind: MeshService
+          name: ai-service
