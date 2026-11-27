@@ -4,7 +4,7 @@
 #   ai_mesh_state=present ai_mesh=istio   after phase_istio.yml        (make istio* AI_MESH=1)
 #   ai_mesh_state=absent                  before any phase, in teardown (always; idempotent)
 #
-# Implemented: istio. Planned: consul, linkerd.
+# Implemented: istio, consul. Planned: linkerd.
 #
 # Common to every mesh (host side):
 #   - Docker publishes the AI load balancer on 127.0.0.1:5005 only (compose override), so its
@@ -28,6 +28,22 @@
 #   - Envoy concurrency 2, as the sidecars in the pods (derived there from the 2-CPU limit);
 #     on the host it would default to all 24 cores.
 #   - the bootstrap token is valid for 7 days; re-run the make target to refresh it.
+#
+# Consul specifics (docs: Register external services to Consul on Kubernetes):
+#   - a client agent on the host joins the servers' LAN gossip directly at their pod IPs (flat
+#     network; no host-port mode). The servers require client certificates on RPC
+#     (verify_incoming); instead of enabling auto_encrypt in the Helm values, the playbook signs a
+#     client certificate with the cluster CA on the controller, so the servers keep the settings
+#     they have without AI_MESH. The CA key never leaves the controller's temp directory.
+#   - consul and envoy binaries are copied out of the very images the cluster runs
+#     (hashicorp/consul, hashicorp/consul-dataplane): the host's Envoy is the pods' build.
+#   - `ai-service` is registered by the agent with tagged_addresses.virtual = the Kubernetes
+#     Service's ClusterIP:80, on the service AND its sidecar (that is what consul-k8s writes and
+#     what the pods' transparent proxies match). Envoy: public listener <host>:21000 (mTLS), local
+#     app 127.0.0.1:5005; no iptables. Concurrency from the injector's
+#     -default-envoy-proxy-concurrency. The agent is restarted, not reloaded, on every join: a
+#     reload did not push a changed tagged address of the sidecar to the catalog.
+#   - /api/Ai through the API Gateway via a MeshService backend (only in this variant).
 
 - name: Cluster side of the AI host mesh membership
   hosts: localhost
@@ -45,8 +61,8 @@
       assert:
         that:
           - ai_mesh_state in ['present', 'absent']
-          - ai_mesh_state == 'absent' or ai_mesh in ['istio']
-        fail_msg: "ai_mesh_state=present needs ai_mesh=istio (consul and linkerd are not implemented yet)"
+          - ai_mesh_state == 'absent' or ai_mesh in ['istio', 'consul']
+        fail_msg: "ai_mesh_state=present needs ai_mesh=istio or consul (linkerd is not implemented yet)"
 
     - name: Istio - cluster objects and host bootstrap files
       when: ai_mesh_state == 'present' and ai_mesh == 'istio'
@@ -98,6 +114,68 @@
           set_fact:
             istio_bootstrap_dir: "{{ _istio_dir.path }}"
 
+    - name: Consul - cluster objects, versions and the agent's TLS files
+      when: ai_mesh_state == 'present' and ai_mesh == 'consul'
+      block:
+        - name: Remove the external-dependency Endpoints
+          command: kubectl -n {{ test_ns }} delete endpoints ai-service --ignore-not-found
+          changed_when: false
+
+        - name: Apply the Service (annotated), MeshService and the /api/Ai HTTPRoute
+          shell: >-
+            sed 's/__AI_HOST_IP__/{{ ai_host_ip }}/' {{ app_dir }}/ai-service/ai-service-mesh-consul.yaml
+            | kubectl apply -f -
+          changed_when: true
+
+        - name: Read the images, Envoy concurrency, datacenter, server pod IPs and the ClusterIP
+          shell: |
+            set -e
+            cmd=$(kubectl -n consul get deploy consul-connect-injector -o jsonpath='{.spec.template.spec.containers[0].command}')
+            pick() { echo "$cmd" | grep -o -- "-$1=[^ ]*" | head -1 | cut -d= -f2- | tr -d '\042\134'; }
+            echo "consul_image=$(pick consul-image)"
+            echo "dataplane_image=$(pick consul-dataplane-image)"
+            echo "concurrency=$(pick default-envoy-proxy-concurrency)"
+            echo "datacenter=$(kubectl -n consul get cm consul-server-config -o jsonpath='{.data.server\.json}' | grep -o '"datacenter": *"[^"]*"' | cut -d'"' -f4)"
+            echo "servers=$(kubectl -n consul get pods -l app=consul,component=server -o jsonpath='{.items[*].status.podIP}')"
+            echo "cluster_ip=$(kubectl -n {{ test_ns }} get svc ai-service -o jsonpath='{.spec.clusterIP}')"
+          register: _consul_facts
+          changed_when: false
+
+        - name: Publish the Consul facts
+          set_fact:
+            consul_facts: "{{ dict(_consul_facts.stdout_lines | map('split', '=') | list) }}"
+
+        - name: Require every fact
+          assert:
+            that: "consul_facts[item] | default('') | length > 0"
+            fail_msg: "could not read {{ item }} from the Consul installation: {{ consul_facts }}"
+          loop: [consul_image, dataplane_image, concurrency, datacenter, servers, cluster_ip]
+
+        - name: Create a work directory for the agent's TLS files
+          tempfile:
+            state: directory
+            suffix: consul-vm
+          register: _consul_dir
+
+        - name: Sign a client certificate for the host agent with the cluster CA
+          shell: |
+            set -e
+            umask 077
+            cd {{ _consul_dir.path }}
+            kubectl -n consul get secret consul-ca-cert -o jsonpath='{.data.tls\.crt}' | base64 -d > ca.pem
+            kubectl -n consul get secret consul-ca-key  -o jsonpath='{.data.tls\.key}' | base64 -d > ca-key.pem
+            openssl ecparam -name prime256v1 -genkey -noout -out client-key.pem
+            openssl req -new -key client-key.pem -subj "/CN=client.{{ consul_facts.datacenter }}.consul" -out client.csr
+            printf 'subjectAltName=DNS:client.%s.consul,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=clientAuth,serverAuth\nkeyUsage=critical,digitalSignature,keyEncipherment\nbasicConstraints=critical,CA:FALSE\n' '{{ consul_facts.datacenter }}' > ext.cnf
+            openssl x509 -req -in client.csr -CA ca.pem -CAkey ca-key.pem -CAcreateserial -days 365 -sha256 -extfile ext.cnf -out client.pem 2>/dev/null
+            rm -f ca-key.pem ca.srl client.csr ext.cnf
+            openssl verify -CAfile ca.pem client.pem
+          changed_when: true
+
+        - name: Hand the TLS directory to the host play
+          set_fact:
+            consul_bootstrap_dir: "{{ _consul_dir.path }}"
+
 - name: Host side of the AI host mesh membership
   hosts: ai_mesh_host
   become: true
@@ -111,6 +189,10 @@
     proxy_concurrency: 2
     istio_version: "{{ hostvars['localhost'].istio_version | default('') }}"
     istio_bootstrap_dir: "{{ hostvars['localhost'].istio_bootstrap_dir | default('') }}"
+    consul: "{{ hostvars['localhost'].consul_facts | default({}) }}"
+    consul_bootstrap_dir: "{{ hostvars['localhost'].consul_bootstrap_dir | default('') }}"
+    consul_sidecar_port: 21000
+    consul_admin_port: 19000
   handlers:
     - name: Recreate the AI load balancer
       command: docker compose up -d
@@ -148,6 +230,14 @@
             state: absent
             purge: true
 
+        # istio-sidecar ships /usr/local/bin in its file list, so purging it removes the (then
+        # empty) directory, which belongs to the base system.
+        - name: Restore /usr/local/bin after the purge
+          file:
+            path: /usr/local/bin
+            state: directory
+            mode: '0755'
+
         - name: Remove Istio files left on the host
           file:
             path: "{{ item }}"
@@ -176,6 +266,38 @@
         - name: Assert no Istio rules remain
           shell: "! iptables-nft-save -t nat | grep -q ISTIO && ! iptables-legacy-save -t nat 2>/dev/null | grep -q ISTIO"
           changed_when: false
+
+        - name: Stop and disable the Consul agent and its Envoy
+          systemd:
+            name: "{{ item }}"
+            state: stopped
+            enabled: false
+          loop: [consul-envoy, consul]
+          failed_when: false
+
+        - name: Remove the Consul units, binaries, configuration and data
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /etc/systemd/system/consul-envoy.service
+            - /etc/systemd/system/consul.service
+            - /usr/local/bin/consul
+            - /usr/local/bin/envoy
+            - /etc/consul.d
+            - /opt/consul
+          register: _consul_removed
+
+        - name: Reload systemd after removing the Consul units
+          systemd:
+            daemon_reload: true
+          when: _consul_removed is changed
+
+        - name: Remove the consul user
+          user:
+            name: consul
+            state: absent
+          failed_when: false
 
         - name: Put the AI load balancer back on 0.0.0.0:{{ ai_port }}
           file:
@@ -305,6 +427,192 @@
             curl -s 127.0.0.1:15000/server_info | grep -q '"concurrency": {{ proxy_concurrency }}'
           changed_when: false
 
+    # ------------------------------------------------------------------ present: consul
+    - name: Join the Consul mesh
+      when: ai_mesh_state == 'present' and ai_mesh == 'consul'
+      block:
+        - name: Copy consul and envoy out of the images the cluster runs
+          shell: |
+            set -e
+            for spec in "{{ consul.consul_image }}=bin/consul" "{{ consul.dataplane_image }}=usr/local/bin/envoy"; do
+              img=${spec%%=*}; f=${spec#*=}
+              docker pull -q "$img" >/dev/null
+              c=$(docker create "$img")
+              docker cp "$c:/$f" /usr/local/bin/
+              docker rm "$c" >/dev/null
+            done
+            /usr/local/bin/envoy --version | grep -o '/[0-9]*\.[0-9]*\.[0-9]*/' | tr -d /
+          register: _envoy_version
+          changed_when: true
+
+        - name: Create the consul user
+          user:
+            name: consul
+            system: true
+            home: /opt/consul
+            shell: /usr/sbin/nologin
+
+        - name: Create the Consul directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            owner: consul
+            group: consul
+            mode: '0750'
+          loop: [/etc/consul.d, /etc/consul.d/tls, /opt/consul]
+
+        - name: Copy the agent's TLS files
+          copy:
+            src: "{{ consul_bootstrap_dir }}/{{ item }}"
+            dest: "/etc/consul.d/tls/{{ item }}"
+            owner: consul
+            group: consul
+            mode: '0600'
+          loop: [ca.pem, client.pem, client-key.pem]
+
+        - name: Write the agent configuration
+          copy:
+            dest: /etc/consul.d/consul.hcl
+            owner: consul
+            group: consul
+            mode: '0640'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml
+              datacenter  = "{{ consul.datacenter }}"
+              node_name   = "{{ inventory_hostname | replace('_', '-') }}"
+              data_dir    = "/opt/consul"
+              bind_addr   = "{{ ansible_host }}"
+              client_addr = "127.0.0.1"
+              retry_join  = {{ consul.servers.split() | to_json }}
+              leave_on_terminate = true
+              ports {
+                http     = 8500
+                https    = -1
+                grpc     = 8502
+                grpc_tls = -1
+                dns      = -1
+              }
+              tls {
+                defaults {
+                  ca_file   = "/etc/consul.d/tls/ca.pem"
+                  cert_file = "/etc/consul.d/tls/client.pem"
+                  key_file  = "/etc/consul.d/tls/client-key.pem"
+                  verify_outgoing = true
+                }
+                internal_rpc { verify_server_hostname = true }
+              }
+
+        - name: Register ai-service and its sidecar
+          copy:
+            dest: /etc/consul.d/ai-service.hcl
+            owner: consul
+            group: consul
+            mode: '0640'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml. virtual = the Kubernetes Service's
+              # ClusterIP, on the service and its sidecar, as consul-k8s registers in-cluster services.
+              service {
+                name    = "ai-service"
+                id      = "ai-service-{{ inventory_hostname | replace('_', '-') }}"
+                address = "{{ ansible_host }}"
+                port    = {{ ai_port }}
+                tagged_addresses {
+                  virtual = { address = "{{ consul.cluster_ip }}", port = 80 }
+                }
+                connect {
+                  sidecar_service {
+                    port = {{ consul_sidecar_port }}
+                    tagged_addresses {
+                      virtual = { address = "{{ consul.cluster_ip }}", port = 80 }
+                    }
+                    proxy {
+                      local_service_address = "127.0.0.1"
+                      local_service_port    = {{ ai_port }}
+                    }
+                  }
+                }
+              }
+
+        - name: Validate the agent configuration
+          command: /usr/local/bin/consul validate /etc/consul.d
+          changed_when: false
+
+        - name: Install the agent and Envoy units
+          copy:
+            dest: "/etc/systemd/system/{{ item.name }}.service"
+            mode: '0644'
+            content: "{{ item.content }}"
+          loop:
+            - name: consul
+              content: |
+                [Unit]
+                Description=Consul client agent (AI host in the Consul mesh)
+                Wants=network-online.target
+                After=network-online.target
+
+                [Service]
+                User=consul
+                Group=consul
+                ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul.d
+                ExecReload=/bin/kill -HUP $MAINPID
+                KillSignal=SIGINT
+                Restart=on-failure
+                LimitNOFILE=65536
+
+                [Install]
+                WantedBy=multi-user.target
+            - name: consul-envoy
+              content: |
+                [Unit]
+                Description=Envoy sidecar for ai-service (Consul mesh)
+                Requires=consul.service
+                After=consul.service
+
+                [Service]
+                User=consul
+                Group=consul
+                Environment=CONSUL_HTTP_ADDR=http://127.0.0.1:8500
+                Environment=CONSUL_GRPC_ADDR=127.0.0.1:8502
+                ExecStart=/usr/local/bin/consul connect envoy -sidecar-for ai-service-{{ inventory_hostname | replace('_', '-') }} -envoy-version {{ _envoy_version.stdout }} -admin-bind 127.0.0.1:{{ consul_admin_port }} -- --concurrency {{ consul.concurrency }}
+                Restart=on-failure
+                RestartSec=3
+
+                [Install]
+                WantedBy=multi-user.target
+
+        - name: Apply the compose override now
+          meta: flush_handlers
+
+        # Restart, not reload (see the header).
+        - name: (Re)start the agent, then Envoy
+          systemd:
+            name: "{{ item }}"
+            state: restarted
+            enabled: true
+            daemon_reload: true
+          loop: [consul, consul-envoy]
+
+        - name: Wait until the sidecar is passing in Consul
+          shell: >-
+            curl -sf http://127.0.0.1:8500/v1/health/checks/ai-service-sidecar-proxy
+            | grep -o '"Status":"[a-z]*"' | sort -u
+          register: _sidecar_health
+          until: _sidecar_health.stdout == '"Status":"passing"'
+          retries: 30
+          delay: 2
+          changed_when: false
+
+        - name: Check Envoy is live with the pods' concurrency
+          shell: |
+            set -e
+            curl -s 127.0.0.1:{{ consul_admin_port }}/server_info | grep -q '"state": "LIVE"'
+            curl -s 127.0.0.1:{{ consul_admin_port }}/server_info | grep -q '"concurrency": {{ consul.concurrency }}'
+          register: _envoy_live
+          until: _envoy_live.rc == 0
+          retries: 15
+          delay: 2
+          changed_when: false
+
 - name: End-to-end check from inside the mesh
   hosts: localhost
   gather_facts: false
@@ -371,8 +679,62 @@
               - (_delta | dict2items | rejectattr('key', 'equalto', ai_mesh_expect) | map(attribute='value') | map('int') | sum) == 0
             fail_msg: "expected all requests as {{ ai_mesh_expect }}, got {{ _delta }}"
 
+    # Through the API Gateway, the measured entry point. The host Envoy's public listener only
+    # accepts mTLS from the mesh, so requests it counts arrived encrypted; Consul has no
+    # plaintext mode. Judged on the delta over three requests, as for Istio.
+    - name: Consul - last-hop check
+      when: ai_mesh_state == 'present' and ai_mesh == 'consul'
+      tags: [verify]
+      block:
+        - name: Snapshot the host Envoy's public listener (requests, TLS handshakes)
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: &csnap >-
+            curl -s 127.0.0.1:19000/stats | grep -E
+            '^(http\.public_listener\.downstream_rq_completed|listener\.[0-9.]+_21000\.ssl\.(handshake|connection_error)):'
+            | sed -E 's/^http\.public_listener\.//; s/^listener\.[0-9.]+_21000\.ssl\./ssl_/' | tr -d ':'
+          register: _cbefore
+          changed_when: false
+
+        - name: Send three requests through the API Gateway
+          shell: |
+            port=$(kubectl -n {{ test_ns }} get svc api-gateway -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')
+            for i in 1 2 3; do
+              curl -s -m 10 -o /dev/null -w '%{http_code} ' "http://{{ hostvars[groups['workers'][-1]].ansible_host }}:$port/api/Ai/health"
+            done
+          register: _ce2e
+          until: _ce2e.stdout == '200 200 200 '
+          retries: 15
+          delay: 4
+          changed_when: false
+
+        - name: Snapshot again
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: *csnap
+          register: _cafter
+          changed_when: false
+
+        - name: Compute the delta
+          set_fact:
+            _cdelta: >-
+              {%- set b = dict(_cbefore.stdout_lines | map('split') | list) -%}
+              {%- set a = dict(_cafter.stdout_lines | map('split') | list) -%}
+              {%- set d = {} -%}
+              {%- for k, v in a.items() -%}{%- set _ = d.update({k: (v | int) - (b.get(k, 0) | int)}) -%}{%- endfor -%}
+              {{- d -}}
+
+        - name: Report the last hop
+          debug:
+            msg: "host Envoy public listener (mTLS only), last 3 requests: {{ _cdelta }}"
+
+        - name: Assert the requests went through the host Envoy without TLS errors
+          assert:
+            that:
+              - (_cdelta.downstream_rq_completed | default(0) | int) >= 3
+              - (_cdelta.ssl_connection_error | default(0) | int) == 0
+            fail_msg: "expected 3 requests through the host Envoy, got {{ _cdelta }}"
+
     - name: Remove the bootstrap files from the controller
       file:
-        path: "{{ istio_bootstrap_dir }}"
+        path: "{{ item }}"
         state: absent
-      when: istio_bootstrap_dir is defined
+      loop: "{{ [istio_bootstrap_dir | default(''), consul_bootstrap_dir | default('')] | select | list }}"
