@@ -1,0 +1,378 @@
+---
+# Joins the bare-metal AI host to the deployed mesh, or removes every mesh component from it.
+#
+#   ai_mesh_state=present ai_mesh=istio   after phase_istio.yml        (make istio* AI_MESH=1)
+#   ai_mesh_state=absent                  before any phase, in teardown (always; idempotent)
+#
+# Implemented: istio. Planned: consul, linkerd.
+#
+# Common to every mesh (host side):
+#   - Docker publishes the AI load balancer on 127.0.0.1:5005 only (compose override), so its
+#     PREROUTING DNAT no longer catches traffic for <host>:5005 before the mesh's capture rule;
+#     the host proxy receives :5005 and forwards to 127.0.0.1:5005. Requires Docker's
+#     userland-proxy off (setup_ai_vm.yml), otherwise that last step adds a docker-proxy hop.
+#   - Docker enables br_netfilter, so container-to-container traffic on the compose bridge also
+#     crosses the host's PREROUTING; the backends listen on 5005 too. The Docker bridges are
+#     therefore excluded from capture, or nginx -> backend would be redirected into the proxy.
+#   - absent: compose override removed (LB back on 0.0.0.0:5005), mesh packages, files,
+#     /etc/hosts entries and iptables chains removed. Cluster objects live in thesis-test and
+#     disappear with the namespace in 01_teardown.yml.
+#
+# Istio specifics (docs: Virtual Machine Installation, single network):
+#   - static WorkloadEntry, no auto-registration: istiod keeps the settings it has without
+#     AI_MESH. With the flat network the host reaches istiod directly at its ClusterIP (no
+#     east-west gateway); /etc/hosts maps istiod.istio-system.svc to it.
+#   - capture limited to inbound 5005 and outbound 10.233.0.0/16 (the generated defaults "*"
+#     would also capture BGP on 179 and the exporters' ports); nft backend forced (the agent
+#     otherwise picked iptables-legacy next to Docker's nft rules).
+#   - Envoy concurrency 2, as the sidecars in the pods (derived there from the 2-CPU limit);
+#     on the host it would default to all 24 cores.
+#   - the bootstrap token is valid for 7 days; re-run the make target to refresh it.
+
+- name: Cluster side of the AI host mesh membership
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ai_mesh_state: present
+    ai_mesh: ""
+    test_ns: thesis-test
+    app_dir: ../k8s
+    ai_host: "{{ groups['ai_mesh_host'][0] }}"
+    ai_host_ip: "{{ hostvars[ai_host].ansible_host }}"
+    istio_token_seconds: 604800
+  tasks:
+    - name: Validate parameters
+      assert:
+        that:
+          - ai_mesh_state in ['present', 'absent']
+          - ai_mesh_state == 'absent' or ai_mesh in ['istio']
+        fail_msg: "ai_mesh_state=present needs ai_mesh=istio (consul and linkerd are not implemented yet)"
+
+    - name: Istio - cluster objects and host bootstrap files
+      when: ai_mesh_state == 'present' and ai_mesh == 'istio'
+      block:
+        - name: Read the istiod version and address
+          shell: |
+            set -e
+            img=$(kubectl -n istio-system get deploy istiod -o jsonpath='{.spec.template.spec.containers[0].image}')
+            ip=$(kubectl -n istio-system get svc istiod -o jsonpath='{.spec.clusterIP}')
+            echo "${img##*:} $ip"
+          register: _istiod
+          changed_when: false
+
+        - name: Publish istiod facts
+          set_fact:
+            istio_version: "{{ _istiod.stdout.split()[0] }}"
+            istiod_ip: "{{ _istiod.stdout.split()[1] }}"
+
+        # The external variant's manual Endpoints would otherwise linger next to the selector.
+        - name: Remove the external-dependency Endpoints
+          command: kubectl -n {{ test_ns }} delete endpoints ai-service --ignore-not-found
+          changed_when: false
+
+        - name: Apply ServiceAccount, Service, WorkloadGroup, WorkloadEntry, Sidecar
+          shell: >-
+            sed 's/__AI_HOST_IP__/{{ ai_host_ip }}/' {{ app_dir }}/ai-service/ai-service-mesh-istio.yaml
+            | kubectl apply -f -
+          changed_when: true
+
+        - name: Create a work directory for the bootstrap files
+          tempfile:
+            state: directory
+            suffix: istio-vm
+          register: _istio_dir
+
+        - name: Generate the host bootstrap files
+          command: >-
+            istioctl x workload entry configure
+            --name ai-service -n {{ test_ns }}
+            -o {{ _istio_dir.path }}
+            --clusterID Kubernetes
+            --ingressIP {{ istiod_ip }}
+            --internalIP {{ ai_host_ip }}
+            --capture-dns=false
+            --tokenDuration {{ istio_token_seconds }}
+          changed_when: true
+
+        - name: Hand the bootstrap directory to the host play
+          set_fact:
+            istio_bootstrap_dir: "{{ _istio_dir.path }}"
+
+- name: Host side of the AI host mesh membership
+  hosts: ai_mesh_host
+  become: true
+  gather_facts: false
+  vars:
+    ai_mesh_state: present
+    ai_mesh: ""
+    ai_compose_dir: /opt/service-mesh-thesis
+    ai_port: 5005
+    capture_cidr: 10.233.0.0/16
+    proxy_concurrency: 2
+    istio_version: "{{ hostvars['localhost'].istio_version | default('') }}"
+    istio_bootstrap_dir: "{{ hostvars['localhost'].istio_bootstrap_dir | default('') }}"
+  handlers:
+    - name: Recreate the AI load balancer
+      command: docker compose up -d
+      args:
+        chdir: "{{ ai_compose_dir }}"
+
+  tasks:
+    # ------------------------------------------------------------------ absent (all meshes)
+    - name: Remove every mesh component from the host
+      when: ai_mesh_state == 'absent'
+      block:
+        - name: Is the Istio sidecar installed?
+          stat:
+            path: /usr/local/bin/pilot-agent
+          register: _pilot_agent
+
+        - name: Stop and disable the Istio sidecar
+          systemd:
+            name: istio
+            state: stopped
+            enabled: false
+          when: _pilot_agent.stat.exists
+          failed_when: false
+
+        - name: Remove the Istio iptables chains (nft and legacy backends)
+          shell: |
+            FORCE_IPTABLES_BINARY=nft /usr/local/bin/pilot-agent istio-iptables --cleanup-only
+            FORCE_IPTABLES_BINARY=legacy /usr/local/bin/pilot-agent istio-iptables --cleanup-only
+          when: _pilot_agent.stat.exists
+          failed_when: false
+
+        - name: Purge the istio-sidecar package
+          apt:
+            name: istio-sidecar
+            state: absent
+            purge: true
+
+        - name: Remove Istio files left on the host
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /etc/certs          # created for Istio only; the agent also writes its issued
+                                  # cert-chain.pem/key.pem here, which outlive the CA they came from
+            - /var/run/secrets/tokens/istio-token
+            - /etc/istio
+            - /var/lib/istio
+            - /var/log/istio
+            - /tmp/istio-sidecar.deb
+
+        - name: Remove the istiod hosts entry
+          lineinfile:
+            path: /etc/hosts
+            regexp: '\sistiod\.istio-system\.svc$'
+            state: absent
+
+        - name: Remove the istio-proxy user
+          user:
+            name: istio-proxy
+            state: absent
+          failed_when: false
+
+        - name: Assert no Istio rules remain
+          shell: "! iptables-nft-save -t nat | grep -q ISTIO && ! iptables-legacy-save -t nat 2>/dev/null | grep -q ISTIO"
+          changed_when: false
+
+        - name: Put the AI load balancer back on 0.0.0.0:{{ ai_port }}
+          file:
+            path: "{{ ai_compose_dir }}/docker-compose.override.yml"
+            state: absent
+          notify: Recreate the AI load balancer
+
+    # ------------------------------------------------------------------ present (common)
+    - name: Prepare the host for a mesh proxy
+      when: ai_mesh_state == 'present'
+      block:
+        - name: Require Docker's userland proxy to be off (setup_ai_vm.yml)
+          shell: grep -Eq '"userland-proxy"[[:space:]]*:[[:space:]]*false' /etc/docker/daemon.json
+          changed_when: false
+
+        - name: Publish the AI load balancer on 127.0.0.1 only
+          copy:
+            dest: "{{ ai_compose_dir }}/docker-compose.override.yml"
+            mode: '0644'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml: present only while the AI host is in a
+              # mesh. The host proxy receives :{{ ai_port }} and forwards to 127.0.0.1:{{ ai_port }}.
+              services:
+                load-balancer:
+                  ports: !override
+                    - "127.0.0.1:{{ ai_port }}:80"
+          notify: Recreate the AI load balancer
+
+        - name: List the Docker bridges to exclude from capture
+          shell: "ip -o link show type bridge | awk -F': ' '{print $2}' | paste -sd,"
+          register: _bridges
+          changed_when: false
+
+    # ------------------------------------------------------------------ present: istio
+    - name: Join the Istio mesh
+      when: ai_mesh_state == 'present' and ai_mesh == 'istio'
+      block:
+        - name: Download istio-sidecar {{ istio_version }}
+          get_url:
+            url: "https://storage.googleapis.com/istio-release/releases/{{ istio_version }}/deb/istio-sidecar.deb"
+            dest: /tmp/istio-sidecar.deb
+            mode: '0644'
+
+        - name: Install istio-sidecar {{ istio_version }}
+          apt:
+            deb: /tmp/istio-sidecar.deb
+
+        # Certificates issued by a previous install's CA would be presented to the new istiod
+        # ("tls: unknown certificate authority").
+        - name: Remove certificates issued by an earlier Istio install
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop: [/etc/certs/cert-chain.pem, /etc/certs/key.pem]
+
+        - name: Create the Istio directories
+          file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+          loop: [/etc/certs, /var/run/secrets/tokens, /etc/istio/proxy, /etc/istio/config, /var/lib/istio/envoy]
+
+        - name: Copy the bootstrap files
+          copy:
+            src: "{{ istio_bootstrap_dir }}/{{ item.src }}"
+            dest: "{{ item.dest }}"
+            mode: '0644'
+          loop:
+            - {src: root-cert.pem, dest: /etc/certs/root-cert.pem}
+            - {src: istio-token, dest: /var/run/secrets/tokens/istio-token}
+            - {src: cluster.env, dest: /var/lib/istio/envoy/cluster.env}
+            - {src: mesh.yaml, dest: /etc/istio/config/mesh}
+
+        - name: Limit capture, force the nft backend, exclude the Docker bridges
+          lineinfile:
+            path: /var/lib/istio/envoy/cluster.env
+            regexp: "^{{ item.key }}="
+            line: "{{ item.key }}='{{ item.value }}'"
+          loop:
+            - {key: ISTIO_INBOUND_PORTS, value: "{{ ai_port }}"}
+            - {key: ISTIO_SERVICE_CIDR, value: "{{ capture_cidr }}"}
+            - {key: FORCE_IPTABLES_BINARY, value: nft}
+            - {key: ISTIO_EXCLUDE_INTERFACES, value: "{{ _bridges.stdout }}"}
+
+        - name: Match the pods' Envoy concurrency
+          lineinfile:
+            path: /etc/istio/config/mesh
+            insertafter: '^defaultConfig:'
+            regexp: '^  concurrency:'
+            line: "  concurrency: {{ proxy_concurrency }}"
+
+        - name: Resolve istiod to its ClusterIP
+          lineinfile:
+            path: /etc/hosts
+            regexp: '\sistiod\.istio-system\.svc$'
+            line: "{{ lookup('file', istio_bootstrap_dir ~ '/hosts') }}"
+
+        - name: Hand the Istio directories to istio-proxy
+          file:
+            path: "{{ item }}"
+            owner: istio-proxy
+            recurse: true
+          loop: [/var/lib/istio, /etc/certs, /etc/istio/proxy, /etc/istio/config, /var/run/secrets]
+
+        - name: Apply the compose override now
+          meta: flush_handlers
+
+        - name: (Re)start the Istio sidecar
+          systemd:
+            name: istio
+            state: restarted
+            enabled: true
+
+        - name: Wait until Envoy is ready
+          uri:
+            url: http://127.0.0.1:15021/healthz/ready
+          register: _ready
+          until: _ready.status == 200
+          retries: 30
+          delay: 2
+
+        - name: Check that the capture rules went to nft and cover only :{{ ai_port }}
+          shell: |
+            set -e
+            iptables-nft-save -t nat | grep -q -- "-A ISTIO_INBOUND -p tcp -m tcp --dport {{ ai_port }} -j ISTIO_IN_REDIRECT"
+            ! iptables-legacy-save -t nat 2>/dev/null | grep -q ISTIO
+            curl -s 127.0.0.1:15000/server_info | grep -q '"concurrency": {{ proxy_concurrency }}'
+          changed_when: false
+
+- name: End-to-end check from inside the mesh
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ai_mesh_state: present
+    ai_mesh: ""
+    test_ns: thesis-test
+  tasks:
+    # Through the ingress gateway, i.e. the measured path: gateway Envoy -> host Envoy. (curl in an
+    # istio-proxy container would bypass capture: the proxy's own uid is excluded.)
+    # The host Envoy's counters are cumulative, so the policy is judged on the DELTA over three
+    # requests. The Makefile re-runs these tasks (--tags verify) after applying the
+    # PeerAuthentication, with ai_mesh_expect=mutual_tls (STRICT) or none (DISABLE).
+    - name: Istio - last-hop check
+      when: ai_mesh_state == 'present' and ai_mesh == 'istio'
+      tags: [verify]
+      block:
+        - name: Snapshot the host Envoy's inbound counters per security policy
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: &snap >-
+            curl -s 127.0.0.1:15090/stats/prometheus | grep '^istio_requests_total{'
+            | grep 'reporter="destination"'
+            | sed -E 's/.*connection_security_policy="([a-z_]*)".* ([0-9.e+]+)$/\1 \2/'
+            | awk '{a[$1]+=$2} END {for (k in a) printf "%s %d\n", k, a[k]}'
+          register: _before
+          changed_when: false
+
+        - name: Send three requests through the ingress gateway
+          shell: |
+            port=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
+            for i in 1 2 3; do
+              curl -s -m 10 -o /dev/null -w '%{http_code} ' "http://{{ hostvars[groups['workers'][-1]].ansible_host }}:$port/api/Ai/health"
+            done
+          register: _e2e
+          until: _e2e.stdout == '200 200 200 '
+          retries: 15
+          delay: 4
+          changed_when: false
+
+        - name: Snapshot again
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: *snap
+          register: _after
+          changed_when: false
+
+        - name: Compute the per-policy delta
+          set_fact:
+            _delta: >-
+              {%- set b = dict(_before.stdout_lines | map('split') | list) -%}
+              {%- set a = dict(_after.stdout_lines | map('split') | list) -%}
+              {%- set d = {} -%}
+              {%- for k, v in a.items() -%}{%- set _ = d.update({k: (v | int) - (b.get(k, 0) | int)}) -%}{%- endfor -%}
+              {{- d -}}
+
+        - name: Report the last-hop security policy
+          debug:
+            msg: "host Envoy, last 3 requests by connection_security_policy: {{ _delta }}"
+
+        - name: Assert the expected policy
+          when: ai_mesh_expect is defined
+          assert:
+            that:
+              - (_delta[ai_mesh_expect] | default(0) | int) >= 3
+              - (_delta | dict2items | rejectattr('key', 'equalto', ai_mesh_expect) | map(attribute='value') | map('int') | sum) == 0
+            fail_msg: "expected all requests as {{ ai_mesh_expect }}, got {{ _delta }}"
+
+    - name: Remove the bootstrap files from the controller
+      file:
+        path: "{{ istio_bootstrap_dir }}"
+        state: absent
+      when: istio_bootstrap_dir is defined
