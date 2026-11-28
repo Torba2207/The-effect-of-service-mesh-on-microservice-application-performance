@@ -4,7 +4,7 @@
 #   ai_mesh_state=present ai_mesh=istio   after phase_istio.yml        (make istio* AI_MESH=1)
 #   ai_mesh_state=absent                  before any phase, in teardown (always; idempotent)
 #
-# Implemented: istio, consul. Planned: linkerd.
+# Implemented: istio, consul, linkerd (linkerd_bypass=true for L-P).
 #
 # Common to every mesh (host side):
 #   - Docker publishes the AI load balancer on 127.0.0.1:5005 only (compose override), so its
@@ -44,6 +44,26 @@
 #     -default-envoy-proxy-concurrency. The agent is restarted, not reloaded, on every join: a
 #     reload did not push a changed tagged address of the sidecar to the catalog.
 #   - /api/Ai through the API Gateway via a MeshService backend (only in this variant).
+#
+# Linkerd specifics (docs: Adding non-Kubernetes workloads to your mesh):
+#   - identity from SPIRE on the host (server + agent, join token, entry for the proxy user's
+#     uid). SPIRE's UpstreamAuthority is a dedicated intermediate CA signed on the controller by
+#     Linkerd's identity issuer (the issuer has no pathlen limit), so `linkerd install` is the same
+#     as without AI_MESH and neither the issuer nor the trust-anchor key reaches the host.
+#   - ExternalWorkload + Service (EndpointSlices by Linkerd); its Ready condition is set once the
+#     host proxy is ready (Linkerd marks the endpoint not ready otherwise).
+#   - cluster DNS on the host via a systemd-resolved routing domain (~cluster.local -> CoreDNS):
+#     the proxy finds the destination and policy controllers by name.
+#   - linkerd-proxy copied out of the control plane's proxy image, run as its own user; its
+#     environment is taken from a meshed pod's linkerd-proxy (cores, timeouts, ...), minus the
+#     per-workload values.
+#   - Linkerd's inbound proxy forwards to the ORIGINAL destination (<host>:5005), not to loopback,
+#     so the load balancer stays on 0.0.0.0:5005 (no compose override) and capture is a native nft
+#     table at priority dstnat-10: it runs before Docker's NAT (iptables-nft, dstnat) whatever
+#     order Docker keeps its rules in; the proxy's own connection to <host>:5005 leaves through
+#     OUTPUT, where Docker's DNAT takes it to the container.
+#   - L-P (linkerd_bypass=true): the host proxy runs but nothing is redirected to it, as the
+#     application ports in the pods bypass theirs.
 
 - name: Cluster side of the AI host mesh membership
   hosts: localhost
@@ -61,8 +81,8 @@
       assert:
         that:
           - ai_mesh_state in ['present', 'absent']
-          - ai_mesh_state == 'absent' or ai_mesh in ['istio', 'consul']
-        fail_msg: "ai_mesh_state=present needs ai_mesh=istio or consul (linkerd is not implemented yet)"
+          - ai_mesh_state == 'absent' or ai_mesh in ['istio', 'consul', 'linkerd']
+        fail_msg: "ai_mesh_state=present needs ai_mesh=istio, consul or linkerd"
 
     - name: Istio - cluster objects and host bootstrap files
       when: ai_mesh_state == 'present' and ai_mesh == 'istio'
@@ -176,6 +196,81 @@
           set_fact:
             consul_bootstrap_dir: "{{ _consul_dir.path }}"
 
+    - name: Linkerd - cluster objects, proxy environment and SPIRE's upstream CA
+      when: ai_mesh_state == 'present' and ai_mesh == 'linkerd'
+      block:
+        - name: Remove the external-dependency Endpoints
+          command: kubectl -n {{ test_ns }} delete endpoints ai-service --ignore-not-found
+          changed_when: false
+
+        - name: Apply the Service (annotated) and the ExternalWorkload
+          shell: >-
+            sed 's/__AI_HOST_IP__/{{ ai_host_ip }}/' {{ app_dir }}/ai-service/ai-service-mesh-linkerd.yaml
+            | kubectl apply -f -
+          changed_when: true
+
+        - name: Read the control plane's proxy image
+          shell: >-
+            kubectl -n linkerd get deploy linkerd-destination
+            -o jsonpath='{.spec.template.spec.containers[?(@.name=="linkerd-proxy")].image}'
+          register: _l5d_image
+          changed_when: false
+
+        - name: Read the meshed pods
+          command: kubectl -n {{ test_ns }} get pods -o json
+          register: _l5d_pods
+          changed_when: false
+
+        # Everything a meshed pod's proxy gets, except what belongs to that pod.
+        - name: Build the host proxy environment from the pod's
+          set_fact:
+            l5d_proxy_image: "{{ _l5d_image.stdout }}"
+            l5d_proxy_env: >-
+              {{ (((_l5d_pods.stdout | from_json)['items']
+                   | map(attribute='spec.containers') | flatten
+                   | selectattr('name', 'equalto', 'linkerd-proxy') | first).env)
+                 | selectattr('value', 'defined')
+                 | selectattr('name', 'match', '^LINKERD2_PROXY_')
+                 | rejectattr('name', 'match', '^LINKERD2_PROXY_(IDENTITY_|POLICY_WORKLOAD$|DESTINATION_CONTEXT$|INBOUND_PORTS$|INBOUND_IPS$|SHUTDOWN_ENDPOINT)')
+                 | items2dict(key_name='name', value_name='value') }}
+
+        - name: Require the proxy image and core settings
+          assert:
+            that:
+              - l5d_proxy_image | length > 0
+              - "'LINKERD2_PROXY_CORES' in l5d_proxy_env"
+              - "'LINKERD2_PROXY_DESTINATION_SVC_ADDR' in l5d_proxy_env"
+
+        - name: Create a work directory for SPIRE's upstream CA
+          tempfile:
+            state: directory
+            suffix: linkerd-vm
+          register: _l5d_dir
+
+        # A dedicated intermediate under Linkerd's issuer: the issuer's key stays on the controller.
+        - name: Sign SPIRE's upstream CA with the Linkerd identity issuer
+          shell: |
+            set -e
+            umask 077
+            cd {{ _l5d_dir.path }}
+            kubectl -n linkerd get cm linkerd-identity-trust-roots -o jsonpath='{.data.ca-bundle\.crt}' > trust-anchor.pem
+            kubectl -n linkerd get secret linkerd-identity-issuer -o jsonpath='{.data.crt\.pem}' | base64 -d > issuer.pem
+            kubectl -n linkerd get secret linkerd-identity-issuer -o jsonpath='{.data.key\.pem}' | base64 -d > issuer-key.pem
+            openssl verify -CAfile trust-anchor.pem issuer.pem
+            openssl ecparam -name prime256v1 -genkey -noout -out upstream-key.pem
+            openssl req -new -key upstream-key.pem -subj "/CN=spire-upstream.{{ ai_host | replace('_', '-') }}" -out up.csr
+            printf 'basicConstraints=critical,CA:TRUE,pathlen:1\nkeyUsage=critical,keyCertSign,cRLSign\nsubjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid\n' > ext.cnf
+            openssl x509 -req -in up.csr -CA issuer.pem -CAkey issuer-key.pem -CAcreateserial -days 365 -sha256 -extfile ext.cnf -out upstream.pem 2>/dev/null
+            rm -f issuer-key.pem up.csr ext.cnf issuer.srl
+            cat upstream.pem issuer.pem > upstream-chain.pem
+            openssl verify -CAfile trust-anchor.pem -untrusted issuer.pem upstream.pem
+            chmod 644 trust-anchor.pem
+          changed_when: true
+
+        - name: Hand the Linkerd facts to the host play
+          set_fact:
+            l5d_bootstrap_dir: "{{ _l5d_dir.path }}"
+
 - name: Host side of the AI host mesh membership
   hosts: ai_mesh_host
   become: true
@@ -193,6 +288,16 @@
     consul_bootstrap_dir: "{{ hostvars['localhost'].consul_bootstrap_dir | default('') }}"
     consul_sidecar_port: 21000
     consul_admin_port: 19000
+    linkerd_bypass: false
+    l5d_proxy_image: "{{ hostvars['localhost'].l5d_proxy_image | default('') }}"
+    l5d_proxy_env: "{{ hostvars['localhost'].l5d_proxy_env | default({}) }}"
+    l5d_bootstrap_dir: "{{ hostvars['localhost'].l5d_bootstrap_dir | default('') }}"
+    spire_version: 1.15.5
+    spire_trust_domain: root.linkerd.cluster.local
+    l5d_identity: "spiffe://root.linkerd.cluster.local/ai-service"
+    l5d_server_name: ai-service.thesis-test.external.cluster.local
+    l5d_workload: "{{ inventory_hostname | replace('_', '-') }}"
+    cluster_dns: 10.233.0.3
   handlers:
     - name: Recreate the AI load balancer
       command: docker compose up -d
@@ -299,6 +404,59 @@
             state: absent
           failed_when: false
 
+        - name: Stop and disable linkerd-proxy and SPIRE
+          systemd:
+            name: "{{ item }}"
+            state: stopped
+            enabled: false
+          loop: [linkerd-proxy, spire-agent, spire-server]
+          failed_when: false
+
+        - name: Remove the Linkerd capture table
+          shell: nft delete table ip ai_mesh_linkerd 2>/dev/null; true
+          changed_when: false
+
+        - name: Remove the linkerd-proxy and SPIRE units, binaries, configuration and data
+          file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /etc/systemd/system/linkerd-proxy.service
+            - /etc/systemd/system/spire-agent.service
+            - /etc/systemd/system/spire-server.service
+            - /opt/linkerd-proxy
+            - /etc/linkerd-proxy
+            - /opt/spire
+            - /run/spire-agent
+          register: _l5d_removed
+
+        - name: Reload systemd after removing the Linkerd units
+          systemd:
+            daemon_reload: true
+          when: _l5d_removed is changed
+
+        - name: Remove the cluster DNS routing domain
+          file:
+            path: /etc/systemd/resolved.conf.d/thesis-cluster-local.conf
+            state: absent
+          register: _l5d_dns
+
+        - name: Restart systemd-resolved without the routing domain
+          systemd:
+            name: systemd-resolved
+            state: restarted
+          when: _l5d_dns is changed
+
+        - name: Remove the linkerd-proxy user
+          user:
+            name: linkerd-proxy
+            state: absent
+          failed_when: false
+
+        - name: Assert no Linkerd capture remains
+          shell: "! nft list tables | grep -q ai_mesh_linkerd"
+          changed_when: false
+
         - name: Put the AI load balancer back on 0.0.0.0:{{ ai_port }}
           file:
             path: "{{ ai_compose_dir }}/docker-compose.override.yml"
@@ -313,7 +471,8 @@
           shell: grep -Eq '"userland-proxy"[[:space:]]*:[[:space:]]*false' /etc/docker/daemon.json
           changed_when: false
 
-        - name: Publish the AI load balancer on 127.0.0.1 only
+        - name: Publish the AI load balancer on 127.0.0.1 only (Istio, Consul)
+          when: ai_mesh != 'linkerd'
           copy:
             dest: "{{ ai_compose_dir }}/docker-compose.override.yml"
             mode: '0644'
@@ -324,6 +483,14 @@
                 load-balancer:
                   ports: !override
                     - "127.0.0.1:{{ ai_port }}:80"
+          notify: Recreate the AI load balancer
+
+        # Linkerd's inbound proxy forwards to <host>:5005 (see the header).
+        - name: Keep the AI load balancer on 0.0.0.0 (Linkerd)
+          when: ai_mesh == 'linkerd'
+          file:
+            path: "{{ ai_compose_dir }}/docker-compose.override.yml"
+            state: absent
           notify: Recreate the AI load balancer
 
         - name: List the Docker bridges to exclude from capture
@@ -613,6 +780,320 @@
           delay: 2
           changed_when: false
 
+    # ------------------------------------------------------------------ present: linkerd
+    - name: Join the Linkerd mesh
+      when: ai_mesh_state == 'present' and ai_mesh == 'linkerd'
+      block:
+        - name: Create /etc/systemd/resolved.conf.d
+          file:
+            path: /etc/systemd/resolved.conf.d
+            state: directory
+            mode: '0755'
+
+        - name: Route cluster.local lookups to the cluster DNS
+          copy:
+            dest: /etc/systemd/resolved.conf.d/thesis-cluster-local.conf
+            mode: '0644'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml (Linkerd): cluster names via CoreDNS.
+              [Resolve]
+              DNS={{ cluster_dns }}
+              Domains=~cluster.local
+          register: _dns_conf
+
+        - name: Restart systemd-resolved
+          systemd:
+            name: systemd-resolved
+            state: restarted
+          when: _dns_conf is changed
+
+        - name: Resolve the Linkerd control plane by name
+          command: resolvectl query linkerd-dst-headless.linkerd.svc.cluster.local
+          register: _dst_dns
+          until: _dst_dns.rc == 0
+          retries: 10
+          delay: 2
+          changed_when: false
+
+        - name: Create the linkerd-proxy user
+          user:
+            name: linkerd-proxy
+            system: true
+            create_home: false
+            shell: /usr/sbin/nologin
+          register: _l5d_user
+
+        - name: Create the SPIRE and proxy directories
+          file:
+            path: "{{ item.path }}"
+            state: directory
+            mode: "{{ item.mode }}"
+          loop:
+            - {path: /opt/spire, mode: '0755'}
+            - {path: /opt/spire/certs, mode: '0700'}
+            - {path: /opt/spire/data/server, mode: '0700'}
+            - {path: /opt/spire/data/agent, mode: '0700'}
+            - {path: /opt/linkerd-proxy, mode: '0755'}
+            - {path: /etc/linkerd-proxy, mode: '0755'}
+
+        - name: Install SPIRE {{ spire_version }}
+          shell: |
+            set -e
+            cd /tmp
+            curl -sfLO https://github.com/spiffe/spire/releases/download/v{{ spire_version }}/spire-{{ spire_version }}-linux-amd64-musl.tar.gz
+            tar -xzf spire-{{ spire_version }}-linux-amd64-musl.tar.gz
+            install -m 0755 spire-{{ spire_version }}/bin/spire-server spire-{{ spire_version }}/bin/spire-agent /opt/spire/
+            rm -rf spire-{{ spire_version }} spire-{{ spire_version }}-linux-amd64-musl.tar.gz
+          args:
+            creates: /opt/spire/spire-server
+
+        - name: Copy SPIRE's upstream CA and the trust anchor
+          copy:
+            src: "{{ l5d_bootstrap_dir }}/{{ item.src }}"
+            dest: "{{ item.dest }}"
+            mode: "{{ item.mode }}"
+          loop:
+            - {src: upstream-chain.pem, dest: /opt/spire/certs/upstream-chain.pem, mode: '0600'}
+            - {src: upstream-key.pem, dest: /opt/spire/certs/upstream-key.pem, mode: '0600'}
+            - {src: trust-anchor.pem, dest: /opt/spire/certs/trust-anchor.pem, mode: '0644'}
+            - {src: trust-anchor.pem, dest: /etc/linkerd-proxy/trust-anchor.pem, mode: '0644'}
+
+        - name: Write the SPIRE server and agent configuration
+          copy:
+            dest: "/opt/spire/{{ item.name }}.conf"
+            mode: '0644'
+            content: "{{ item.content }}"
+          loop:
+            - name: server
+              content: |
+                # Managed by deployments/ansible/ai_mesh.yml
+                server {
+                  bind_address = "127.0.0.1"
+                  bind_port = "8081"
+                  trust_domain = "{{ spire_trust_domain }}"
+                  data_dir = "/opt/spire/data/server"
+                  log_level = "INFO"
+                  ca_ttl = "168h"
+                  default_x509_svid_ttl = "48h"
+                  ca_key_type = "ec-p256"
+                }
+                plugins {
+                  DataStore "sql" {
+                    plugin_data {
+                      database_type = "sqlite3"
+                      connection_string = "/opt/spire/data/server/datastore.sqlite3"
+                    }
+                  }
+                  KeyManager "disk" {
+                    plugin_data { keys_path = "/opt/spire/data/server/keys.json" }
+                  }
+                  NodeAttestor "join_token" { plugin_data {} }
+                  UpstreamAuthority "disk" {
+                    plugin_data {
+                      cert_file_path   = "/opt/spire/certs/upstream-chain.pem"
+                      key_file_path    = "/opt/spire/certs/upstream-key.pem"
+                      bundle_file_path = "/opt/spire/certs/trust-anchor.pem"
+                    }
+                  }
+                }
+            - name: agent
+              content: |
+                # Managed by deployments/ansible/ai_mesh.yml
+                agent {
+                  data_dir = "/opt/spire/data/agent"
+                  log_level = "INFO"
+                  server_address = "127.0.0.1"
+                  server_port = "8081"
+                  socket_path = "/run/spire-agent/public/api.sock"
+                  trust_bundle_path = "/opt/spire/certs/trust-anchor.pem"
+                  trust_domain = "{{ spire_trust_domain }}"
+                }
+                plugins {
+                  KeyManager "disk" {
+                    plugin_data { directory = "/opt/spire/data/agent" }
+                  }
+                  NodeAttestor "join_token" { plugin_data {} }
+                  WorkloadAttestor "unix" { plugin_data {} }
+                }
+
+        - name: Copy linkerd-proxy out of {{ l5d_proxy_image }}
+          shell: |
+            set -e
+            docker pull -q "{{ l5d_proxy_image }}" >/dev/null
+            c=$(docker create "{{ l5d_proxy_image }}")
+            docker cp "$c:/usr/lib/linkerd/linkerd2-proxy" /opt/linkerd-proxy/
+            docker rm "$c" >/dev/null
+          changed_when: true
+
+        - name: Write the proxy environment
+          copy:
+            dest: /etc/linkerd-proxy/proxy.env
+            mode: '0644'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml: a meshed pod's proxy environment plus this
+              # workload's identity, policy and destination context. Trust anchors: run.sh.
+              {% for k, v in (l5d_proxy_env | dictsort) %}
+              {{ k }}='{{ v }}'
+              {% endfor %}
+              LINKERD2_PROXY_INBOUND_PORTS='{{ ai_port }}'
+              LINKERD2_PROXY_INBOUND_IPS='{{ ansible_host }}'
+              LINKERD2_PROXY_IDENTITY_SERVER_ID='{{ l5d_identity }}'
+              LINKERD2_PROXY_IDENTITY_SERVER_NAME='{{ l5d_server_name }}'
+              LINKERD2_PROXY_IDENTITY_SPIRE_WORKLOAD_API_ADDRESS='unix:///run/spire-agent/public/api.sock'
+              LINKERD2_PROXY_POLICY_WORKLOAD='{"ns":"thesis-test", "external_workload":"{{ l5d_workload }}"}'
+              LINKERD2_PROXY_DESTINATION_CONTEXT='{"ns":"thesis-test", "nodeName":"{{ l5d_workload }}", "external_workload":"{{ l5d_workload }}"}'
+
+        - name: Write the nft capture table (inbound :{{ ai_port }} -> 4143, Docker bridges excluded)
+          copy:
+            dest: /etc/linkerd-proxy/ai-mesh.nft
+            mode: '0644'
+            content: |
+              # Managed by deployments/ansible/ai_mesh.yml. Priority dstnat-10: before Docker's NAT.
+              table ip ai_mesh_linkerd {
+                chain prerouting {
+                  type nat hook prerouting priority dstnat - 10; policy accept;
+                  iifname { {{ _bridges.stdout.split(',') | map('to_json') | join(', ') }} } return
+                  tcp dport {{ ai_port }} redirect to :4143
+                }
+              }
+
+        - name: Write the proxy start and capture scripts
+          copy:
+            dest: "/opt/linkerd-proxy/{{ item.name }}"
+            mode: '0755'
+            content: "{{ item.content }}"
+          loop:
+            - name: run.sh
+              content: |
+                #!/bin/sh
+                # PEM with newlines cannot go through an EnvironmentFile.
+                LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS="$(cat /etc/linkerd-proxy/trust-anchor.pem)" exec /opt/linkerd-proxy/linkerd2-proxy
+            - name: capture.sh
+              content: |
+                #!/bin/sh
+                # up: load the capture table, unless L-P (linkerd_bypass); down: remove it.
+                nft delete table ip ai_mesh_linkerd 2>/dev/null
+                [ "$1" = up ] && [ "{{ linkerd_bypass | bool | lower }}" = false ] && exec nft -f /etc/linkerd-proxy/ai-mesh.nft
+                true
+
+        - name: Install the SPIRE and proxy units
+          copy:
+            dest: "/etc/systemd/system/{{ item.name }}.service"
+            mode: '0644'
+            content: "{{ item.content }}"
+          loop:
+            - name: spire-server
+              content: |
+                [Unit]
+                Description=SPIRE server (identities for the AI host in the Linkerd mesh)
+                After=network-online.target
+                [Service]
+                ExecStart=/opt/spire/spire-server run -config /opt/spire/server.conf
+                Restart=on-failure
+                [Install]
+                WantedBy=multi-user.target
+            - name: spire-agent
+              content: |
+                [Unit]
+                Description=SPIRE agent (workload API for linkerd-proxy)
+                Requires=spire-server.service
+                After=spire-server.service
+                [Service]
+                ExecStartPre=/usr/bin/mkdir -p /run/spire-agent/public
+                EnvironmentFile=-/opt/spire/join-token.env
+                ExecStart=/opt/spire/spire-agent run -config /opt/spire/agent.conf -joinToken ${SPIRE_JOIN_TOKEN}
+                Restart=on-failure
+                [Install]
+                WantedBy=multi-user.target
+            - name: linkerd-proxy
+              content: |
+                [Unit]
+                Description=linkerd-proxy for ai-service (AI host in the Linkerd mesh)
+                Requires=spire-agent.service
+                After=spire-agent.service network-online.target
+                [Service]
+                User=linkerd-proxy
+                Group=linkerd-proxy
+                EnvironmentFile=/etc/linkerd-proxy/proxy.env
+                ExecStartPre=+/opt/linkerd-proxy/capture.sh up
+                ExecStart=/opt/linkerd-proxy/run.sh
+                ExecStopPost=+/opt/linkerd-proxy/capture.sh down
+                Restart=on-failure
+                RestartSec=3
+                [Install]
+                WantedBy=multi-user.target
+
+        - name: Start the SPIRE server
+          systemd:
+            name: spire-server
+            state: restarted
+            enabled: true
+            daemon_reload: true
+
+        - name: Wait for the SPIRE server
+          command: /opt/spire/spire-server healthcheck
+          register: _spire_srv
+          until: _spire_srv.rc == 0
+          retries: 20
+          delay: 1
+          changed_when: false
+
+        - name: Issue a join token for the agent
+          shell: >-
+            /opt/spire/spire-server token generate -spiffeID spiffe://{{ spire_trust_domain }}/agent/{{ l5d_workload }} -ttl 600
+            | sed -n 's/^Token: //p'
+          register: _join_token
+          changed_when: true
+
+        - name: Hand the join token to the agent unit
+          copy:
+            dest: /opt/spire/join-token.env
+            mode: '0600'
+            content: "SPIRE_JOIN_TOKEN={{ _join_token.stdout }}\n"
+
+        - name: Start the SPIRE agent
+          systemd:
+            name: spire-agent
+            state: restarted
+            enabled: true
+
+        - name: Wait for the SPIRE agent
+          command: /opt/spire/spire-agent healthcheck -socketPath /run/spire-agent/public/api.sock
+          register: _spire_agent
+          until: _spire_agent.rc == 0
+          retries: 20
+          delay: 1
+          changed_when: false
+
+        - name: Register the proxy's identity (selector unix:uid of linkerd-proxy)
+          shell: |
+            uid=$(id -u linkerd-proxy)
+            if /opt/spire/spire-server entry show -spiffeID {{ l5d_identity }} | grep -q "unix:uid:$uid"; then echo exists; exit 0; fi
+            /opt/spire/spire-server entry create -parentID spiffe://{{ spire_trust_domain }}/agent/{{ l5d_workload }} \
+              -spiffeID {{ l5d_identity }} -selector unix:uid:$uid -x509SVIDTTL 86400
+          register: _entry
+          changed_when: "'exists' not in _entry.stdout"
+
+        - name: (Re)start linkerd-proxy
+          systemd:
+            name: linkerd-proxy
+            state: restarted
+            enabled: true
+
+        - name: Wait until linkerd-proxy is ready (identity certified)
+          uri:
+            url: http://127.0.0.1:4191/ready
+            return_content: true
+          register: _l5d_ready
+          until: _l5d_ready.status == 200
+          retries: 30
+          delay: 2
+
+        - name: Check the capture table matches the variant
+          shell: >-
+            {% if linkerd_bypass | bool %}! {% endif %}nft list table ip ai_mesh_linkerd 2>/dev/null | grep -q 'redirect to :4143'
+          changed_when: false
+
 - name: End-to-end check from inside the mesh
   hosts: localhost
   gather_facts: false
@@ -733,8 +1214,74 @@
               - (_cdelta.ssl_connection_error | default(0) | int) == 0
             fail_msg: "expected 3 requests through the host Envoy, got {{ _cdelta }}"
 
+    # Linkerd marks an ExternalWorkload's endpoint not ready until its Ready condition is true;
+    # nothing on the host reports health to Linkerd, so it is set here, after the proxy is ready.
+    - name: Linkerd - mark the ExternalWorkload ready
+      when: ai_mesh_state == 'present' and ai_mesh == 'linkerd'
+      shell: |
+        now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        kubectl -n {{ test_ns }} patch externalworkload {{ groups['ai_mesh_host'][0] | replace('_', '-') }} --subresource=status --type=merge \
+          -p "{\"status\":{\"conditions\":[{\"type\":\"Ready\",\"status\":\"True\",\"reason\":\"ProxyReady\",\"message\":\"linkerd-proxy on the AI host is ready\",\"lastTransitionTime\":\"$now\",\"lastProbeTime\":\"$now\"}]}}"
+      changed_when: true
+
+    # Through the ingress (nginx, itself meshed), the measured entry point. Judged on the delta of
+    # the host proxy's inbound responses over three requests: tls="true" for L-S; for L-P nothing
+    # may reach the host proxy (the requests still answer 200, around it).
+    - name: Linkerd - last-hop check
+      when: ai_mesh_state == 'present' and ai_mesh == 'linkerd'
+      tags: [verify]
+      block:
+        - name: Snapshot the host proxy's inbound responses by TLS state
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: &lsnap >-
+            curl -s 127.0.0.1:4191/metrics | grep '^response_total{direction="inbound"'
+            | grep 'target_port="5005"'
+            | sed -E 's/.*[{,]tls="([a-z_]*)".* ([0-9]+)$/\1 \2/'
+            | awk '{a[$1]+=$2} END {for (k in a) printf "%s %d\n", k, a[k]}'
+          register: _lbefore
+          changed_when: false
+
+        - name: Send three requests through the ingress
+          shell: |
+            for i in 1 2 3; do
+              curl -s -m 10 -o /dev/null -w '%{http_code} ' "http://{{ hostvars[groups['workers'][-1]].ansible_host }}:30080/api/Ai/health"
+            done
+          register: _le2e
+          until: _le2e.stdout == '200 200 200 '
+          retries: 15
+          delay: 4
+          changed_when: false
+
+        - name: Snapshot again
+          delegate_to: "{{ groups['ai_mesh_host'][0] }}"
+          shell: *lsnap
+          register: _lafter
+          changed_when: false
+
+        - name: Compute the delta
+          set_fact:
+            _ldelta: >-
+              {%- set b = dict(_lbefore.stdout_lines | map('split') | list) -%}
+              {%- set a = dict(_lafter.stdout_lines | map('split') | list) -%}
+              {%- set d = {} -%}
+              {%- for k, v in a.items() -%}{%- set _ = d.update({k: (v | int) - (b.get(k, 0) | int)}) -%}{%- endfor -%}
+              {{- d -}}
+
+        - name: Report the last hop
+          debug:
+            msg: "host linkerd-proxy, last 3 requests by tls: {{ _ldelta }} ({{ 'L-P: expected none' if linkerd_bypass | default(false) | bool else 'expected tls=true' }})"
+
+        - name: Assert the last hop
+          assert:
+            that: >-
+              {{ ((_ldelta | dict2items | map(attribute='value') | map('int') | sum) == 0)
+                 if (linkerd_bypass | default(false) | bool) else
+                 ((_ldelta['true'] | default(0) | int) >= 3
+                  and (_ldelta | dict2items | rejectattr('key', 'equalto', 'true') | map(attribute='value') | map('int') | sum) == 0) }}
+            fail_msg: "unexpected last hop: {{ _ldelta }}"
+
     - name: Remove the bootstrap files from the controller
       file:
         path: "{{ item }}"
         state: absent
-      loop: "{{ [istio_bootstrap_dir | default(''), consul_bootstrap_dir | default('')] | select | list }}"
+      loop: "{{ [istio_bootstrap_dir | default(''), consul_bootstrap_dir | default(''), l5d_bootstrap_dir | default('')] | select | list }}"
