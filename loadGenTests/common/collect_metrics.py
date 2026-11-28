@@ -28,8 +28,9 @@ import urllib.request
 sys.dont_write_bytecode = True   # no __pycache__ in the clone (lg_campaign.sh needs a clean tree)
 import ai_host_metrics as aihost  # noqa: E402
 
-SIDECAR = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "baseline": None}
-CONTROL_NS = {"istio": "istio-system", "linkerd": "linkerd"}
+SIDECAR = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "consul": "consul-dataplane", "baseline": None}
+# consul: accepted here, but the runners do not pass -m consul yet (C-S is not in the scheduler).
+CONTROL_NS = {"istio": "istio-system", "linkerd": "linkerd", "consul": "consul"}
 
 # csv service -> (pod regex, app container name)
 SERVICES = {
@@ -177,7 +178,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prom", default="http://localhost:9090")
     ap.add_argument("--config", required=True)
-    ap.add_argument("--mesh", required=True, choices=["baseline", "istio", "linkerd"])
+    ap.add_argument("--mesh", required=True, choices=["baseline", "istio", "linkerd", "consul"])
     ap.add_argument("--mtls", required=True)
     ap.add_argument("--level", required=True)
     ap.add_argument("--rep", required=True)
