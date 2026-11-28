@@ -15,8 +15,8 @@
 #   JS_FILE        k6 script, copied to the load generator
 #   HAS_ASSETS     "true" if the scenario posts a fixed binary asset
 #   ASSET_FILE     that asset, in loadGenTests/common/assets/ (only when HAS_ASSETS=true)
-#   DEFAULT_RATES  "LOW MED HIGH" req/s when the k6 script reads RATE_LOW/MED/HIGH, overridable
-#                  with the Core's -R; empty when the script's rates are fixed
+#   DEFAULT_RATES  "LOW MED HIGH" req/s; the k6 script reads them as RATE_LOW/MED/HIGH and the
+#                  Core's -R overrides them. Every scenario has them.
 #   USES_AI        "true" if requests reach the external AI host
 #   K6_EXTRA_ENV   extra k6 environment, expanded HERE (locally), not on the load generator
 #   PREFLIGHT_CMD  one smoke request; eval'd later by the Core, so \$URL and \$COMMON stay
@@ -39,6 +39,7 @@ case "$SERVICE_ARG" in
     SERVICE_DIR="DigitalFiltersService"
     SERVICE_SLUG="digital_filters"
     JS_FILE="filters-test.js"
+    DEFAULT_RATES="60 120 180"
     HAS_ASSETS="true"
     ASSET_FILE="filter_input_128.png"
     K6_EXTRA_ENV="IMG_PATH=assets/filter_input_128.png"
@@ -48,6 +49,7 @@ case "$SERVICE_ARG" in
     SERVICE_DIR="FibonacciService"
     SERVICE_SLUG="fibonacci"
     JS_FILE="fibonacci-test.js"
+    DEFAULT_RATES="50 100 150"
     K6_EXTRA_ENV="FIB_N=$FIB_N"
     PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"n\":10}' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/fibonacci/calculate\""
     ;;
@@ -55,12 +57,14 @@ case "$SERVICE_ARG" in
     SERVICE_DIR="IntegrationService"
     SERVICE_SLUG="integration"
     JS_FILE="integration-test.js"
+    DEFAULT_RATES="200 400 800"
     PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"function\":\"x^2\",\"lowerBound\":0,\"upperBound\":1,\"steps\":10}' -o /dev/null -w '   api -> http=%{http_code}\n' \"\$URL/api/integration/calculate\""
     ;;
   "permutation")
     SERVICE_DIR="PermutationService"
     SERVICE_SLUG="permutation"
     JS_FILE="permutation-test.js"
+    DEFAULT_RATES="100 200 300"
     PREFLIGHT_CMD="curl -s -m 8 -o /dev/null -w '   ingress -> http=%{http_code}\n' -X POST \"\$URL/api/permutation/generate\" -H 'Content-Type: application/json' -d '{\"set\":[1,2,3,4,5,6,7]}'"
     ;;
   "video")
@@ -89,8 +93,8 @@ case "$SERVICE_ARG" in
     SERVICE_SLUG="differential"
     SCENARIO_TAG="S2int"
     JS_FILE="differential-test.js"
-    # STD rates, same as Phase B. Each request also puts one request on integration-service.
-    DEFAULT_RATES="25 50 100"
+    # Same rates as integration S1. Each request also puts one request on integration-service.
+    DEFAULT_RATES="200 400 800"
     PREFLIGHT_CMD="curl -s -m 8 -X POST -H 'Content-Type: application/json' -d '{\"function\":\"x^2\",\"initialConditionY\":1,\"steps\":5}' -o /dev/null -w '   differential/solve -> http=%{http_code}\n' \"\$URL/api/differential/solve\""
     ;;
   "permutation_ai")
