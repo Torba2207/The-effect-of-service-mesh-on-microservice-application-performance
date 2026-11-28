@@ -4,20 +4,25 @@
 # from Prometheus (via port-forward), and appends rows to results/master.csv.
 #
 # The active configuration must already be deployed before calling this (deployments/:
-# make baseline | linkerd | linkerd-nomtls | istio-mtls | istio-nomtls).
+# make baseline | linkerd | linkerd-nomtls | istio-mtls | istio-nomtls | consul).
 # One invocation = 3 levels x N reps. Every run drives all nine scenarios, AI included.
 #
 # Usage:
-#   ./run_phaseB.sh -c <label> -m <baseline|istio|linkerd> -t <mtls> [opts]
+#   ./run_phaseB.sh -c <label> -m <baseline|istio|linkerd|consul> -t <mtls> [opts]
 # Example:
 #   ./run_phaseB.sh -c linkerd_mtls -m linkerd -t on
 #   ./run_phaseB.sh -c baseline -m baseline -t na -u http://10.29.20.113:30080
+#   CPORT=$(kubectl --context projekt-badawchy-cluster -n thesis-test get svc api-gateway \
+#     -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')
+#   ./run_phaseB.sh -c consul_mtls_aimesh -m consul -t on -u http://10.29.20.113:$CPORT
+#     (C-S with AI needs make consul AI_MESH=1: only then has the API Gateway a /api/Ai route)
 #
 # Options:
 #   -c LABEL     config label for the CSV (e.g. linkerd_mtls, istio_nomtls)   [required]
-#   -m MESH      baseline | istio | linkerd                                   [required]
-#   -t MTLS      mTLS state label: on | off | na                              [required]
-#   -u URL       TARGET_URL base (default http://<node>:30080; istio: resolve gateway)
+#   -m MESH      baseline | istio | linkerd | consul                          [required]
+#   -t MTLS      mTLS state label: on | off (istio, linkerd), on (consul), na (baseline) [required]
+#   -u URL       TARGET_URL base (default http://<node>:30080); required for istio and consul,
+#                whose gateway NodePort changes on every install
 #   -n NODE_IP   worker node IP for NodePort ingress     (default 10.29.20.113)
 #   -l "LEVELS"  space-separated levels                  (default "low med high")
 #   -r REPS      repetitions per level                   (default 10)
@@ -70,6 +75,18 @@ while getopts "c:m:t:u:n:l:r:W:S:C:N:X" opt; do
   esac
 done
 [ -z "$CONFIG" ] || [ -z "$MESH" ] || [ -z "$MTLS" ] && { echo "ERROR: -c -m -t are required"; exit 2; }
+case "$MESH:$MTLS" in
+  baseline:na|istio:on|istio:off|linkerd:on|linkerd:off|consul:on) ;;
+  consul:*) echo "ERROR: -m consul takes -t on only (mTLS is always on in Consul)"; exit 2 ;;
+  baseline:*|istio:*|linkerd:*) echo "ERROR: -t must be na for baseline, on|off for a mesh (got -m $MESH -t $MTLS)"; exit 2 ;;
+  *) echo "ERROR: -m must be baseline, istio, linkerd or consul (collect_metrics.py accepts no other value)"; exit 2 ;;
+esac
+if [ -z "$URL" ] && [ "$MESH" = istio ]; then
+  echo "ERROR: -m istio requires -u (gateway NodePort: kubectl --context $CTX -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')"; exit 2
+fi
+if [ -z "$URL" ] && [ "$MESH" = consul ]; then
+  echo "ERROR: -m consul requires -u (API Gateway NodePort: kubectl --context $CTX -n thesis-test get svc api-gateway -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')"; exit 2
+fi
 [ -z "$URL" ] && URL="http://${NODE_IP}:30080"
 case "$FIB_N" in ''|*[!0-9]*) echo "ERROR: -N must be a positive integer (got '$FIB_N')"; exit 2 ;; esac
 [ "$FIB_N" -ge 1 ] || { echo "ERROR: -N must be >= 1"; exit 2; }
@@ -80,6 +97,11 @@ if [ "$INCLUDE_AI" = "true" ]; then
   source "$HERE/../common/ai_state.sh"
   ai_state
   ai_label_check "$CONFIG"
+  # The Consul API Gateway routes only to catalog services: ai_generate (/api/Ai) has a route only
+  # with the AI host in the mesh (ai-service-mesh-consul.yaml).
+  if [ "$MESH" = consul ] && [ "$AI_MODE" != mesh ]; then
+    echo "ERROR: Phase B under consul needs the AI host in the mesh (make consul AI_MESH=1): without it the API Gateway has no /api/Ai route for ai_generate"; exit 1
+  fi
 fi
 
 RESULTS="$RESULTS_ROOT/phaseB/results"; mkdir -p "$RESULTS"
@@ -159,7 +181,8 @@ run_one() {
   python3 "$HERE/../common/collect_metrics.py" \
     --prom "$PROM_LOCAL" --config "$CONFIG" --mesh "$MESH" --mtls "$MTLS" \
     --level "$level" --rep "$rep" --run-id "$run_id" \
-    --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
+    --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV" \
+    ${AI_MODE:+--ai-mode "$AI_MODE"}
 
   # Extract this run's CPU/RAM time-series NOW, while it is still in Prometheus.
   # Prometheus retention here is only 1h (tmpfs), so end-of-campaign extraction would
