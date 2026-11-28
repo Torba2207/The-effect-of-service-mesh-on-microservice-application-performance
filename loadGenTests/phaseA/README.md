@@ -251,15 +251,26 @@ Service has no endpoints. Everything else runs entirely in the cluster.
 
 | `-s` key | Endpoint | Type | k6 script | Work unit | Rates low / med / high (req/s) | `-R` |
 |----------|----------|------|-----------|-----------|-------------------------------|------|
-| `permutation` | `POST /api/permutation/generate` | S1 | `PermutationService/permutation-test.js` | set `[1..7]` (5040 permutations) | 25 / 50 / 100 | — |
-| `fibonacci` | `POST /api/fibonacci/calculate` | S1 | `FibonacciService/fibonacci-test.js` | `n` from `-N` (default 20000) | 25 / 50 / 100 | — |
-| `integration` | `POST /api/integration/calculate` | S1 | `IntegrationService/integration-test.js` | `x^2` on [0,1], 20000 steps | 25 / 50 / 100 | — |
-| `digital` | `POST /api/filters/apply-image` | S1 | `DigitalFiltersService/filters-test.js` | fixed 128×128 PNG, `blur` | 25 / 50 / 100 | — |
+| `permutation` | `POST /api/permutation/generate` | S1 | `PermutationService/permutation-test.js` | set `[1..7]` (5040 permutations) | 100 / 200 / 300 | yes |
+| `fibonacci` | `POST /api/fibonacci/calculate` | S1 | `FibonacciService/fibonacci-test.js` | `n` from `-N` (default 20000) | 50 / 100 / 150 | yes |
+| `integration` | `POST /api/integration/calculate` | S1 | `IntegrationService/integration-test.js` | `x^2` on [0,1], 20000 steps | 200 / 400 / 800 | yes |
+| `digital` | `POST /api/filters/apply-image` | S1 | `DigitalFiltersService/filters-test.js` | fixed 128×128 PNG, `blur` | 60 / 120 / 180 | yes |
 | `video` | `POST /api/video/compress` | S1 | `VideoService/video-test.js` | fixed 360p / 1 s MP4 | 6 / 12 / 18 | yes |
 | `ai` | `POST /api/Ai/generate` | S1 | `AiService/ai-test.js` | seeded prompt: 10 numbers, seed 42 | 3 / 6 / 12 | yes |
 | `permutation_ai` | `POST /api/permutation/generate-from-ai` | S2-ext | `PermutationService/permutation-ai-test.js` | AI returns a 7-element set (seed 42), then permuted | 3 / 6 / 12 | yes |
 | `digital_ai` | `POST /api/filters/apply-ai-matrix` | S2-ext | `DigitalFiltersService/filters-ai-test.js` | AI returns a 3×3 matrix, `blur` applied | 3 / 6 / 12 | yes |
-| `differential` | `POST /api/differential/solve` | S2-int | `DifferentialEquationsService/differential-test.js` | `x^2`, `initialConditionY` 1, `steps` 5 → exactly one call to integration | 25 / 50 / 100 | yes |
+| `differential` | `POST /api/differential/solve` | S2-int | `DifferentialEquationsService/differential-test.js` | `x^2`, `initialConditionY` 1, `steps` 5 → exactly one call to integration | 200 / 400 / 800 | yes |
+
+**Rates of the in-cluster scenarios (raised 28.11.2026).** Until then permutation, fibonacci,
+integration, digital and differential ran at 25 / 50 / 100 req/s; the November 2026 matrix showed
+that even "high" used at most half of a service's CPU limit (fibonacci 50 %, filters 41 %,
+permutation 23 %, integration and differential ~7 % of 3 × 500m) and latency did not rise with load,
+so the three levels were one operating point. The new rates aim at ~25 / 50 / 75 % of the CPU limit
+from the measured CPU per request (fibonacci 7.5m, filters 6.1m, permutation 3.5m); integration and
+differential stop at 800 req/s (~50 %), beyond which the ingress and the proxies, not the service,
+would be the bottleneck. Video and the AI scenarios are unchanged: video already shows rising tail
+latency at 18 req/s, the AI host is GPU-bound near 12-13 req/s. Results at the old rates are not
+comparable with the new ones (`measurements_11_11_26/`).
 
 **S2-int** is the in-cluster chain differential → integration. Both services are meshed and the call
 goes to `http://integration-service/` directly, not back through the ingress, so under a mesh **both
@@ -314,8 +325,9 @@ script still prints `DONE`.
 
 #### `-N N` — Fibonacci work-unit size
 Positive integer. Default `20000`. Only affects `-s fibonacci`; accepted and ignored for the others.
-The computation is O(n²), so `n` sets per-request CPU cost. 20000 was calibrated to sustain 100 req/s
-within the pods' 1.5-core budget; `n ≥ 30000` saturates the CPU limit and masks mesh overhead. The
+The computation is O(n²), so `n` sets per-request CPU cost. 20000 costs ~7.5m CPU per request (measured
+11.2026), so the default 50 / 100 / 150 req/s use ~25 / 50 / 75 % of the pods' 1.5-core budget;
+`n ≥ 30000` saturates the CPU limit and masks mesh overhead. The
 value is expanded on the workstation and sent to k6 as a literal.
 
 ```bash
@@ -323,9 +335,8 @@ value is expanded on the workstation and sent to k6 as a literal.
 ```
 
 #### `-R "LOW MED HIGH"` — per-level request rates
-Exactly three positive integers, in req/s, quoted as one argument. Only for scenarios whose rates
-are configurable (`video`, `differential`, `ai`, `permutation_ai`, `digital_ai`); rejected for the others, whose
-rates are fixed in their k6 script. Without `-R` the defaults from the table above apply.
+Exactly three positive integers, in req/s, quoted as one argument. Every scenario accepts it (the
+k6 scripts read `RATE_LOW/MED/HIGH`). Without `-R` the defaults from the table above apply.
 
 ```bash
 ./run_phaseA_Core.sh -s digital_ai -R "2 4 8"
@@ -517,7 +528,6 @@ a VPN drop breaks the SSH sessions and the port-forward mid-run.
 | `ERROR: -m baseline, but thesis-test pods carry a mesh sidecar` | A mesh is still deployed. Pass the real `-m/-t`, or finish the teardown. |
 | `ERROR: -m istio requires -u` / `-m consul requires -u` | Resolve the gateway NodePort (see Quick start) and pass `-u`. |
 | `ERROR: -s ai under consul needs the AI host in the mesh` | Deploy with `make consul AI_MESH=1`; without it the API Gateway has no `/api/Ai` route. |
-| `ERROR: -R is not supported for -s …` | That scenario's rates are fixed in its k6 script. |
 | `ERROR: SSH key not found` | Set `SSH_PRIVATE_KEY` or add it to the repo-root `.env`. |
 | `k6 missing on lg` / SSH hangs | VPN down, or `k6` not installed on the load generator. |
 | `kube context unreachable` | VPN down, or context `projekt-badawchy-cluster` not configured. |
