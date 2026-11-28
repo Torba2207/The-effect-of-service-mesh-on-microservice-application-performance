@@ -26,7 +26,7 @@ import urllib.request
 sys.dont_write_bytecode = True   # no __pycache__ in the clone (lg_campaign.sh needs a clean tree)
 import ai_host_metrics as aihost  # noqa: E402
 
-SIDE = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "baseline": None}
+SIDE = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "consul": "consul-dataplane", "baseline": None}
 SERVICES = {
     "permutation":     ("permutation-service-.*",            "permutation-service"),
     "fibonacci":       ("fibonacci-service-.*",              "fibonacci-service"),
