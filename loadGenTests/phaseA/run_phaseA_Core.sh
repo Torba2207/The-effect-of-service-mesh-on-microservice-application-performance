@@ -10,8 +10,9 @@
 #   -s SERVICE   S1:     digital | fibonacci | integration | permutation | video | ai
 #                S2-int: differential   (differential → integration, meshed→meshed)
 #                S2-ext: permutation_ai | digital_ai   (chains to the external AI host)  (required)
-#   -m MESH      baseline | istio | linkerd                                     (default: baseline)
-#   -t MTLS      on | off for a mesh, na for baseline                           (required with -m)
+#   -m MESH      baseline | istio | linkerd | consul                            (default: baseline)
+#   -t MTLS      on | off for istio/linkerd, on for consul (mTLS cannot be switched off there),
+#                na for baseline                                                (required with -m)
 #   -c LABEL     configuration label; CONFIG="<LABEL>_<service>_<S1|S2int|S2ext>" is written to
 #                the config column, run_id and the time-series filename.
 #                (default: baseline, or <mesh>_mtls / <mesh>_nomtls — same labels as Phase B)
@@ -19,7 +20,8 @@
 #   -R "L M H"   req/s for the low, med and high levels; only for services whose rates are
 #                configurable: video (default "6 12 18"), differential (default "25 50 100"),
 #                ai / permutation_ai / digital_ai (default "3 6 12")
-#   -u URL       full ingress base URL; required for istio, whose gateway NodePort is dynamic
+#   -u URL       full ingress base URL; required for istio and consul, whose gateway NodePort is
+#                dynamic (consul: the API Gateway, `make consul` prints it)
 #   -n NODE_IP   worker node behind the default URL http://<node>:30080         (default: 10.29.20.113)
 #   -l "LEVELS"  space-separated load levels                                    (default: "low med high")
 #   -r REPS      repetitions per level                                          (default: 10)
@@ -40,6 +42,12 @@
 #   ./run_phaseA_Core.sh -s digital_ai -R "2 4 8"                # -> baseline_digital_filters_S2ext
 #   ./run_phaseA_Core.sh -s differential -m istio -t on -u http://10.29.20.113:$GWPORT
 #                                                                # -> istio_mtls_differential_S2int
+#   CPORT=$(kubectl --context projekt-badawchy-cluster -n thesis-test get svc api-gateway \
+#     -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')
+#   ./run_phaseA_Core.sh -s video -m consul -t on -u http://10.29.20.113:$CPORT
+#                                                                # -> consul_mtls_video_S1
+#   (-s ai under consul needs the AI host in the mesh: make consul AI_MESH=1; the API Gateway
+#    has a /api/Ai route only then)
 #
 # Results go to <ServiceDir>/results/: master.csv for S1, master_<tag>.csv for any other scenario
 # (master_S2int.csv, master_S2ext.csv), so two scenarios of one service never share a CSV.
@@ -121,19 +129,21 @@ fi
 
 # --- Validate the labelling flags before anything runs ---
 case "$MESH" in
-  baseline|istio|linkerd) ;;
-  *) echo "ERROR: -m must be baseline, istio or linkerd (collect_metrics.py accepts no other value)"; exit 1 ;;
+  baseline|istio|linkerd|consul) ;;
+  *) echo "ERROR: -m must be baseline, istio, linkerd or consul (collect_metrics.py accepts no other value)"; exit 1 ;;
 esac
 
 if [ "$MESH" = "baseline" ]; then
   MTLS="${MTLS:-na}"
   [ "$MTLS" = "na" ] || { echo "ERROR: -m baseline takes -t na (there is no mesh to encrypt)"; exit 1; }
 else
-  [ -n "$MTLS" ] || { echo "ERROR: -m $MESH requires -t on|off"; exit 1; }
+  [ -n "$MTLS" ] || { [ "$MESH" = consul ] && echo "ERROR: -m consul requires -t on" || echo "ERROR: -m $MESH requires -t on|off"; exit 1; }
   case "$MTLS" in
     on|off) ;;
     *) echo "ERROR: -t must be on or off for -m $MESH"; exit 1 ;;
   esac
+  # C-S only: Consul has no mTLS switch and no C-P variant is defined (docs/test-scenario.typ).
+  [ "$MESH" != consul ] || [ "$MTLS" = on ] || { echo "ERROR: -m consul takes -t on only (mTLS is always on in Consul)"; exit 1; }
 fi
 
 LABEL_GIVEN=0; [ -n "$CONFIG_LABEL" ] && LABEL_GIVEN=1
@@ -155,6 +165,11 @@ if [ "$MESH" = "istio" ] && [ -z "$URL" ]; then
   echo "  kubectl --context $CTX -n istio-system get svc istio-ingressgateway -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}'"
   exit 1
 fi
+if [ "$MESH" = "consul" ] && [ -z "$URL" ]; then
+  echo "ERROR: -m consul requires -u; the API Gateway NodePort changes on every install. Resolve it with:"
+  echo "  kubectl --context $CTX -n thesis-test get svc api-gateway -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}'"
+  exit 1
+fi
 
 # Set default URL before sourcing, as PREFLIGHT_CMD depends on it.
 [ -z "$URL" ] && URL="http://${NODE_IP}:30080"
@@ -172,6 +187,11 @@ if [ "$USES_AI" = "true" ]; then
   ai_state
   [ "$AI_MODE" = mesh ] && [ "$LABEL_GIVEN" = 0 ] && CONFIG_LABEL="${CONFIG_LABEL}${AI_MESH_SUFFIX}"
   ai_label_check "$CONFIG_LABEL"
+  # The Consul API Gateway routes only to catalog services: /api/Ai exists only with the AI host
+  # in the mesh (ai-service-mesh-consul.yaml). S2-ext chains go through the pods' sidecars instead.
+  if [ "$MESH" = consul ] && [ "$AI_MODE" != mesh ] && [ "$SERVICE_NAME" = ai ]; then
+    echo "ERROR: -s ai under consul needs the AI host in the mesh (make consul AI_MESH=1): without it the API Gateway has no /api/Ai route"; exit 1
+  fi
 fi
 
 # The run label: written to the config column, to run_id and to the time-series filename.
@@ -289,13 +309,15 @@ PODC=" $(kubectl --context "$CTX" -n thesis-test get pods \
   -o jsonpath='{.items[*].spec.containers[*].name} {.items[*].spec.initContainers[*].name}' 2>/dev/null) "
 case "$MESH" in
   baseline)
-    if [[ "$PODC" == *" istio-proxy "* || "$PODC" == *" linkerd-proxy "* ]]; then
+    if [[ "$PODC" == *" istio-proxy "* || "$PODC" == *" linkerd-proxy "* || "$PODC" == *" consul-dataplane "* ]]; then
       echo "ERROR: -m baseline, but thesis-test pods carry a mesh sidecar. Pass the real -m/-t."; exit 1
     fi ;;
   istio)
     [[ "$PODC" == *" istio-proxy "* ]] || { echo "ERROR: -m istio, but no istio-proxy sidecar in thesis-test."; exit 1; } ;;
   linkerd)
     [[ "$PODC" == *" linkerd-proxy "* ]] || { echo "ERROR: -m linkerd, but no linkerd-proxy sidecar in thesis-test."; exit 1; } ;;
+  consul)
+    [[ "$PODC" == *" consul-dataplane "* ]] || { echo "ERROR: -m consul, but no consul-dataplane sidecar in thesis-test."; exit 1; } ;;
 esac
 
 # Show which host the cluster forwards /api/Ai to, so a run never silently hits a stale AI host.
@@ -363,7 +385,8 @@ run_one() {
   python3 "$COMMON/collect_metrics.py" \
     --prom "$PROM_LOCAL" --config "$CONFIG" --mesh "$MESH" --mtls "$MTLS" \
     --level "$level" --rep "$rep" --run-id "$run_id" \
-    --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV"
+    --start "$start" --end "$end" --summary "$RESULTS/k6_${run_id}.json" --csv "$CSV" \
+    ${AI_MODE:+--ai-mode "$AI_MODE"}
 
   # Extract this run's CPU/RAM time-series while it is still in Prometheus (1h tmpfs retention).
   python3 "$COMMON/extract_timeseries.py" --prom "$PROM_LOCAL" --master "$CSV" \
