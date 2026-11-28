@@ -195,13 +195,17 @@ resolves the Python helpers and `results/` regardless of cwd).
 Two `row_type`s per run, joined on `run_id`:
 - `resource` — one per service + `_controlplane` + `_ingress`: `app_*` / `sidecar_*` CPU
   (millicores) and RAM (MiB), mean & p95/max over the steady window. Baseline has empty sidecar
-  columns and no `_controlplane` row.
+  columns and no `_controlplane` row. Plus the bare-metal AI host when Prometheus scrapes it
+  (`make ai-monitoring`): `_ai_host` (AI containers / the host's mesh proxy unit, empty with
+  `AI_MESH=0`), `_ai_host_meshinfra` (Consul agent or SPIRE, only in the mesh) and `_ai_host_total`
+  (whole host); see `../phaseA/README.md`.
 - `latency` — one per k6 scenario: `lat_p50/p90/p95/p99/avg/max_ms`, `reqs`, `fail_rate`.
 
 Deltas vs `baseline` and the mTLS deltas are derived downstream.
 
 ### `results/timeseries_<config>.csv` — CPU/RAM behaviour over time
-Long format `run_id,config,mesh,level,rep,t_rel_s,kind(cpu_cores|mem_mib),service,container,value`.
+Long format `run_id,config,mesh,level,rep,t_rel_s,kind(cpu_cores|mem_mib|gpu_util_pct),service,container,value`
+(`gpu_util_pct`: AI host GPU, service `_ai_host_total`, container `gpu`).
 Written per-run during the campaign. To (re)generate/back-fill from recorded windows (within
 Prometheus retention):
 ```bash
