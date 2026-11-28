@@ -7,7 +7,11 @@ then appends long-format rows to the master CSV.
 
 Two row types are emitted:
   - resource : one per in-cluster service + _controlplane + _ingress
-               (CPU millicores / RAM MiB for app and sidecar containers)
+               (CPU millicores / RAM MiB for app and sidecar containers),
+               plus the bare-metal AI host when Prometheus scrapes it (ai_host_metrics.py):
+                 _ai_host            app = AI containers, sidecar = the host's mesh proxy
+                 _ai_host_meshinfra  mesh agents the pods do not have (Consul agent, SPIRE)
+                 _ai_host_total      the whole host (node_exporter: busy CPU, memory in use)
   - latency  : one per k6 scenario (p50/p90/p95/p99/avg/max, reqs, fail_rate)
 
 Resources and latency are decoupled because, under aggregate load, one service
@@ -17,8 +21,12 @@ import argparse
 import csv
 import json
 import os
+import sys
 import urllib.parse
 import urllib.request
+
+sys.dont_write_bytecode = True   # no __pycache__ in the clone (lg_campaign.sh needs a clean tree)
+import ai_host_metrics as aihost  # noqa: E402
 
 SIDECAR = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "baseline": None}
 CONTROL_NS = {"istio": "istio-system", "linkerd": "linkerd"}
@@ -74,10 +82,9 @@ def prom_query(prom, expr, t):
         return None
 
 
-def cpu_milli(prom, ns, pod_re, container, start, end, stat):
+def cpu_over(prom, inner, start, end, stat):
+    """inner: an expression in cores -> millicores, mean or p95 over the window."""
     dur = max(int(end - start), 15)
-    inner = ('sum(rate(container_cpu_usage_seconds_total{namespace="%s",pod=~"%s",container="%s"}[30s]))'
-             % (ns, pod_re, container))
     if stat == "mean":
         expr = "1000 * avg_over_time((%s)[%ds:5s])" % (inner, dur)
     else:
@@ -85,12 +92,23 @@ def cpu_milli(prom, ns, pod_re, container, start, end, stat):
     return prom_query(prom, expr, end)
 
 
-def mem_mib(prom, ns, pod_re, container, start, end, stat):
+def mem_over(prom, inner, start, end, stat):
+    """inner: an expression in MiB -> mean or max over the window."""
     dur = max(int(end - start), 15)
-    inner = ('sum(container_memory_working_set_bytes{namespace="%s",pod=~"%s",container="%s"})/1048576'
-             % (ns, pod_re, container))
     fn = "avg_over_time" if stat == "mean" else "max_over_time"
     return prom_query(prom, "%s((%s)[%ds:5s])" % (fn, inner, dur), end)
+
+
+def pod_sel(ns, pod_re, container):
+    return 'namespace="%s",pod=~"%s",container="%s"' % (ns, pod_re, container)
+
+
+def cpu_milli(prom, ns, pod_re, container, start, end, stat):
+    return cpu_over(prom, aihost.cpu_expr(pod_sel(ns, pod_re, container), "30s"), start, end, stat)
+
+
+def mem_mib(prom, ns, pod_re, container, start, end, stat):
+    return mem_over(prom, aihost.mem_expr(pod_sel(ns, pod_re, container)), start, end, stat)
 
 
 def ns_total_cpu(prom, ns, start, end):
@@ -123,6 +141,36 @@ def resource_row(base, prom, mesh, service, pod_re, app, start, end):
             "sidecar_mem_mib_max":    mem_mib(prom, base["ns"], pod_re, sc, start, end, "max"),
         })
     return row
+
+
+def ai_host_rows(base, prom, mesh, start, end):
+    """Rows of the bare-metal AI host; [] when Prometheus does not scrape it (make ai-monitoring)."""
+    if prom_query(prom, aihost.UP, end) != 1.0:
+        print("  . AI host not scraped by Prometheus (make ai-monitoring): no _ai_host rows")
+        return []
+    rows = {}
+    for svc, role, sel in aihost.groups(mesh):
+        row = rows.setdefault(svc, dict(base, row_type="resource", service=svc, scenario=""))
+        cpu, mem = aihost.cpu_expr(sel, "30s"), aihost.mem_expr(sel)
+        row.update({
+            role + "_cpu_milli_mean": cpu_over(prom, cpu, start, end, "mean"),
+            role + "_cpu_milli_p95":  cpu_over(prom, cpu, start, end, "p95"),
+            role + "_mem_mib_mean":   mem_over(prom, mem, start, end, "mean"),
+            role + "_mem_mib_max":    mem_over(prom, mem, start, end, "max"),
+        })
+    total = dict(base, row_type="resource", service="_ai_host_total", scenario="")
+    total.update({
+        "app_cpu_milli_mean": cpu_over(prom, aihost.node_cpu_expr("30s"), start, end, "mean"),
+        "app_cpu_milli_p95":  cpu_over(prom, aihost.node_cpu_expr("30s"), start, end, "p95"),
+        "app_mem_mib_mean":   mem_over(prom, aihost.node_mem_expr(), start, end, "mean"),
+        "app_mem_mib_max":    mem_over(prom, aihost.node_mem_expr(), start, end, "max"),
+    })
+    rows["_ai_host_total"] = total
+    # The mesh agents run only with the AI host in the mesh; no empty row without them.
+    infra = rows.get("_ai_host_meshinfra")
+    if infra and infra.get("app_cpu_milli_mean") is None:
+        del rows["_ai_host_meshinfra"]
+    return list(rows.values())
 
 
 def main():
@@ -175,6 +223,9 @@ def main():
         ing2["sidecar_mem_mib_mean"] = mem_mib(args.prom, "ingress-nginx", "ingress-nginx-controller-.*",
                                                SIDECAR[args.mesh], args.start, args.end, "mean")
     rows.append(ing2)
+
+    # bare-metal AI host: AI containers, its mesh proxy (AI_MESH=1), the whole host
+    rows += ai_host_rows(base, args.prom, args.mesh, args.start, args.end)
 
     # --- latency rows: one per k6 scenario ---
     try:
