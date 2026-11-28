@@ -1,0 +1,69 @@
+# Prometheus (kube-prometheus-stack, release cluster-monitor) scrapes the exporters on the
+# bare-metal AI host (deployments/ansible/monitoring_ai_host.yml, `make ai-monitoring`).
+# One ScrapeConfig per job; the operator picks them up by the label release: cluster-monitor.
+#
+# Interval 10 s = kubelet's /metrics/cadvisor in this cluster, so host series have the same
+# resolution as the pods' and collect_metrics.py can use the same rate windows for both.
+#
+# Every series gets host="ai_rtx". cAdvisor series of systemd units also get unit="<name>"
+# (from id="/system.slice/<name>.service"): the host-side mesh proxies (istio, consul-envoy,
+# consul, linkerd-proxy, spire-server, spire-agent) are systemd units. Docker containers keep
+# cAdvisor's name="<container>" (ai-load-balancer, ai-service-1, ...).
+#
+# The host series carry no namespace/pod/container labels, so the in-cluster queries
+# (container_*{namespace=...}) never pick them up; select them with job="ai-host-cadvisor".
+#
+# __AI_HOST_IP__ is substituted by monitoring_ai_host.yml from the inventory.
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: ai-host-cadvisor
+  namespace: monitoring
+  labels:
+    release: cluster-monitor
+spec:
+  jobName: ai-host-cadvisor
+  scrapeInterval: 10s
+  scrapeTimeout: 8s
+  staticConfigs:
+    - targets: ["__AI_HOST_IP__:8080"]
+      labels:
+        host: ai_rtx
+  metricRelabelings:
+    - sourceLabels: [id]
+      regex: /system\.slice/(.+)\.service
+      targetLabel: unit
+      replacement: $1
+      action: replace
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: ai-host-node
+  namespace: monitoring
+  labels:
+    release: cluster-monitor
+spec:
+  jobName: ai-host-node
+  scrapeInterval: 10s
+  scrapeTimeout: 8s
+  staticConfigs:
+    - targets: ["__AI_HOST_IP__:9100"]
+      labels:
+        host: ai_rtx
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: ScrapeConfig
+metadata:
+  name: ai-host-gpu
+  namespace: monitoring
+  labels:
+    release: cluster-monitor
+spec:
+  jobName: ai-host-gpu
+  scrapeInterval: 10s
+  scrapeTimeout: 8s
+  staticConfigs:
+    - targets: ["__AI_HOST_IP__:9835"]
+      labels:
+        host: ai_rtx
