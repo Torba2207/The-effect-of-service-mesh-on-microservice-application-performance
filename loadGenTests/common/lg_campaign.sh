@@ -4,7 +4,7 @@
 #   2. checks that the clone is on the studies branch and has no local changes;
 #   3. syncs it with origin (fast-forward only), so the campaign runs the latest pushed code and
 #      appends to the latest pushed CSVs;
-#   4. optionally deploys the configuration (-d) and resolves the Istio gateway (-G);
+#   4. optionally deploys the configuration (-d) and resolves the mesh gateway (-G);
 #   5. runs the given runner, which writes its results into the clone (loadGenTests/.../results);
 #   6. commits the new results and pushes the branch.
 #
@@ -22,8 +22,9 @@
 #               deploy stops here, before the runner
 #   -A          with -d: deploy with the AI host inside the mesh (make TARGET AI_MESH=1). The runners
 #               then require the _aimesh label suffix on AI runs (common/ai_state.sh)
-#   -G          append -u http://<node>:<port> to the runner arguments, with the Istio ingress
-#               gateway's NodePort (it changes on every Istio install); after -d if both are given
+#   -G          append -u http://<node>:<port> to the runner arguments, with the NodePort of the
+#               deployed gateway - Istio's ingress gateway or Consul's API Gateway (both change on
+#               every install); after -d if both are given
 #
 # The lock ($LG_CAMPAIGN_LOCK, default /run/lock/thesis-campaign.lock) is held for the whole run,
 # deploy included; a second lg_campaign.sh refuses to start while it is held. A bare `make <config>`
@@ -129,12 +130,17 @@ main() {
     echo "[deploy] done ($(date -u +%H:%M:%SZ))"
   fi
   if [ "$gateway" = 1 ]; then
-    local gwport
+    local gwport gwname="Istio gateway"
     gwport="$(kubectl --context "$CTX" -n istio-system get svc istio-ingressgateway \
-      -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 9>&- || true)"
-    [ -n "$gwport" ] || die "-G: cannot read the Istio ingress gateway NodePort (is Istio deployed?)"
+      -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}' 2>/dev/null 9>&- || true)"
+    if [ -z "$gwport" ]; then
+      gwname="Consul API Gateway"
+      gwport="$(kubectl --context "$CTX" -n thesis-test get svc api-gateway \
+        -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}' 2>/dev/null 9>&- || true)"
+    fi
+    [ -n "$gwport" ] || die "-G: no Istio ingress gateway or Consul API Gateway NodePort (is a gateway mesh deployed?)"
     set -- "$@" -u "http://$NODE_IP:$gwport"
-    echo "[deploy] Istio gateway: http://$NODE_IP:$gwport"
+    echo "[deploy] $gwname: http://$NODE_IP:$gwport"
   fi
 
   # --- campaign ---
