@@ -4,6 +4,7 @@
 //   LEVEL           low | med | high           (default low)
 //   DURATION        steady/warmup length        (default 120s)
 //   INCLUDE_AI      true | false                (default false)
+//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s (default 60 / 120 / 180; the Core's -R sets them)
 //   IMG_PATH        path to fixed PNG (on lg)   (default assets/filter_input_128.png)
 //   K6_SUMMARY_OUT  per-scenario JSON out path  (default phaseA_filters_summary.json)
 
@@ -23,9 +24,12 @@ if (!BASE) { throw new Error('BASE_URL env is required'); }
 // Fixed image work-unit asset (must be opened at init context).
 const IMG = open(IMG_PATH, 'b');
 
-// Baseline S1 target rates for filters_apply_image; AI-chained variant is opt-in.
+// S1 target rates for filters_apply_image (~25/50/75 % of the 3x500m CPU limit at 6.1m CPU per
+// request, measured 11.2026); the AI-chained variant is opt-in.
 const RATES = {
-  filters_apply_image: { low: 25, med: 50, high: 100 },
+  filters_apply_image: { low:  parseInt(__ENV.RATE_LOW  || '60', 10),
+    med:  parseInt(__ENV.RATE_MED  || '120', 10),
+    high: parseInt(__ENV.RATE_HIGH || '180', 10) },
   filters_ai_matrix:   { low: 1,  med: 1,  high: 1 },
 };
 

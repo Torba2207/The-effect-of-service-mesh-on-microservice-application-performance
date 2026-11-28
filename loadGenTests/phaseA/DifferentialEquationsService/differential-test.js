@@ -11,7 +11,7 @@
 //   BASE_URL           required, e.g. http://10.29.20.113:30080
 //   LEVEL              low | med | high                                  (default low)
 //   DURATION           steady/warmup length                              (default 120s)
-//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s                     (default 25 / 50 / 100)
+//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s                     (default 200 / 400 / 800)
 //   K6_SUMMARY_OUT     per-scenario JSON out path                        (default phaseA_summary.json)
 
 import http from 'k6/http';
@@ -25,11 +25,11 @@ const SUMMARY_OUT = __ENV.K6_SUMMARY_OUT || 'phaseA_summary.json';
 
 if (!BASE) { throw new Error('BASE_URL env is required'); }
 
-// STD class rates, identical to Phase B's differential_solve and to the S1 STD scenarios.
+// Same rates as the integration S1 scenario: ~1m CPU per request here plus one integration call.
 const RATES = {
-  low:  parseInt(__ENV.RATE_LOW  || '25', 10),
-  med:  parseInt(__ENV.RATE_MED  || '50', 10),
-  high: parseInt(__ENV.RATE_HIGH || '100', 10),
+  low:  parseInt(__ENV.RATE_LOW  || '200', 10),
+  med:  parseInt(__ENV.RATE_MED  || '400', 10),
+  high: parseInt(__ENV.RATE_HIGH || '800', 10),
 };
 const RATE = RATES[LEVEL];
 const S = 'differential_solve';

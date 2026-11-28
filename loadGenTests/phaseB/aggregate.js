@@ -39,11 +39,12 @@ const VID = open(VID_PATH, 'b');
 // Per-level target rates (requests/second) per scenario. STD and video match Phase A exactly.
 //                            low  med  high
 const RATES = {
-  permutation_generate:  { low: 25, med: 50, high: 100 }, // S1  STD
-  fibonacci_calculate:   { low: 25, med: 50, high: 100 }, // S1  STD
-  integration_calculate: { low: 25, med: 50, high: 100 }, // S1  STD
-  filters_apply_image:   { low: 25, med: 50, high: 100 }, // S1  STD (multipart)
-  differential_solve:    { low: 25, med: 50, high: 100 }, // S2-int STD (chains -> Integration)
+  // STD: one step below Phase A's levels (all run at once here; ~13-14 of 24 worker cores at high)
+  permutation_generate:  { low: 50,  med: 100, high: 150 }, // S1  STD
+  fibonacci_calculate:   { low: 50,  med: 100, high: 150 }, // S1  STD
+  integration_calculate: { low: 100, med: 200, high: 400 }, // S1  STD
+  filters_apply_image:   { low: 50,  med: 100, high: 150 }, // S1  STD (multipart)
+  differential_solve:    { low: 100, med: 200, high: 400 }, // S2-int STD (chains -> Integration)
   video_compress:        { low: 6,  med: 12, high: 18 },  // S1  HVY (multipart, ~0.28 s/req)
   ai_generate:           { low: 1,  med: 2,  high: 3  },  // S1  HVY  (external AI host)
   permutation_from_ai:   { low: 1,  med: 2,  high: 3  },  // S2-ext   (-> external AI host)

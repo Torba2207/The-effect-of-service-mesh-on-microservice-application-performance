@@ -4,7 +4,8 @@
 //   BASE_URL        required, e.g. http://10.29.20.113:30080
 //   LEVEL           low | med | high           (default low)
 //   DURATION        steady/warmup length        (default 120s)
-//   FIB_N           work-unit size (n)          (default 3000, matches Phase B)
+//   FIB_N           work-unit size (n)          (default 3000; the Core passes -N, default 20000)
+//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s (default 50 / 100 / 150; the Core's -R sets them)
 //   K6_SUMMARY_OUT  per-scenario JSON out path  (default phaseA_summary.json)
 
 import http from 'k6/http';
@@ -19,9 +20,12 @@ const SUMMARY_OUT = __ENV.K6_SUMMARY_OUT || 'phaseA_summary.json';
 
 if (!BASE) { throw new Error('BASE_URL env is required'); }
 
-// Isolated target rates for fibonacci_calculate
+// Isolated target rates for fibonacci_calculate (~25/50/75 % of the 3x500m CPU limit at n=20000,
+// 7.5m CPU per request, measured 11.2026)
 const RATES = {
-  fibonacci_calculate: { low: 25, med: 50, high: 100 }
+  fibonacci_calculate: { low:  parseInt(__ENV.RATE_LOW  || '50', 10),
+    med:  parseInt(__ENV.RATE_MED  || '100', 10),
+    high: parseInt(__ENV.RATE_HIGH || '150', 10) }
 };
 
 const SCENARIOS = ['fibonacci_calculate'];

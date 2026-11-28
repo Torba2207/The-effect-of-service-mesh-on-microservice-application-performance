@@ -3,6 +3,7 @@
 //   BASE_URL        required, e.g. http://10.29.20.113:30080
 //   LEVEL           low | med | high           (default low)
 //   DURATION        steady/warmup length        (default 120s)
+//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s (default 200 / 400 / 800; the Core's -R sets them)
 //   K6_SUMMARY_OUT  per-scenario JSON out path  (default phaseA_summary.json)
 
 import http from 'k6/http';
@@ -16,9 +17,13 @@ const SUMMARY_OUT = __ENV.K6_SUMMARY_OUT || 'phaseA_summary.json';
 
 if (!BASE) { throw new Error('BASE_URL env is required'); }
 
-// Isolated target rates for integration_calculate
+// Isolated target rates for integration_calculate. ~1m CPU per request (measured 11.2026), so even
+// 800 req/s is only ~50 % of the 3x500m limit; higher rates would load the ingress and the proxies
+// more than the service itself.
 const RATES = {
-  integration_calculate: { low: 25, med: 50, high: 100 }
+  integration_calculate: { low:  parseInt(__ENV.RATE_LOW  || '200', 10),
+    med:  parseInt(__ENV.RATE_MED  || '400', 10),
+    high: parseInt(__ENV.RATE_HIGH || '800', 10) }
 };
 
 const SCENARIOS = ['integration_calculate'];

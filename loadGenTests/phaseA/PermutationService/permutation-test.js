@@ -4,6 +4,7 @@
 //   LEVEL           low | med | high           (default low)
 //   DURATION        steady/warmup length        (default 120s)
 //   INCLUDE_AI      true | false                (default false)
+//   RATE_LOW/MED/HIGH  per-level arrival rate, req/s (default 100 / 200 / 300; the Core's -R sets them)
 //   K6_SUMMARY_OUT  per-scenario JSON out path  (default phaseA_permutation_summary.json)
 
 import http from 'k6/http';
@@ -18,9 +19,12 @@ const SUMMARY_OUT = __ENV.K6_SUMMARY_OUT || 'phaseA_permutation_summary.json';
 
 if (!BASE) { throw new Error('BASE_URL env is required'); }
 
-// Baseline S1 target rates for permutation_generate; AI-chained variant is opt-in.
+// S1 target rates for permutation_generate (~25/50/75 % of the 3x500m CPU limit at 3.5m CPU per
+// request, measured 11.2026); the AI-chained variant is opt-in.
 const RATES = {
-  permutation_generate: { low: 25, med: 50, high: 100 },
+  permutation_generate: { low:  parseInt(__ENV.RATE_LOW  || '100', 10),
+    med:  parseInt(__ENV.RATE_MED  || '200', 10),
+    high: parseInt(__ENV.RATE_HIGH || '300', 10) },
   permutation_from_ai: { low: 1, med: 1, high: 1 },
 };
 
