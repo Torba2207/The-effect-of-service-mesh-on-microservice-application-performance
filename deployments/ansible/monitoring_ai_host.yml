@@ -7,7 +7,10 @@
 #                          (Istio `istio`, Consul agent + Envoy, `linkerd-proxy`), so their cost
 #                          appears as container_cpu_usage_seconds_total{id="/system.slice/<unit>"},
 #                          the same metric names collect_metrics.py already uses for sidecars.
-#                          Housekeeping 10 s, as kubelet's built-in cAdvisor in the cluster.
+#                          Housekeeping 10 s without the dynamic back-off (by default cAdvisor
+#                          stretches it to 60 s for idle containers). cAdvisor jitters each
+#                          period to 10-20 s, as kubelet's built-in cAdvisor does for the pods,
+#                          so host and pod series have the same resolution.
 #   node_exporter   :9100  whole-host CPU, memory, network, softirq; a cross-check for the cgroups.
 #   GPU exporter    :9835  RTX 4070 utilisation and memory (NVML variant: reads the library
 #                          directly instead of spawning nvidia-smi on every scrape). A control
@@ -18,10 +21,14 @@
 # They run in every configuration alike, so their own cost cancels out in differences.
 # Host networking: no docker-proxy and no extra NAT rules in front of the scrapes.
 #
-# Prometheus is NOT configured here: the cluster side (ScrapeConfig) is a separate step.
+# The second play configures Prometheus in the cluster to scrape them every 10 s
+# (k8s/monitoring/ai-host-scrapeconfig.yaml: jobs ai-host-cadvisor, ai-host-node, ai-host-gpu,
+# label host="ai_rtx") and waits until all targets are up. collect_metrics.py and
+# extract_timeseries.py then add the host's rows to every run.
 #
 # Usage (from deployments/):  make ai-monitoring
 # Remove: docker compose -p thesis-monitoring down  (in /opt/thesis-monitoring on the host)
+#         kubectl -n monitoring delete scrapeconfig ai-host-cadvisor ai-host-node ai-host-gpu
 
 - name: Metrics exporters on the AI host
   hosts: ai_monitored_host
@@ -94,6 +101,7 @@
                 - --port={{ cadvisor_port }}
                 - --docker_only=false
                 - --housekeeping_interval=10s
+                - --allow_dynamic_housekeeping=false
                 - --store_container_labels=false
                 - --enable_metrics=cpu,memory,network,diskIO
               network_mode: host
@@ -160,3 +168,56 @@
     - name: Report
       debug:
         msg: "{{ cadvisor_check.stdout_lines + ['GPU exporter: ' ~ (mon_gpu_enabled | bool | ternary('on :' ~ gpu_exporter_port, 'off'))] }}"
+
+- name: Prometheus scrapes the AI host
+  hosts: localhost
+  gather_facts: false
+  vars:
+    ai_host: "{{ groups['ai_monitored_host'][0] }}"
+    ai_host_ip: "{{ hostvars[ai_host].ansible_host }}"
+    gpu_enabled: "{{ hostvars[ai_host].mon_gpu_enabled | bool }}"
+    manifest: ../k8s/monitoring/ai-host-scrapeconfig.yaml
+    prom_api: /api/v1/namespaces/monitoring/services/http:cluster-monitor-kube-prome-prometheus:9090/proxy/api/v1
+    jobs: "{{ ['ai-host-cadvisor', 'ai-host-node'] + (gpu_enabled | ternary(['ai-host-gpu'], [])) }}"
+  tasks:
+    - name: Apply the ScrapeConfigs
+      shell: sed 's/__AI_HOST_IP__/{{ ai_host_ip }}/' {{ manifest }} | kubectl apply -f -
+      register: sc_apply
+      changed_when: "'configured' in sc_apply.stdout or 'created' in sc_apply.stdout"
+
+    # A target that can never come up would only show as a permanent scrape error.
+    - name: Remove the GPU scrape when the host runs no GPU exporter
+      command: kubectl -n monitoring delete scrapeconfig ai-host-gpu --ignore-not-found
+      when: not gpu_enabled
+      changed_when: false
+
+    # The operator rewrites the Prometheus config and the config-reloader reloads it: ~1 min.
+    - name: Wait until Prometheus scrapes every AI host target
+      command: kubectl get --raw "{{ prom_api }}/targets?state=active"
+      register: targets
+      changed_when: false
+      until: >-
+        (targets.stdout | from_json).data.activeTargets
+        | selectattr('labels.job', 'in', jobs) | selectattr('health', 'eq', 'up')
+        | map(attribute='labels.job') | unique | length == jobs | length
+      retries: 30
+      delay: 10
+
+    - name: Check that the host series reach Prometheus with their labels
+      command: >-
+        kubectl get --raw "{{ prom_api }}/query?query={{ item.q | urlencode }}"
+      loop:
+        - {what: "AI load balancer container", q: 'count(container_cpu_usage_seconds_total{job="ai-host-cadvisor",host="ai_rtx",name="ai-load-balancer"})'}
+        - {what: "systemd units (unit label)", q: 'count(container_cpu_usage_seconds_total{job="ai-host-cadvisor",unit="docker"})'}
+        - {what: "host CPU", q: 'count(node_cpu_seconds_total{job="ai-host-node",host="ai_rtx"})'}
+      loop_control:
+        label: "{{ item.what }}"
+      register: series
+      changed_when: false
+      until: (series.stdout | from_json).data.result | length > 0
+      retries: 6
+      delay: 10
+
+    - name: Report
+      debug:
+        msg: "Prometheus scrapes {{ jobs | join(', ') }} on {{ ai_host_ip }} every 10 s"
