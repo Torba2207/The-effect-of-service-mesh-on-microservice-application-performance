@@ -36,12 +36,13 @@ CONFIGS = {
 AI_SCENARIOS = {"ai", "permutation_ai", "digital_ai"}
 AI_MESH_SUFFIX = "_aimesh"
 
-# Phase A scenario keys (loadGenTests/phaseA/phaseA_Data.sh) and the default -R rates of those
-# whose k6 script reads RATE_LOW/MED/HIGH.
+# Phase A scenario keys (loadGenTests/phaseA/phaseA_Data.sh) and their default -R rates
+# (DEFAULT_RATES there; keep the two in sync).
 SCENARIOS = {
-    "digital": None, "fibonacci": None, "integration": None, "permutation": None,
+    "digital": "60 120 180", "fibonacci": "50 100 150", "integration": "200 400 800",
+    "permutation": "100 200 300",
     "video": "6 12 18", "ai": "3 6 12",
-    "differential": "25 50 100",
+    "differential": "200 400 800",
     "permutation_ai": "3 6 12", "digital_ai": "3 6 12",
 }
 
