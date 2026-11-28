@@ -17,9 +17,10 @@
 #                the config column, run_id and the time-series filename.
 #                (default: baseline, or <mesh>_mtls / <mesh>_nomtls — same labels as Phase B)
 #   -N N         fibonacci work-unit size n                                     (default: 20000)
-#   -R "L M H"   req/s for the low, med and high levels; only for services whose rates are
-#                configurable: video (default "6 12 18"), differential (default "25 50 100"),
-#                ai / permutation_ai / digital_ai (default "3 6 12")
+#   -R "L M H"   req/s for the low, med and high levels, for every service. Defaults:
+#                permutation "100 200 300", fibonacci "50 100 150", integration and
+#                differential "200 400 800", digital "60 120 180", video "6 12 18",
+#                ai / permutation_ai / digital_ai "3 6 12"
 #   -u URL       full ingress base URL; required for istio and consul, whose gateway NodePort is
 #                dynamic (consul: the API Gateway, `make consul` prints it)
 #   -n NODE_IP   worker node behind the default URL http://<node>:30080         (default: 10.29.20.113)
