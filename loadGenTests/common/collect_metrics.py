@@ -42,7 +42,9 @@ SERVICES = {
     "video":            ("video-service-.*",                  "video-service"),
 }
 
-# k6 scenario -> host service (for latency rows; "ai-external" is off-cluster)
+# k6 scenario -> host service (for latency rows). The AI host is off-cluster; its label depends on
+# whether it is an external dependency or a mesh member (--ai-mode, from common/ai_state.sh).
+AI_SERVICE = {"external": "ai-external", "mesh": "ai_rtx_in_mesh"}
 SCENARIO_HOST = {
     "permutation_generate":  "permutation",
     "permutation_from_ai":   "permutation",
@@ -52,7 +54,7 @@ SCENARIO_HOST = {
     "filters_apply_image":   "digital-filters",
     "filters_ai_matrix":     "digital-filters",
     "video_compress":        "video",
-    "ai_generate":           "ai-external",
+    "ai_generate":           None,          # AI_SERVICE[--ai-mode]
 }
 
 FIELDS = [
@@ -188,6 +190,8 @@ def main():
     ap.add_argument("--summary", required=True, help="k6 per-scenario JSON")
     ap.add_argument("--csv", required=True)
     ap.add_argument("--ns", default="thesis-test")
+    ap.add_argument("--ai-mode", default="external", choices=sorted(AI_SERVICE),
+                    help="the AI host as an external dependency or a mesh member (AI_MESH=1)")
     args = ap.parse_args()
 
     base = {
@@ -239,7 +243,7 @@ def main():
     for scen, m in summ.get("scenarios", {}).items():
         row = dict(base)
         row.update({
-            "row_type": "latency", "service": SCENARIO_HOST.get(scen, "?"), "scenario": scen,
+            "row_type": "latency", "service": SCENARIO_HOST.get(scen, "?") or AI_SERVICE[args.ai_mode], "scenario": scen,
             "rps_target": m.get("rps_target"), "reqs": m.get("reqs"), "fail_rate": m.get("fail_rate"),
             "lat_avg_ms": m.get("lat_avg_ms"), "lat_p50_ms": m.get("lat_p50_ms"),
             "lat_p90_ms": m.get("lat_p90_ms"), "lat_p95_ms": m.get("lat_p95_ms"),
