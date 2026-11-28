@@ -1,0 +1,43 @@
+# AI host INSIDE the Linkerd mesh (make linkerd AI_MESH=1). Replaces ai-service-external.yaml.
+# The AI host runs linkerd-proxy with an identity from SPIRE (deployments/ansible/ai_mesh.yml);
+# this ExternalWorkload registers it, and Linkerd's controller turns it into EndpointSlices of the
+# Service below, so the pods' proxies reach http://ai-service/ over mTLS.
+#
+# __AI_HOST_IP__ is substituted by ai_mesh.yml from the inventory. The annotations tell the
+# runners (loadGenTests/common/ai_state.sh) and the Makefile that the AI host is in the mesh.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: thesis-test
+  labels:
+    app: ai-service
+  annotations:
+    thesis/ai-mesh: linkerd
+    thesis/ai-host: __AI_HOST_IP__
+spec:
+  selector:
+    app: ai-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5005
+---
+apiVersion: workload.linkerd.io/v1beta1
+kind: ExternalWorkload
+metadata:
+  name: ai-rtx
+  namespace: thesis-test
+  labels:
+    app: ai-service
+spec:
+  meshTLS:
+    # The SPIFFE ID SPIRE on the host issues to the proxy's uid, and the SNI name the proxy
+    # expects (LINKERD2_PROXY_IDENTITY_SERVER_ID / _SERVER_NAME on the host).
+    identity: spiffe://root.linkerd.cluster.local/ai-service
+    serverName: ai-service.thesis-test.external.cluster.local
+  workloadIPs:
+    - ip: __AI_HOST_IP__
+  ports:
+    - port: 5005
+      name: http
