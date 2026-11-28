@@ -15,14 +15,20 @@ RUNNER = {
 }
 
 # Configuration -> deploy target in deployments/Makefile and the runner's -m/-t labels.
-# istio_*: the Envoy gateway NodePort changes on every install, lg_campaign.sh -G resolves it.
+# gateway: the ingress NodePort changes on every install (Istio ingress gateway, Consul API
+#          Gateway); lg_campaign.sh -G resolves it.
 # ai_mesh: the target can deploy with the AI host inside the mesh (make TARGET AI_MESH=1).
+# ai_route_needs_mesh: the ingress reaches /api/Ai only with the AI host in the mesh (Consul's API
+#          Gateway routes to catalog services only), so Phase B and Phase A "ai" need ai_mesh.
 CONFIGS = {
     "baseline":       {"make": "baseline",       "mesh": "baseline", "mtls": "na"},
     "linkerd_mtls":   {"make": "linkerd",        "mesh": "linkerd",  "mtls": "on",  "ai_mesh": True},
     "linkerd_nomtls": {"make": "linkerd-nomtls", "mesh": "linkerd",  "mtls": "off", "ai_mesh": True},
     "istio_mtls":     {"make": "istio-mtls",     "mesh": "istio",    "mtls": "on",  "gateway": True, "ai_mesh": True},
     "istio_nomtls":   {"make": "istio-nomtls",   "mesh": "istio",    "mtls": "off", "gateway": True, "ai_mesh": True},
+    # C-S: mTLS is always on in Consul, there is no C-P variant.
+    "consul_mtls":    {"make": "consul",         "mesh": "consul",   "mtls": "on",  "gateway": True, "ai_mesh": True,
+                       "ai_route_needs_mesh": True},
 }
 
 # Phase A scenarios that call the AI host. With the AI host in the mesh their label carries this
@@ -131,6 +137,8 @@ def build(params):
         scenario = params.get("scenario")
         if scenario not in SCENARIOS:
             raise BadRequest("scenario: choose a Phase A scenario")
+        if scenario == "ai" and cfg.get("ai_route_needs_mesh") and not ai_mesh:
+            raise BadRequest(f"scenario ai under {config} needs the AI host in the mesh: without it the gateway has no /api/Ai route")
         args += ["-s", scenario, "-m", cfg["mesh"], "-t", cfg["mtls"]]
         if label:
             if ai_mesh and scenario in AI_SCENARIOS and not label.endswith(AI_MESH_SUFFIX):
@@ -151,6 +159,8 @@ def build(params):
         title = f"A {scenario} · {shown}"
     else:
         exclude_ai = bool(params.get("exclude_ai", False))
+        if cfg.get("ai_route_needs_mesh") and not ai_mesh and not exclude_ai:
+            raise BadRequest(f"Phase B under {config} needs the AI host in the mesh: without it the gateway has no /api/Ai route for ai_generate")
         with_ai_mesh = ai_mesh and not exclude_ai
         if label and with_ai_mesh and not label.endswith(AI_MESH_SUFFIX):
             raise BadRequest(f"label must end in {AI_MESH_SUFFIX} with the AI host in the mesh")
