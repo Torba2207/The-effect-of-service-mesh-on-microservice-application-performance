@@ -13,8 +13,8 @@ AI_MESH_PLAY = ansible-playbook ansible/ai_mesh.yml -i $(INVENTORY)
 AI_STATE = m=$$(kubectl --context $(KUBECTX) -n $(TEST_NS) get svc ai-service -o jsonpath='{.metadata.annotations.thesis/ai-mesh}' 2>/dev/null); if [ -n "$$m" ]; then echo "AI host: IN the $$m mesh (AI_MESH=1)"; else echo "AI host: external dependency (AI_MESH=0)"; fi
 
 ifeq ($(AI_MESH),1)
-ifneq ($(filter baseline linkerd linkerd-nomtls,$(MAKECMDGOALS)),)
-$(error AI_MESH=1 is implemented for the Istio targets and consul so far; baseline has no mesh)
+ifneq ($(filter baseline,$(MAKECMDGOALS)),)
+$(error AI_MESH=1 needs a mesh target; baseline has no mesh)
 endif
 endif
 
@@ -79,6 +79,8 @@ istio-nomtls: istio
 linkerd: set-context teardown clean
 	@echo "Deploying Linkerd via Ansible..."
 	ansible-playbook ansible/phase_linkerd.yml -i $(INVENTORY)
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Joining the AI host to the Linkerd mesh..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=linkerd; fi
+	@$(AI_STATE)
 
 # L-P configuration. Linkerd has no mTLS switch, so this is NOT an encryption-off variant:
 # every proxy stays injected, but the application ports (and the ingress controller's) are
@@ -88,6 +90,8 @@ linkerd-nomtls: set-context teardown clean
 	ansible-playbook ansible/phase_linkerd.yml -i $(INVENTORY) -e linkerd_bypass=true
 	@echo "Waiting for $(TEST_NS) deployments to become Available..."
 	kubectl --context $(KUBECTX) -n $(TEST_NS) wait --for=condition=Available deployment --all --timeout=300s
+	@if [ "$(AI_MESH)" = 1 ]; then echo "Joining the AI host to the Linkerd mesh (proxy bypass on the host too)..."; $(AI_MESH_PLAY) -e ai_mesh_state=present -e ai_mesh=linkerd -e linkerd_bypass=true; fi
+	@$(AI_STATE)
 	@echo "Bypass annotations on $(TEST_NS): $$(kubectl --context $(KUBECTX) get ns $(TEST_NS) -o jsonpath='{.metadata.annotations}')"
 	@echo "Ingress: http://<node>:30080 (static NodePort)"
 
