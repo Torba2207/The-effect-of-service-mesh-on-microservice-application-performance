@@ -84,7 +84,8 @@ loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseA/run_p
 branch) with no local changes, a git identity is set and `lg` can push. It then pulls the branch
 (fast-forward only), deploys with `make -C deployments <target>` when given `-d <target>` (a failed
 deploy stops it before the runner), appends `-u http://10.29.20.113:<gateway NodePort>` to the
-runner arguments when given `-G` (Istio), runs the runner given after `--`, commits everything new
+runner arguments when given `-G` (Istio ingress gateway or Consul API Gateway, whichever is
+deployed), runs the runner given after `--`, commits everything new
 under `*/results/` and pushes; `-n` commits without pushing. Results are committed even if the
 runner fails (its exit code is in the commit message); a campaign stopped with Ctrl-C is not
 committed. On the workstation the results arrive with `git pull` of the branch. k6 `*.log` files
@@ -119,6 +120,11 @@ cd loadGenTests/phaseA
 GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc istio-ingressgateway \
   -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
 ./run_phaseA_Core.sh -s integration -m istio -t on -u http://10.29.20.113:$GWPORT
+
+# Consul (C-S, make consul) — the API Gateway NodePort is dynamic too
+CPORT=$(kubectl --context projekt-badawchy-cluster -n thesis-test get svc api-gateway \
+  -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')
+./run_phaseA_Core.sh -s video -m consul -t on -u http://10.29.20.113:$CPORT
 ```
 
 ---
@@ -335,16 +341,18 @@ The Core never detects the configuration on its own. These three flags **label**
 they must describe what is actually deployed.
 
 #### `-m MESH` — deployed mesh
-`baseline`, `istio` or `linkerd`. Default `baseline`.
+`baseline`, `istio`, `linkerd` or `consul`. Default `baseline`.
 
 Besides labelling, it selects the sidecar container whose CPU/RAM is collected (`istio-proxy`,
-`linkerd-proxy`, none for baseline) and the control-plane namespace. A preflight check compares it
+`linkerd-proxy`, `consul-dataplane`, none for baseline) and the control-plane namespace
+(`istio-system`, `linkerd`, `consul`). A preflight check compares it
 with the sidecars actually present in `thesis-test` and **refuses to start on a mismatch** — for
 example `-m baseline` while pods carry `linkerd-proxy`.
 
 #### `-t MTLS` — mTLS state
 - `-m baseline`: must be `na`, or omitted (it defaults to `na`).
 - `-m istio` / `-m linkerd`: required, `on` or `off`.
+- `-m consul`: required, `on` only (C-S: Consul has no mTLS switch, no C-P variant is defined).
 
 The flag is a label: it does not switch mTLS. Set the state first — Istio `PeerAuthentication`
 `STRICT` or `DISABLE`; for Linkerd, `off` means the proxy-bypass deployment, see
@@ -356,7 +364,7 @@ Letters, digits, `_` and `-`. Defaults to the same labels Phase B uses:
 | `-m` | `-t` | default label |
 |------|------|---------------|
 | `baseline` | `na` | `baseline` |
-| `istio` / `linkerd` | `on` | `<mesh>_mtls` |
+| `istio` / `linkerd` / `consul` | `on` | `<mesh>_mtls` |
 | `istio` / `linkerd` | `off` | `<mesh>_nomtls` |
 
 Pass `-c` only when the defaults cannot distinguish two configurations, e.g. `-c linkerd_bypass`.
@@ -379,8 +387,11 @@ baseline_fibonacci_S1_high_r3         # one run
 
 #### `-u URL` — ingress base URL
 Full base URL, without a trailing path, e.g. `http://10.29.20.113:31245`. Overrides `-n`.
-**Required with `-m istio`**: the Istio ingress gateway's NodePort is dynamic and changes on every
-`make istio`, so re-resolve it each time (command in [Quick start](#quick-start)).
+**Required with `-m istio` and `-m consul`**: the Istio ingress gateway's and the Consul API
+Gateway's NodePorts are dynamic and change on every install, so re-resolve them each time (commands
+in [Quick start](#quick-start)). Under Consul the API Gateway routes only to services in the Consul
+catalog, so `-s ai` (`/api/Ai`) needs the AI host in the mesh (`make consul AI_MESH=1`); the S2-ext
+chains reach the AI host through the pods' sidecars and work either way.
 
 #### `-n NODE_IP` — worker node
 Used only to build the default URL `http://<NODE_IP>:30080` (the NGINX ingress NodePort for baseline
@@ -504,7 +515,8 @@ a VPN drop breaks the SSH sessions and the port-forward mid-run.
 | Symptom | Cause and fix |
 |---------|---------------|
 | `ERROR: -m baseline, but thesis-test pods carry a mesh sidecar` | A mesh is still deployed. Pass the real `-m/-t`, or finish the teardown. |
-| `ERROR: -m istio requires -u` | Resolve the gateway NodePort (see Quick start) and pass `-u`. |
+| `ERROR: -m istio requires -u` / `-m consul requires -u` | Resolve the gateway NodePort (see Quick start) and pass `-u`. |
+| `ERROR: -s ai under consul needs the AI host in the mesh` | Deploy with `make consul AI_MESH=1`; without it the API Gateway has no `/api/Ai` route. |
 | `ERROR: -R is not supported for -s …` | That scenario's rates are fixed in its k6 script. |
 | `ERROR: SSH key not found` | Set `SSH_PRIVATE_KEY` or add it to the repo-root `.env`. |
 | `k6 missing on lg` / SSH hangs | VPN down, or `k6` not installed on the load generator. |
