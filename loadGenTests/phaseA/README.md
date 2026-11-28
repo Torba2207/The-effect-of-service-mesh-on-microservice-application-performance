@@ -455,6 +455,15 @@ Every run appends two kinds of rows, joined on `run_id`:
   Envoy ingress gateway instead, which lives in `istio-system` and is therefore counted inside
   `_controlplane`; the `_ingress` row is then near idle. Split the gateway out before comparing
   ingress cost between Istio and the other configurations.
+- **AI host rows** (when Prometheus scrapes the bare-metal AI host: `make ai-monitoring`; otherwise
+  the collector prints a note and skips them). Same columns, from cAdvisor/node_exporter on the host
+  (`common/ai_host_metrics.py`):
+  - `_ai_host` — `app_*` = the AI containers (`ai-load-balancer`, `ai-service-N`), `sidecar_*` =
+    the host's mesh proxy (systemd unit `istio` / `consul-envoy` / `linkerd-proxy`). The sidecar
+    columns are empty with the AI host outside the mesh (`AI_MESH=0`).
+  - `_ai_host_meshinfra` — only with the AI host in the mesh, mesh agents the pods do not have:
+    the Consul client agent, or SPIRE server + agent for Linkerd. Count it as mesh cost on the host.
+  - `_ai_host_total` — the whole host: busy CPU (all modes but idle/iowait/steal) and memory in use.
 - **`row_type=latency`** — one row per k6 scenario: `rps_target`, `reqs`, `fail_rate`,
   `lat_avg/p50/p90/p95/p99/max_ms`.
 
@@ -466,7 +475,8 @@ from the known seeded answer. It is not written to the master CSV.
 
 ### Time-series CSV
 
-`run_id, config, mesh, level, rep, t_rel_s, kind (cpu_cores|mem_mib), service, container, value`.
+`run_id, config, mesh, level, rep, t_rel_s, kind (cpu_cores|mem_mib|gpu_util_pct), service, container, value`.
+The AI host rows have the same services as above; `gpu_util_pct` is the host GPU (`_ai_host_total`, container `gpu`).
 Resolution is ~15 s, bounded by cAdvisor's housekeeping interval, not by the query step.
 
 ---
