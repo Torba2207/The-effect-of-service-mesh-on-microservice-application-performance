@@ -124,7 +124,8 @@ ai-bgp-nonat:
 	ansible-playbook ansible/network_ai_bgp.yml -i $(INVENTORY) -l 'control_plane,ai_bgp_host' -e ai_no_nat=true
 
 # Metrics exporters on the AI host (cAdvisor incl. systemd units, node_exporter, GPU exporter),
-# for measuring the mesh cost on the host. The Prometheus side is configured separately.
-ai-monitoring:
+# for measuring the mesh cost on the host, and the ScrapeConfigs that make Prometheus scrape them.
+# Independent of the mesh phase: teardown leaves both in place.
+ai-monitoring: set-context
 	@echo "Deploying metrics exporters on the AI host..."
 	ansible-playbook ansible/monitoring_ai_host.yml -i $(INVENTORY)
