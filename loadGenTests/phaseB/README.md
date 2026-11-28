@@ -40,8 +40,11 @@ Configurations to cover: `baseline`, `linkerd_mtls`, `linkerd_nomtls` (proxy byp
 - **AI host (10.29.20.121) up**, and the `ai-service` Service in `thesis-test` pointing at it —
   the preflight refuses to start otherwise.
 - The target config must already be **deployed** with the matching `make` target from
-  `deployments/` (see the setup table in `../phaseA/README.md`), and for Istio the gateway NodePort
-  resolved for `-u`.
+  `deployments/` (see the setup table in `../phaseA/README.md`), and for Istio and Consul the
+  gateway NodePort resolved for `-u` (the runner refuses to start without it).
+- **Consul (C-S) only with the AI host in the mesh** (`make consul AI_MESH=1`): the Consul API
+  Gateway routes only to catalog services, so without it `ai_generate` has no `/api/Ai` route and
+  the runner refuses to start (unless `-X`, which is not a valid Phase B run).
 
 ## Quick start
 ```bash
@@ -59,6 +62,11 @@ GWPORT=$(kubectl --context projekt-badawchy-cluster -n istio-system get svc isti
   -o jsonpath='{.spec.ports[?(@.port==80)].nodePort}')
 ./run_phaseB.sh -c istio_mtls   -m istio -t on  -u http://10.29.20.113:$GWPORT   # make istio-mtls
 ./run_phaseB.sh -c istio_nomtls -m istio -t off -u http://10.29.20.113:$GWPORT   # make istio-nomtls
+
+# Consul (C-S, make consul AI_MESH=1) — the API Gateway NodePort is dynamic as well
+CPORT=$(kubectl --context projekt-badawchy-cluster -n thesis-test get svc api-gateway \
+  -o jsonpath='{.spec.ports[?(@.port==8080)].nodePort}')
+./run_phaseB.sh -c consul_mtls_aimesh -m consul -t on -u http://10.29.20.113:$CPORT
 ```
 **Validate first:** `-r 1 -l high` per config and confirm `fail_rate < 0.01` before the full run.
 
@@ -138,9 +146,9 @@ scalars and time-series. It does **not** switch the cluster — deploy the targe
 | Flag | Meaning | Default |
 |------|---------|---------|
 | `-c LABEL` | config label written to the CSV `config` column (e.g. `linkerd_mtls`) | **required** |
-| `-m MESH` | `baseline` \| `istio` \| `linkerd` (selects sidecar container name for metrics) | **required** |
-| `-t MTLS` | mTLS state label: `on` \| `off` \| `na` | **required** |
-| `-u URL` | `TARGET_URL` base | `http://<node>:30080` |
+| `-m MESH` | `baseline` \| `istio` \| `linkerd` \| `consul` (selects sidecar container name for metrics) | **required** |
+| `-t MTLS` | mTLS state label: `na` (baseline), `on` \| `off` (istio, linkerd), `on` (consul) | **required** |
+| `-u URL` | `TARGET_URL` base; required for istio and consul (dynamic gateway NodePort) | `http://<node>:30080` |
 | `-n NODE_IP` | worker node IP for the default NodePort URL | `10.29.20.113` |
 | `-l "LEVELS"` | space-separated load levels | `"low med high"` |
 | `-r REPS` | repetitions per level | `10` |
@@ -224,7 +232,7 @@ Output of the old closed-loop AI probe (June, CPU AI VM). Not produced by curren
 AI used to be measured separately with the closed-loop `ai_probe/`, because the old CPU AI VM
 capped out at ~0.3 req/s. The GPU host sustains ~12–13 req/s, so the three AI scenarios now run
 open-loop inside `aggregate.js` like every other scenario, and their latency rows land in
-`master.csv` with the rest (`ai_generate` under service `ai-external`). `ai_probe/` is kept only
+`master.csv` with the rest (`ai_generate` under service `ai-external`, or `ai_rtx_in_mesh` with the AI host in the mesh). `ai_probe/` is kept only
 for reference.
 
 ## Plots
