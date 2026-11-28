@@ -7,7 +7,11 @@ pulls the CPU/RAM curves via query_range -> one long CSV you can plot. Works for
 runs (within Prometheus retention) and any future config. No re-running needed.
 
 Output (default results/timeseries_cpu_ram.csv):
-  run_id, config, mesh, level, rep, t_rel_s, kind(cpu_cores|mem_mib), service, container, value
+  run_id, config, mesh, level, rep, t_rel_s, kind(cpu_cores|mem_mib|gpu_util_pct), service, container, value
+
+The bare-metal AI host is included when Prometheus scrapes it (ai_host_metrics.py): service
+_ai_host (container app = AI containers, sidecar = the host's mesh proxy), _ai_host_meshinfra
+(Consul agent / SPIRE) and _ai_host_total (whole host CPU/RAM, container gpu = GPU utilisation).
 
 Optional: --plot-run <run_id> renders a CPU+RAM PNG for one run.
 """
@@ -15,8 +19,12 @@ import argparse
 import csv
 import json
 import os
+import sys
 import urllib.parse
 import urllib.request
+
+sys.dont_write_bytecode = True   # no __pycache__ in the clone (lg_campaign.sh needs a clean tree)
+import ai_host_metrics as aihost  # noqa: E402
 
 SIDE = {"istio": "istio-proxy", "linkerd": "linkerd-proxy", "baseline": None}
 SERVICES = {
@@ -50,17 +58,24 @@ def series_for_run(prom, mesh, start, end, step, ns):
     items += [("_ingress", "ingress-nginx-controller-.*", "controller", "app")]
     if side:
         items += [("_ingress", "ingress-nginx-controller-.*", side, "sidecar")]
-    rows = []
+    # (service, role, kind, expression)
+    exprs = []
     for svc, pod, cont, role in items:
         ns_ = "ingress-nginx" if svc == "_ingress" else ns
-        cpu = ('sum(rate(container_cpu_usage_seconds_total{namespace="%s",pod=~"%s",container="%s"}[1m]))'
-               % (ns_, pod, cont))
-        mem = ('sum(container_memory_working_set_bytes{namespace="%s",pod=~"%s",container="%s"})/1048576'
-               % (ns_, pod, cont))
-        for t, v in query_range(prom, cpu, start, end, step):
-            rows.append((round(t - start, 1), "cpu_cores", svc, role, round(v, 4)))
-        for t, v in query_range(prom, mem, start, end, step):
-            rows.append((round(t - start, 1), "mem_mib", svc, role, round(v, 2)))
+        sel = 'namespace="%s",pod=~"%s",container="%s"' % (ns_, pod, cont)
+        exprs += [(svc, role, "cpu_cores", aihost.cpu_expr(sel, "1m")),
+                  (svc, role, "mem_mib", aihost.mem_expr(sel))]
+    # bare-metal AI host (empty series when Prometheus does not scrape it)
+    for svc, role, sel in aihost.groups(mesh):
+        exprs += [(svc, role, "cpu_cores", aihost.cpu_expr(sel, "1m")),
+                  (svc, role, "mem_mib", aihost.mem_expr(sel))]
+    exprs += [("_ai_host_total", "app", "cpu_cores", aihost.node_cpu_expr("1m")),
+              ("_ai_host_total", "app", "mem_mib", aihost.node_mem_expr()),
+              ("_ai_host_total", "gpu", "gpu_util_pct", aihost.gpu_util_expr())]
+    rows = []
+    for svc, role, kind, expr in exprs:
+        for t, v in query_range(prom, expr, start, end, step):
+            rows.append((round(t - start, 1), kind, svc, role, round(v, 4 if kind == "cpu_cores" else 2)))
     return rows
 
 
@@ -80,7 +95,8 @@ def plot_run(rows, run_id, path):
     from collections import defaultdict
     cpu = defaultdict(lambda: defaultdict(float)); mem = defaultdict(lambda: defaultdict(float))
     for t, kind, svc, role, v in rows:
-        (cpu if kind == "cpu_cores" else mem)[svc][t] += v
+        if kind in ("cpu_cores", "mem_mib") and svc != "_ai_host_total":   # host total would dwarf the rest
+            (cpu if kind == "cpu_cores" else mem)[svc][t] += v
     fig, ax = plt.subplots(2, 1, figsize=(12, 8))
     for svc, s in sorted(cpu.items()):
         ts = sorted(s); ax[0].plot(ts, [s[t] for t in ts], marker=".", label=svc)
