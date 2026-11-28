@@ -24,9 +24,9 @@ loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseA/run_p
 | Form | Becomes |
 |------|---------|
 | Configuration | the runner's `-m`/`-t` (and the Phase B `-c` label); with *Deploy first*, `lg_campaign.sh -d <make target>` |
-| `istio_*` | `lg_campaign.sh -G`: the Envoy gateway NodePort is read after the deploy and passed as `-u` |
+| `istio_*`, `consul_mtls` | `lg_campaign.sh -G`: the gateway NodePort (Istio ingress gateway / Consul API Gateway) is read after the deploy and passed as `-u` |
 | Phase A scenario, rates, n, levels, reps, durations, label | the runner's flags; only values that differ from the runner defaults are passed |
-| *AI host in the mesh* (`istio_*`, `linkerd_*`; Consul is not in the scheduler) | with *Deploy first*, `lg_campaign.sh -A` = `make <target> AI_MESH=1` (`deployments/ansible/ai_mesh.yml`); AI runs get the label suffix `_aimesh` (Phase B: `-c <config>_aimesh`; Phase A AI scenarios: the runner adds it). Without deploy it only sets the labels, for a cluster already deployed that way. The runners check the label against the deployed state (`common/ai_state.sh`) and refuse a mismatch. |
+| *AI host in the mesh* (`istio_*`, `linkerd_*`, `consul_mtls`) | with *Deploy first*, `lg_campaign.sh -A` = `make <target> AI_MESH=1` (`deployments/ansible/ai_mesh.yml`); AI runs get the label suffix `_aimesh` (Phase B: `-c <config>_aimesh`; Phase A AI scenarios: the runner adds it). Without deploy it only sets the labels, for a cluster already deployed that way. The runners check the label against the deployed state (`common/ai_state.sh`) and refuse a mismatch. |
 | *Push the results* off | `lg_campaign.sh -n` |
 | Self-test | a one-minute counter: touches neither the cluster nor git, checks the scheduler itself |
 
@@ -37,6 +37,12 @@ loadGenTests/common/lg_campaign.sh -d istio-mtls -G -- loadGenTests/phaseA/run_p
 | `linkerd_nomtls` | `linkerd-nomtls` | `-m linkerd -t off` (proxy bypass, see `../phaseA/README.md`) |
 | `istio_mtls` | `istio-mtls` | `-m istio -t on` |
 | `istio_nomtls` | `istio-nomtls` | `-m istio -t off` |
+| `consul_mtls` | `consul` | `-m consul -t on` (C-S, provisional; mTLS cannot be switched off) |
+
+`consul_mtls` needs *AI host in the mesh* for Phase B and for the Phase A scenario `ai`: Consul's
+API Gateway routes only to services in the Consul catalog, so `/api/Ai` exists only with the AI host
+in the mesh. The page refuses those jobs otherwise; the S2-ext scenarios (`permutation_ai`,
+`digital_ai`) and the in-cluster ones work either way.
 
 The duration shown is an estimate: levels × reps × (warm-up + steady + cooldown), plus ~10 min for
 a deploy.
