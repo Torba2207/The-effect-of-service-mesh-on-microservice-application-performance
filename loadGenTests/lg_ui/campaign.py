@@ -19,8 +19,8 @@ RUNNER = {
 # ai_mesh: the target can deploy with the AI host inside the mesh (make TARGET AI_MESH=1).
 CONFIGS = {
     "baseline":       {"make": "baseline",       "mesh": "baseline", "mtls": "na"},
-    "linkerd_mtls":   {"make": "linkerd",        "mesh": "linkerd",  "mtls": "on"},
-    "linkerd_nomtls": {"make": "linkerd-nomtls", "mesh": "linkerd",  "mtls": "off"},
+    "linkerd_mtls":   {"make": "linkerd",        "mesh": "linkerd",  "mtls": "on",  "ai_mesh": True},
+    "linkerd_nomtls": {"make": "linkerd-nomtls", "mesh": "linkerd",  "mtls": "off", "ai_mesh": True},
     "istio_mtls":     {"make": "istio-mtls",     "mesh": "istio",    "mtls": "on",  "gateway": True, "ai_mesh": True},
     "istio_nomtls":   {"make": "istio-nomtls",   "mesh": "istio",    "mtls": "off", "gateway": True, "ai_mesh": True},
 }
