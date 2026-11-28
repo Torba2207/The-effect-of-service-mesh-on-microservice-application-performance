@@ -91,24 +91,25 @@ Rate is chosen by the `LEVEL` env (`low`/`med`/`high`):
 
 | Scenario | Endpoint | Class | low / med / high |
 |----------|----------|-------|------------------|
-| `permutation_generate` | `POST /api/permutation/generate` | S1 STD | 25 / 50 / 100 rps |
-| `fibonacci_calculate` | `POST /api/fibonacci/calculate` | S1 STD | 25 / 50 / 100 |
-| `integration_calculate` | `POST /api/integration/calculate` | S1 STD | 25 / 50 / 100 |
-| `filters_apply_image` | `POST /api/filters/apply-image` (multipart) | S1 STD | 25 / 50 / 100 |
-| `differential_solve` | `POST /api/differential/solve` | S2-int | 25 / 50 / 100 |
+| `permutation_generate` | `POST /api/permutation/generate` | S1 STD | 50 / 100 / 150 rps |
+| `fibonacci_calculate` | `POST /api/fibonacci/calculate` | S1 STD | 50 / 100 / 150 |
+| `integration_calculate` | `POST /api/integration/calculate` | S1 STD | 100 / 200 / 400 |
+| `filters_apply_image` | `POST /api/filters/apply-image` (multipart) | S1 STD | 50 / 100 / 150 |
+| `differential_solve` | `POST /api/differential/solve` | S2-int | 100 / 200 / 400 |
 | `video_compress` | `POST /api/video/compress` (multipart) | S1 HVY | 6 / 12 / 18 |
 | `ai_generate` | `POST /api/Ai/generate` | S1 HVY | 1 / 2 / 3 |
 | `permutation_from_ai` | `POST /api/permutation/generate-from-ai` | S2-ext | 1 / 2 / 3 |
 | `filters_ai_matrix` | `POST /api/filters/apply-ai-matrix` | S2-ext | 1 / 2 / 3 |
 
-- **STD, S2-int and video rates are identical to Phase A**, so every service carries the same load
-  it had in isolation and the only new variable is contention.
+- **Video rates are identical to Phase A; STD and S2-int run one step below Phase A's levels**
+  (raised 28.11.2026 from 25 / 50 / 100, see `../phaseA/README.md`): all scenarios run at once
+  here, and Phase A's levels together would push the worker nodes towards saturation.
 - **The three AI scenarios are part of every run.** They share one GPU AI host that sustains about
   12–13 req/s in total, so each runs at 1/2/3 req/s — 3/6/9 req/s combined, below that ceiling even
   at high. (Phase A drives each AI scenario alone at 3/6/12.) `-X` / `INCLUDE_AI=false` drops them
   for debugging only; such a run is not a valid Phase B measurement.
-- At high the cluster carries roughly 8–9 cores of application CPU (video alone ~6.5) out of the
-  24 worker vCPUs, before sidecars. Validate each configuration with `-r 1 -l high` first.
+- At high the cluster carries roughly 11-12 cores of application CPU (video alone ~6.5) out of the
+  24 worker vCPUs, ~13-14 with sidecars and ingress (estimate from the 11.2026 per-request costs). Validate each configuration with `-r 1 -l high` first.
 
 ### Fixed work units (reproducibility)
 Every scenario uses one immutable payload so per-request work is constant across runs and configs:
